@@ -92,6 +92,24 @@
     }
   }
 
+  // ── Mark all as read silently ────────────────────────────
+  function markAllAsReadSilently() {
+    if (badge) {
+      badge.style.display = 'none';
+      badge.textContent = '0';
+    }
+
+    fetch('/api/notifications/mark-all-read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ device_id: deviceId })
+    })
+      .then(() => {
+        updateUnreadCount();
+      })
+      .catch(() => {});
+  }
+
   // ── Load notifications ───────────────────────────────────
   function loadNotifications() {
     panelBody.innerHTML = '<div class="notif-loading">Loading...</div>';
@@ -114,17 +132,15 @@
         panelBody.innerHTML = notifications
           .map(
             (n) => `
-          <a class="notif-item ${n.isRead ? '' : 'unread'}" 
+          <a class="notif-item" 
              href="${n.link || '#'}"
-             data-id="${n.id}"
-             onclick="window._notifMarkRead(${n.id})">
+             data-id="${n.id}">
             <div class="notif-item-icon">${getTypeIcon(n.type)}</div>
             <div class="notif-item-content">
               <div class="notif-item-title">${escapeHtml(n.title)}</div>
               <div class="notif-item-body">${escapeHtml(n.body)}</div>
               <div class="notif-item-time">${timeAgo(n.createdAt)}</div>
             </div>
-            ${n.isRead ? '' : '<div class="notif-unread-dot"></div>'}
           </a>
         `
           )
@@ -166,6 +182,8 @@
   function openPanel() {
     panel.classList.add('open');
     overlay.classList.add('show');
+    // Automatically mark all notifications as read upon opening
+    markAllAsReadSilently();
     loadNotifications();
   }
 
@@ -191,23 +209,16 @@
   if (closeBtn) closeBtn.addEventListener('click', closePanel);
   if (overlay) overlay.addEventListener('click', closePanel);
 
-  // ── Mark all read ────────────────────────────────────────
+  // ── Mark all read button (hidden by default as read is automatic) ──
   if (markAllBtn) {
+    markAllBtn.style.display = 'none';
     markAllBtn.addEventListener('click', () => {
-      fetch('/api/notifications/mark-all-read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device_id: deviceId })
-      })
-        .then(() => {
-          document.querySelectorAll('.notif-item.unread').forEach((el) => {
-            el.classList.remove('unread');
-            const dot = el.querySelector('.notif-unread-dot');
-            if (dot) dot.remove();
-          });
-          updateUnreadCount();
-        })
-        .catch(() => {});
+      markAllAsReadSilently();
+      document.querySelectorAll('.notif-item.unread').forEach((el) => {
+        el.classList.remove('unread');
+        const dot = el.querySelector('.notif-unread-dot');
+        if (dot) dot.remove();
+      });
     });
   }
 

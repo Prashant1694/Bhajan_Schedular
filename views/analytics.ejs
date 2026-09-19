@@ -1,4 +1,4 @@
-<div class="container">
+<div class="container container-lg">
     <div class="header">
       <h1>📈 Analytics</h1>
       <p>Most Popular Bhajans</p>
@@ -8,28 +8,30 @@
       <a href="/admin" class="button secondary">⬅️ Back to Admin</a>
     </div>
 
-    <div style="background:#f8f9fa; padding:24px; border-radius:16px; border:1px solid #e9ecef;">
-      <h3 style="color:#495057; margin-bottom:16px; display:flex; justify-content:space-between;">
+    <div class="card analytics-card">
+      <h3 style="margin-bottom:16px; display:flex; align-items:center; gap:8px;">
         <span>🏆 Top 15 Most Sung Bhajans</span>
       </h3>
       
-      <table style="background:white; border-radius:12px; overflow:hidden;">
-        <thead>
-          <tr>
-            <th style="background:#e5dbff; color:#5f3dc4;">Rank</th>
-            <th style="background:#e5dbff; color:#5f3dc4;">Bhajan Title</th>
-            <th style="background:#e5dbff; color:#5f3dc4; text-align:center;">Times Sung</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% topBhajans.forEach((b, i) => { %>
+      <div class="table-container">
+        <table class="analytics-table">
+          <thead>
             <tr>
-              <td><strong>#<%= i + 1 %></strong></td>
-              <td><%= b.title %></td>
-              <td style="text-align:center;"><span style="background:#b197fc; color:white; padding:4px 10px; border-radius:20px; font-weight:bold; font-size:12px;"><%= b.count %></span></td>
+              <th style="width:90px;">Rank</th>
+              <th>Bhajan Title</th>
+              <th style="text-align:center; width:130px;">Times Sung</th>
             </tr>
-          <% }) %>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <% topBhajans.forEach((b, i) => { %>
+              <tr>
+                <td><span class="rank-pill <%= i < 3 ? 'rank-top' : '' %>">#<%= i + 1 %></span></td>
+                <td><strong><%= b.title %></strong></td>
+                <td style="text-align:center;"><span class="badge-count"><%= b.count %></span></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>

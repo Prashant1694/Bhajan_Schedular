@@ -31,11 +31,11 @@
         <div class="table-header">
             <div>
                 <h2 style="margin:0; font-size:18px; font-weight:700;">Administrator Accounts</h2>
-                <p style="margin:4px 0 0 0; color:#666; font-size:13px;"><%= admins.length %> account(s) registered</p>
+                <p style="margin:4px 0 0 0; color:var(--muted); font-size:13px;"><%= admins.length %> account(s) registered</p>
             </div>
             <input
                 type="text"
-                class="search-box"
+                class="search-box filter-input"
                 id="adminUserSearchInput"
                 placeholder="Search admin name, title or username..."
                 onkeyup="filterAdminUsersTable()"
@@ -66,10 +66,10 @@
                                     <div class="admin-name" style="font-weight:600;">
                                         <%= admin.display_name %>
                                         <% if (admin.title) { %>
-                                            <span class="badge badge-optional" style="font-size:10px; padding:2px 8px; margin-left:4px; background:#fff3cd; color:#d97706; border:1px solid #fcd34d; font-weight:700;"><%= admin.title %></span>
+                                            <span class="badge badge-title" style="font-size:10px; padding:2px 8px; margin-left:4px; font-weight:700;"><%= admin.title %></span>
                                         <% } %>
                                     </div>
-                                    <div class="admin-id" style="font-size:12px; color:#888;">
+                                    <div class="admin-id" style="font-size:12px; color:var(--muted);">
                                         ID #<%= admin.id %> <%= admin.title ? '• ' + admin.title : '' %>
                                     </div>
                                 </div>

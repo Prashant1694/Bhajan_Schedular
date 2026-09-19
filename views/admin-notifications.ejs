@@ -9,47 +9,46 @@
     style="padding:9px 18px; border:none; border-radius:8px; background:linear-gradient(135deg, #ff9933 0%, #e65100 100%); color:#fff; font-weight:600; cursor:pointer; font-size:13.5px; display:inline-flex; align-items:center; gap:6px;">
     <span>📢</span> Send Custom Notification
   </button>
-  <button type="button" onclick="sendTestNotification()"
-    style="padding:9px 16px; border:1px solid #ddd; border-radius:8px; background:#fff; cursor:pointer; font-size:13px; color:#555;">
+  <button type="button" onclick="sendTestNotification()" class="button secondary" style="padding:9px 16px; font-size:13px;">
     🔔 Send Quick Test
   </button>
 </div>
 
 <!-- Custom Notification Form Card (Collapsible) -->
-<div id="customNotifCard"
-  style="display:none; background:#fff; border:1px solid #e9ecef; border-radius:12px; padding:20px 24px; margin-bottom:28px; box-shadow:0 2px 8px rgba(0,0,0,0.04); max-width:640px;">
+<div id="customNotifCard" class="card"
+  style="display:none; padding:20px 24px; margin-bottom:28px; max-width:640px;">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-    <h3 style="margin:0; font-size:16px; color:#333; display:flex; align-items:center; gap:8px;">
+    <h3 style="margin:0; font-size:16px; color:var(--ink); display:flex; align-items:center; gap:8px;">
       <span>📢</span> New Custom Notification
     </h3>
     <button type="button" onclick="toggleCustomForm()"
-      style="background:none; border:none; font-size:18px; color:#888; cursor:pointer;">✕</button>
+      style="background:none; border:none; font-size:18px; color:var(--muted); cursor:pointer;">✕</button>
   </div>
 
   <form id="customNotifForm" onsubmit="handleSendCustom(event)">
     <div style="margin-bottom:14px;">
-      <label style="display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:6px;">Notification Title
+      <label style="display:block; font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:6px;">Notification Title
         *</label>
       <input type="text" id="custTitle" required maxlength="150" placeholder="e.g. Special Bhajan Practice at 6 PM"
-        style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; box-sizing:border-box;">
+        class="filter-input" style="width:100%; box-sizing:border-box;">
     </div>
 
     <div style="margin-bottom:14px;">
-      <label style="display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:6px;">Message / Body
+      <label style="display:block; font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:6px;">Message / Body
         *</label>
       <textarea id="custBody" required rows="3" maxlength="500" placeholder="Enter message for devotees..."
-        style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
+        class="filter-input" style="width:100%; font-family:inherit; resize:vertical; box-sizing:border-box;"></textarea>
     </div>
 
     <div style="margin-bottom:14px;">
-      <label style="display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:6px;">Action Link
+      <label style="display:block; font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:6px;">Action Link
         (optional)</label>
       <input type="text" id="custLink" placeholder="e.g. /submit-form or /plan-view" value="/"
-        style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; box-sizing:border-box;">
+        class="filter-input" style="width:100%; box-sizing:border-box;">
     </div>
 
     <div style="margin-bottom:18px;">
-      <label style="display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:8px;">Target
+      <label style="display:block; font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:8px;">Target
         Audience</label>
       <div style="display:flex; gap:18px; align-items:center; margin-bottom:10px;">
         <label style="display:inline-flex; align-items:center; gap:6px; font-size:13.5px; cursor:pointer;">
@@ -63,28 +62,27 @@
       </div>
 
       <div id="singerSelectWrap" style="display:none; margin-top:8px;">
-        <select id="custSingerId"
-          style="width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-size:14px; background:#fff; box-sizing:border-box;">
-          <option value="">— Select a singer —</option>
-          <% if (typeof allSingers !=='undefined' && allSingers) { %>
+        <select id="custSingerId" class="filter-input" style="width:100%; box-sizing:border-box;">
+          <option value="">-- Choose a Singer --</option>
+          <% if (typeof allSingers !== 'undefined' && allSingers) { %>
             <% allSingers.forEach(function(s) { %>
               <option value="<%= s.id %>">
                 <%= s.name %>
               </option>
-              <% }); %>
-                <% } %>
+            <% }); %>
+          <% } %>
         </select>
       </div>
     </div>
 
-    <div style="display:flex; gap:10px;">
-      <button type="submit" id="custSubmitBtn"
-        style="padding:10px 22px; border:none; border-radius:8px; background:linear-gradient(135deg, #ff9933 0%, #e65100 100%); color:#fff; font-weight:600; font-size:14px; cursor:pointer;">
-        Send Notification
-      </button>
-      <button type="button" onclick="toggleCustomForm()"
-        style="padding:10px 18px; border:1px solid #ddd; border-radius:8px; background:#fff; color:#666; font-size:14px; cursor:pointer;">
+    <div id="custFormMsg" style="display:none; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:14px;"></div>
+
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button type="button" onclick="toggleCustomForm()" class="button secondary">
         Cancel
+      </button>
+      <button type="submit" id="custSubmitBtn" class="button" style="background:#e65100; border:none; color:#fff; font-weight:600;">
+        🚀 Send Notification Now
       </button>
     </div>
   </form>

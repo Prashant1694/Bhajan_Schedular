@@ -1,224 +1,124 @@
-<style>
-.login-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 24px 0;
-  color: #777;
-  font-size: 14px;
-}
+<%# Admin Login — vertically & horizontally centered with bokeh bg effect %>
+<%# All styles live in style.css (.login-fullscreen, .login-card, .bokeh-*) %>
 
-.login-divider::before,
-.login-divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: #ddd;
-}
+<div class="login-fullscreen">
 
-.login-divider span {
-  white-space: nowrap;
-}
+  <%# Animated bokeh orbs (appear subtly; intensify on hover of the whole area) %>
+  <span class="bokeh bokeh-1" aria-hidden="true"></span>
+  <span class="bokeh bokeh-2" aria-hidden="true"></span>
+  <span class="bokeh bokeh-3" aria-hidden="true"></span>
 
-#google-signin-button {
-  display: flex;
-  justify-content: center;
-}
+  <div class="container login-card">
 
-.google-login-error {
-  min-height: 20px;
-  margin-top: 14px;
-  color: #c62828;
-  font-size: 14px;
-  text-align: center;
-}
+    <h2 class="login-heading">
+      🔐 Admin Login
+    </h2>
 
-.forgot-password {
-  text-align: center;
-  margin-top: 14px;
-}
+    <% if (error) { %>
+      <div class="alert-error">
+        <%= error %>
+      </div>
+    <% } %>
 
-.forgot-password a {
-  color: #1565c0;
-  text-decoration: none;
-  font-size: 14px;
-}
+    <form method="post" action="/admin-login">
 
-.forgot-password a:hover {
-  text-decoration: underline;
-}
-</style>
+      <div class="form-group">
+        <label for="username">User ID</label>
+        <input
+          id="username"
+          type="text"
+          name="username"
+          required
+          autocomplete="username"
+        />
+      </div>
 
-<div class="container" style="max-width: 400px; padding: 40px;">
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          name="password"
+          required
+          autocomplete="current-password"
+        />
+      </div>
 
-  <h2 style="text-align: center; color: #C2185B; margin-bottom: 24px;">
-    🔐 Admin Login
-  </h2>
+      <button
+        type="submit"
+        class="submit-btn"
+        style="width:100%; margin-top:8px;">
+        Login
+      </button>
 
-  <% if (error) { %>
-    <div style="background:#ffe3e3; color:#c92a2a; padding:10px; border-radius:8px; margin-bottom:16px; text-align:center;">
-      <%= error %>
-    </div>
-  <% } %>
+    </form>
 
-  <form method="post" action="/admin-login">
-
-    <div class="form-group">
-      <label>User ID</label>
-      <input
-        type="text"
-        name="username"
-        required
-      />
+    <div class="forgot-password">
+      <a href="/forgot-password">Forgot Password?</a>
     </div>
 
-    <div class="form-group">
-      <label>Password</label>
-      <input
-        type="password"
-        name="password"
-        required
-      />
+    <% if (googleClientId) { %>
+
+      <div class="login-divider">
+        <span>or</span>
+      </div>
+
+      <div id="google-signin-button"></div>
+
+      <p id="google-login-error" class="google-login-error"></p>
+
+    <% } %>
+
+    <div style="text-align:center; margin-top:20px;">
+      <a
+        href="/"
+        style="color:var(--muted); text-decoration:none; font-size:14px;">
+        ← Back to Home
+      </a>
     </div>
 
-    <button
-      type="submit"
-      class="submit-btn">
-      Login
-    </button>
+  </div><%# /.container.login-card %>
 
-  </form>
+</div><%# /.login-fullscreen %>
 
-  <div class="forgot-password">
-    <a href="/forgot-password">
-      Forgot Password?
-    </a>
-  </div>
-
-  <% if (googleClientId) { %>
-
-    <div class="login-divider">
-      <span>or</span>
-    </div>
-
-    <div id="google-signin-button"></div>
-
-    <p
-      id="google-login-error"
-      class="google-login-error">
-    </p>
-
-  <% } %>
-
-  <div style="text-align:center; margin-top:20px;">
-    <a
-      href="/"
-      style="color:#868e96; text-decoration:none;">
-      ← Back to Home
-    </a>
-  </div>
-
-</div>
 
 <% if (googleClientId) { %>
-
 <script>
 
 async function handleGoogleCredential(response) {
-
-  const errorElement =
-    document.getElementById(
-      "google-login-error"
-    );
-
-  errorElement.textContent = "";
-
+  const errorEl = document.getElementById('google-login-error');
+  errorEl.textContent = '';
   try {
-
-    const result =
-      await fetch(
-        "/auth/google",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-          body: JSON.stringify({
-            credential:
-              response.credential
-          })
-        }
-      );
-
-    const data =
-      await result.json();
-
+    const result = await fetch('/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: response.credential })
+    });
+    const data = await result.json();
     if (!result.ok || !data.success) {
-
-      errorElement.textContent =
-        data.error ||
-        "Google login failed.";
-
+      errorEl.textContent = data.error || 'Google login failed.';
       return;
-
     }
-
-    window.location.href =
-      data.redirect || "/admin";
-
+    window.location.href = data.redirect || '/admin';
+  } catch (err) {
+    console.error(err);
+    errorEl.textContent = 'Google login failed. Please try again.';
   }
-
-  catch (error) {
-
-    console.error(error);
-
-    errorElement.textContent =
-      "Google login failed. Please try again.";
-
-  }
-
 }
 
-window.addEventListener("load", () => {
-
+window.addEventListener('load', () => {
   google.accounts.id.initialize({
-
-    client_id:
-      <%- JSON.stringify(googleClientId) %>,
-
-    callback:
-      handleGoogleCredential,
-
+    client_id: <%- JSON.stringify(googleClientId) %>,
+    callback: handleGoogleCredential,
     auto_select: false
-
   });
-
   google.accounts.id.renderButton(
-
-    document.getElementById(
-      "google-signin-button"
-    ),
-
-    {
-      type: "standard",
-      theme: "outline",
-      size: "large",
-      text: "signin_with",
-      shape: "rectangular",
-      width: 320
-    }
-
+    document.getElementById('google-signin-button'),
+    { type: 'standard', theme: 'outline', size: 'large', text: 'signin_with', shape: 'rectangular', width: 320 }
   );
-
 });
 
 </script>
-
 <% } %>
 
-<script
-src="https://accounts.google.com/gsi/client"
-async
-defer>
-</script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>

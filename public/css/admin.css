@@ -43,6 +43,43 @@
 }
 
 /* ==========================================================================
+   ADMIN DARK MODE TOKENS
+   Mirrors the [data-theme="dark"] block in style.css, using admin.css aliases.
+   Both files share --surface, --border, --border-soft, --shadow-*, so those
+   are already covered by style.css. This block handles admin-specific aliases.
+   ========================================================================== */
+
+[data-theme="dark"] {
+  --primary: #f59e0b;
+  --primary-dark: #d97706;
+
+  --accent: #f43f5e;
+  --accent-dark: #e11d48;
+
+  --gold: #fbbf24;
+
+  --bg: #0c0e14;
+  --surface: #151824;
+
+  --border: #262d3e;
+  --border-soft: #1d2332;
+
+  --text: #f8fafc;
+  --text-light: #cbd5e1;
+
+  --success: #34d399;
+  --success-bg: rgba(16, 185, 129, 0.14);
+  --danger: #f87171;
+  --danger-bg: rgba(239, 68, 68, 0.14);
+  --info: #38bdf8;
+  --info-bg: rgba(14, 165, 233, 0.14);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
+}
+
+/* ==========================================================================
    PAGE
    ========================================================================== */
 
@@ -313,6 +350,8 @@ body.sidebar-collapsed .sidebar:hover .sidebar-footer a {
   color: var(--accent-dark);
   border-left: 3px solid var(--primary);
   padding-left: 11px;
+  transition: background var(--transition), color var(--transition),
+              border-left-color var(--transition);
 }
 
 .nav-icon-wrap {
@@ -396,6 +435,7 @@ body.sidebar-collapsed .sidebar:hover .sidebar-badge-dot {
   min-height: 72px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 var(--border-soft);
   display: flex;
   flex-direction: row;
   justify-content: space-between;
@@ -461,6 +501,44 @@ body.sidebar-collapsed .sidebar:hover .sidebar-badge-dot {
   letter-spacing: 0.4px;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+/* Topbar Theme Toggle */
+.topbar-theme-toggle {
+  position: relative !important;
+  bottom: auto !important;
+  right: auto !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  flex-shrink: 0 !important;
+  margin-right: 4px;
+}
+
+.topbar-theme-toggle:hover {
+  transform: translateY(-1px) scale(1.04) !important;
+  border-color: var(--accent) !important;
+  background: var(--bg) !important;
+}
+
+.topbar-theme-toggle:active {
+  transform: scale(0.95) !important;
+}
+
+.topbar-theme-toggle::before {
+  top: calc(100% + 8px) !important;
+  right: 50% !important;
+  left: auto !important;
+  transform: translateX(50%) !important;
 }
 
 /* ==========================================================================
@@ -608,9 +686,17 @@ body.sidebar-collapsed .sidebar:hover .sidebar-badge-dot {
   border-radius: var(--radius);
   padding: 24px;
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  transition: var(--transition);
+}
+
+.stat-card:has(.stat-icon) {
+  flex-direction: row;
   align-items: center;
   gap: 16px;
-  transition: var(--transition);
 }
 
 .stat-card:hover {
@@ -1774,9 +1860,15 @@ body.sidebar-collapsed .sidebar:hover .sidebar-badge-dot {
   border-color: #a5d8ff;
 }
 
+.legend-color.day-festival,
 .legend-color.day-festival-perm {
   background: #fff9db;
   border-color: #ffe066;
+}
+
+.legend-color.day-today {
+  background: #fff;
+  border: 2px solid #ff9933;
 }
 
 /* Weekdays */
@@ -2198,3 +2290,285 @@ body.sidebar-collapsed .sidebar:hover .sidebar-badge-dot {
   opacity: 0;
   transform: scale(0.97);
 }
+
+/* ==========================================================================
+   ADMIN DARK MODE — sidebar & body overrides
+   ========================================================================== */
+
+[data-theme="dark"] body.admin-page {
+  background: var(--bg);
+  color: var(--text);
+}
+
+[data-theme="dark"] .sidebar {
+  background: var(--surface);
+  border-right-color: var(--border);
+}
+
+[data-theme="dark"] .topbar {
+  background: var(--surface);
+  border-bottom-color: var(--border);
+  box-shadow: 0 1px 0 var(--border-soft);
+}
+
+[data-theme="dark"] .admin-card {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .page-body {
+  background: var(--bg);
+}
+
+/* ── Admin form inputs ─────────────────────────────────────── */
+[data-theme="dark"] .admin-form-wrapper input,
+[data-theme="dark"] .admin-form-wrapper select,
+[data-theme="dark"] .admin-form-wrapper textarea,
+[data-theme="dark"] form input[type="text"],
+[data-theme="dark"] form input[type="password"],
+[data-theme="dark"] form input[type="email"],
+[data-theme="dark"] form input[type="number"],
+[data-theme="dark"] form input[type="date"],
+[data-theme="dark"] form input[type="datetime-local"],
+[data-theme="dark"] form select,
+[data-theme="dark"] form textarea {
+  background-color: #1a1f2e;
+  border-color: #2e374c;
+  color: #f8fafc;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] form input:focus,
+[data-theme="dark"] form select:focus,
+[data-theme="dark"] form textarea:focus {
+  background-color: #22293d;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+  outline: none;
+}
+
+[data-theme="dark"] form select option {
+  background: #1a1f2e;
+  color: #f8fafc;
+}
+
+/* ── Admin table rows ──────────────────────────────────────── */
+[data-theme="dark"] .admin-table th {
+  background: #161a25;
+  color: #cbd5e1;
+  border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .admin-table td {
+  border-bottom-color: var(--border-soft);
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .admin-table tr:hover td {
+  background: #1d2332;
+}
+
+/* ── Singer availability rows ───────────────────────────────── */
+[data-theme="dark"] .singer-row {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .singer-row:hover {
+  background: #1d2332;
+}
+
+/* ── Stat number pills ──────────────────────────────────────── */
+[data-theme="dark"] .stat-number {
+  color: var(--primary);
+}
+
+/* ── Admin action buttons ────────────────────────────────────── */
+[data-theme="dark"] .btn-secondary {
+  background: #1a1f2e;
+  border-color: #2e374c;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+  background: #22293d;
+  border-color: var(--primary);
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .btn-danger {
+  background: var(--danger-bg);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: var(--danger);
+}
+
+/* ── Admin card header ───────────────────────────────────────── */
+[data-theme="dark"] .admin-card-header {
+  border-bottom-color: var(--border);
+  background: var(--surface);
+}
+
+/* ── Section title ──────────────────────────────────────────── */
+[data-theme="dark"] .section-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .section-subtitle {
+  color: #94a3b8;
+}
+
+/* ── Month/week picker inputs ────────────────────────────────── */
+[data-theme="dark"] input[type="month"],
+[data-theme="dark"] input[type="week"] {
+  background: #1a1f2e;
+  border-color: #2e374c;
+  color: #f8fafc;
+  color-scheme: dark;
+}
+
+/* ── Admin Calendar Specific High Contrast Overrides ─────────── */
+[data-theme="dark"] .calendar-title {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .calendar-date-num {
+  color: #f1f5f9 !important;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .calendar-day-header {
+  color: #cbd5e1 !important;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .legend-item {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .calendar-legend {
+  border-top: 1px solid var(--border) !important;
+}
+
+[data-theme="dark"] .calendar-hint {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .calendar-day {
+  background: #161922;
+  border-color: #262d3e;
+}
+
+[data-theme="dark"] .calendar-day.day-none {
+  background: #11141c;
+  border-color: #1e2432;
+}
+
+[data-theme="dark"] .calendar-day.day-none .calendar-date-num {
+  color: #64748b !important;
+}
+
+[data-theme="dark"] .calendar-day.day-thursday {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+[data-theme="dark"] .calendar-day.day-thursday .calendar-date-num {
+  color: #e9d5ff !important;
+}
+
+[data-theme="dark"] .calendar-day.day-thursday-upcoming {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+[data-theme="dark"] .calendar-day.day-thursday-upcoming .calendar-date-num {
+  color: #c7d2fe !important;
+}
+
+[data-theme="dark"] .calendar-day.day-thursday-missed {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+[data-theme="dark"] .calendar-day.day-thursday-missed .calendar-date-num {
+  color: #fecaca !important;
+}
+
+[data-theme="dark"] .calendar-day.day-special {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+[data-theme="dark"] .calendar-day.day-special .calendar-date-num {
+  color: #bae6fd !important;
+}
+
+[data-theme="dark"] .calendar-day.day-festival,
+[data-theme="dark"] .calendar-day.day-festival-perm {
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+[data-theme="dark"] .calendar-day.day-festival .calendar-date-num,
+[data-theme="dark"] .calendar-day.day-festival-perm .calendar-date-num {
+  color: #fef08a !important;
+}
+
+[data-theme="dark"] .calendar-day.today {
+  box-shadow: 0 0 0 2px var(--primary), 0 0 16px rgba(245, 158, 11, 0.35) !important;
+}
+
+[data-theme="dark"] .event-pill {
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .legend-color.day-none          { background: #11141c; border-color: #262d3e; }
+[data-theme="dark"] .legend-color.day-thursday      { background: rgba(124, 58, 237, 0.25); border-color: #7c3aed; }
+[data-theme="dark"] .legend-color.day-festival      { background: rgba(245, 158, 11, 0.25); border-color: #f59e0b; }
+[data-theme="dark"] .legend-color.day-special       { background: rgba(14, 165, 233, 0.25); border-color: #38bdf8; }
+[data-theme="dark"] .legend-color.day-festival-perm { background: rgba(245, 158, 11, 0.25); border-color: #f59e0b; }
+[data-theme="dark"] .legend-color.day-today         { background: #161922; border: 2px solid var(--primary); box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); }
+
+[data-theme="dark"] .perm-pill {
+  background: var(--primary) !important;
+  color: #111827 !important;
+  font-weight: 800;
+}
+
+/* ── Singer Dictionary & Management in Dark Mode ─────────────── */
+[data-theme="dark"] .add-singer-card,
+[data-theme="dark"] .analytics-card,
+[data-theme="dark"] .missing-summary-banner,
+[data-theme="dark"] .pagination-card {
+  background: #151824 !important;
+  border: 1px solid #262d40 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .candidate-row {
+  background: #1a1f2e !important;
+  border-color: #262d40 !important;
+}
+
+[data-theme="dark"] .modal-content {
+  background: #151824 !important;
+  border: 1px solid #262d40 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .modal-header {
+  border-bottom: 1px solid #262d40 !important;
+}
+
+[data-theme="dark"] .modal-header h3 {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .close-btn {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .close-btn:hover {
+  color: #f8fafc !important;
+}

@@ -8,6 +8,29 @@ function escapeHtml(unsafe) {
     .replace(/'/g, "&#039;");
 }
 
+const themeHeadScript = `
+  <script>
+  (function(){
+    try {
+      var t = localStorage.getItem('bp-theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+    } catch(e){}
+  })();
+  </script>`;
+
+const themeToggleBtnHtml = `
+  <!-- Dark Mode Toggle -->
+  <button
+    class="theme-toggle"
+    id="themeToggle"
+    aria-label="Toggle dark mode"
+    aria-pressed="false"
+    data-tooltip="Switch to Dark"
+  >
+    <span class="icon-moon" aria-hidden="true">🌙</span>
+    <span class="icon-sun"  aria-hidden="true">☀️</span>
+  </button>`;
+
 function generateSubmitFormHtml(
   sessionDate,
   mandatoryFilled,
@@ -25,12 +48,12 @@ function generateSubmitFormHtml(
   const isAdminBool = isAdmin === true || isAdmin === 'true';
   const dateAttr = isAdminBool
     ? ""
-    : 'readonly style="cursor:not-allowed; background:#f8f9fa;"';
+    : 'readonly style="cursor:not-allowed;"';
   const dateNotice = isAdminBool
-    ? `<div style="background:#fff3cd; border:1px solid #ffe066; color:#856404; padding:10px 14px; border-radius:8px; font-size:12.5px; margin-top:8px; line-height:1.5;">
+    ? `<div class="date-notice date-notice-admin">
         🔐 <strong>Admin Mode:</strong> You can select any date and manage bhajans at any time.
        </div>`
-    : `<div style="background:#e7f5ff; border:1px solid #a5d8ff; color:#1864ab; padding:10px 14px; border-radius:8px; font-size:12.5px; margin-top:8px; line-height:1.5;">
+    : `<div class="date-notice date-notice-user">
         ⏰ <strong>Submission Deadline:</strong> Submissions for <strong>${sessionDate}</strong> close on <strong>the night before at 11:59 PM</strong>. At 12:00 AM on the session date, submissions automatically lock and move to the History tab.
        </div>`;
 
@@ -42,8 +65,10 @@ function generateSubmitFormHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  ${themeHeadScript}
 </head>
 <body>
+  ${themeToggleBtnHtml}
   <div class="container">
     
     <div class="header">
@@ -71,7 +96,7 @@ function generateSubmitFormHtml(
           ${dateNotice}
         </div>
         
-        <div class="bhajan-details" style="display:block; margin-top:0; background: #E1F5FE; border: 2px solid #81D4FA;">
+        <div class="bhajan-details singer-profile-box">
           <div class="form-row cols-3">
             <div class="form-group">
               <label>Singer Name <span class="required">*</span></label>
@@ -100,10 +125,10 @@ function generateSubmitFormHtml(
           </div>
         </div>
         
-        <div style="font-size:17px; font-weight:700; color:#343a40; margin:24px 0 12px; display:flex; align-items:center; gap:8px;">
+        <div class="deity-choose-header">
           ✨ Choose Deity <span class="required">*</span>
         </div>
-        <div style="font-size:12px; color:#868e96; margin-bottom:16px; font-style:italic;">
+        <div class="deity-choose-subtitle">
           Tile color shows submission count • Tap available tile to select • Tap taken tile to view details
         </div>
         
@@ -122,7 +147,7 @@ function generateSubmitFormHtml(
         <input type="hidden" name="deity" id="selectedDeity" />
         
         <div class="bhajan-details" id="bhajanDetails">
-          <h3 style="font-size:18px; color:#e65100; margin-bottom:15px; font-weight:700; border-bottom:1px solid rgba(0,0,0,0.1); padding-bottom:10px;">
+          <h3 class="bhajan-details-heading">
             🎶 Details for <span id="deityDisplay">---</span>
           </h3>
           
@@ -144,7 +169,7 @@ function generateSubmitFormHtml(
             
             <div class="form-group" style="flex: 1;">
               <label>Speed / Tempo</label>
-              <input type="text" name="speed" id="speedInput" readonly placeholder="Auto-filled..." style="background-color: #e9ecef; cursor: not-allowed; color: #495057; border: 1px solid #ced4da;" />
+              <input type="text" name="speed" id="speedInput" readonly placeholder="Auto-filled..." class="input-readonly" />
             </div>
           </div>
           
@@ -153,17 +178,17 @@ function generateSubmitFormHtml(
                 <label>🎵 Scale / Shruti</label>
                 <input type="text" name="scale" id="scaleInput" placeholder="e.g., 1.5P or C#" />
                 <div id="scaleSuggestionsContainer" style="margin-top:6px; display:flex; flex-direction:column; gap:4px;">
-                  <div id="singerPrevScaleBadge" style="display:none; color:#1971c2; background:#e7f5ff; border:1px solid #a5d8ff; padding:4px 8px; border-radius:6px; font-size:11.5px; font-weight:500;">
+                  <div id="singerPrevScaleBadge" class="badge-scale-prev" style="display:none;">
                     👤 <strong>Your Previous Scale:</strong> <span id="singerPrevScaleVal"></span>
                   </div>
-                  <div id="genderCommonScaleBadge" style="display:none; color:#d9480f; background:#fff4e6; border:1px solid #ffd8a8; padding:4px 8px; border-radius:6px; font-size:11.5px; font-weight:500;">
+                  <div id="genderCommonScaleBadge" class="badge-scale-common" style="display:none;">
                     👥 <strong>Most Common <span id="genderCommonScaleLabel">Male</span> Scale:</strong> <span id="genderCommonScaleVal"></span>
                   </div>
                 </div>
              </div>
             <div class="form-group" style="flex: 1;">
                <label>🎼 Raag</label>
-               <input type="text" name="raga" id="ragaInput" readonly placeholder="Auto-filled..." style="background-color: #e9ecef; cursor: not-allowed; color: #495057; border: 1px solid #ced4da;" />
+               <input type="text" name="raga" id="ragaInput" readonly placeholder="Auto-filled..." class="input-readonly" />
             </div>
           </div>
 
@@ -242,22 +267,22 @@ function generateSubmitFormHtml(
       </div>
       <div style="display:flex; gap:12px; margin-top:24px; justify-content: flex-end;">
         <button type="button" id="editBtn" class="button secondary">Edit</button>
-        <button type="button" id="confirmBtn" class="button" style="background:#28a745; border:none; color:white; padding:8px 24px; border-radius:8px; font-weight:600;">Confirm</button>
+        <button type="button" id="confirmBtn" class="button button-confirm">Confirm</button>
       </div>
     </div>
   </div>
   
   <div id="selectBhajanModal" class="modal">
-    <div class="modal-content" style="max-width: 420px; text-align: center; padding: 28px 24px;">
-      <div style="font-size: 42px; line-height: 1; margin-bottom: 14px;">🎵</div>
-      <h3 style="color: #d9480f; margin-bottom: 10px; font-size: 19px; font-weight: 700;">
+    <div class="modal-content select-bhajan-modal-content">
+      <div class="modal-music-icon">🎵</div>
+      <h3 class="modal-warning-title">
         Select Bhajan from Suggestions
       </h3>
-      <p style="color: #495057; font-size: 14px; line-height: 1.55; margin-bottom: 24px;">
+      <p class="modal-warning-text">
         Cannot submit bhajan without selecting from dropdown. Manual entry without selecting a suggested bhajan is not allowed.
       </p>
       <div style="display:flex; justify-content:center;">
-        <button type="button" id="closeSelectBhajanModalBtn" class="button" style="width: 100%; padding: 12px 20px; font-weight: 600; font-size: 14.5px; background: linear-gradient(135deg, #ff9933 0%, #ff7700 100%); border: none; color: white; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 119, 0, 0.25);">
+        <button type="button" id="closeSelectBhajanModalBtn" class="button button-select-dropdown">
           Select from Dropdown
         </button>
       </div>
@@ -283,6 +308,7 @@ function generatePlanViewHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  ${themeHeadScript}
   <style>
     @media print {
       .no-print { display: none !important; }
@@ -299,16 +325,17 @@ function generatePlanViewHtml(
   </style>
 </head>
 <body>
+  ${themeToggleBtnHtml}
   <div class="container container-lg">
     <div class="header" style="border-radius: 16px 16px 0 0; margin: -20px -20px 20px -20px;">
       <h1>🕉️ Bhajan Plan</h1>
       <p>${sessionDate}</p>
     </div>
 
-    <div class="no-print" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:20px; background:#fff; padding:16px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+    <div class="no-print plan-filter-box" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:20px; padding:16px; border-radius:12px;">
       <form method="get" action="/plan-view" style="display:flex; align-items:center; gap:10px; margin:0; flex-grow:1;">
-        <label style="font-weight:600; color:#495057; white-space:nowrap;">📅 Date:</label>
-        <input type="date" name="session_date" value="${sessionDate}" required style="padding:8px 12px; border:1px solid #dee2e6; border-radius:8px; font-family:inherit;" />
+        <label style="font-weight:600; white-space:nowrap;">📅 Date:</label>
+        <input type="date" name="session_date" value="${sessionDate}" required style="padding:8px 12px; border-radius:8px; font-family:inherit;" />
         <button type="submit" class="button" style="padding:8px 16px; font-size:14px;">Go</button>
       </form>
       <div style="display:flex; gap:8px;">
@@ -336,12 +363,12 @@ function generatePlanViewHtml(
       </table>
     </div>
     
-    <div class="no-print" style="margin-top:30px; background:#f8f9fa; padding:20px; border-radius:12px; border:1px solid #e9ecef;">
-      <h3 style="color:#343a40; margin-bottom:10px; display:flex; align-items:center; gap:8px;">
+    <div class="no-print whatsapp-share-box" style="margin-top:30px; padding:20px; border-radius:12px;">
+      <h3 style="margin-bottom:10px; display:flex; align-items:center; gap:8px;">
         <span style="font-size:24px;">📱</span> WhatsApp Share
       </h3>
-      <p style="font-size:13px; color:#6c757d; margin-bottom:12px;">Copy the text below or click the button to share directly.</p>
-      <textarea readonly style="width:100%; min-height:120px; padding:12px; border-radius:8px; border:1px solid #dee2e6; font-family:monospace; font-size:13px; resize:vertical;">${whatsappText}</textarea>
+      <p style="font-size:13px; margin-bottom:12px; opacity:0.8;">Copy the text below or click the button to share directly.</p>
+      <textarea readonly style="width:100%; min-height:120px; padding:12px; border-radius:8px; font-family:monospace; font-size:13px; resize:vertical;">${whatsappText}</textarea>
       <div style="margin-top:16px; text-align:right;">
         <a class="button" href="https://wa.me/?text=${whatsappEncoded}" target="_blank" style="background:#25D366; border:none; display:inline-flex; align-items:center; gap:8px;">
           <span>Share via WhatsApp</span>
@@ -349,12 +376,13 @@ function generatePlanViewHtml(
       </div>
     </div>
   </div>
+  <script src="/js/script.js"></script>
 </body>
 </html>`;
 }
 
 function generateErrorHtml(deity, existing, session_date) {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Slot Taken</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css"></head><body><div class="container" style="text-align:center; padding:32px;"><div class="error-icon">⚠️</div><h2 style="color:#e03131;">Slot Already Taken</h2><p>Sorry, the <strong>${deity}</strong> deity slot has already been taken.</p><div class="info-box"><strong>Taken by:</strong> ${escapeHtml(existing.singer_name)}<br><strong>Bhajan:</strong> ${escapeHtml(existing.title)}<br><strong>Time:</strong> ${new Date(existing.created_at).toLocaleTimeString()}</div><a class="button" href="/submit-form?session_date=${session_date}">← Go Back</a></div></body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Slot Taken</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtnHtml}<div class="container" style="text-align:center; padding:32px;"><div class="error-icon">⚠️</div><h2 style="color:#e03131;">Slot Already Taken</h2><p>Sorry, the <strong>${deity}</strong> deity slot has already been taken.</p><div class="info-box"><strong>Taken by:</strong> ${escapeHtml(existing.singer_name)}<br><strong>Bhajan:</strong> ${escapeHtml(existing.title)}<br><strong>Time:</strong> ${new Date(existing.created_at).toLocaleTimeString()}</div><a class="button" href="/submit-form?session_date=${session_date}">← Go Back</a></div><script src="/js/script.js"></script></body></html>`;
 }
 
 function generateSuccessHtml(
@@ -378,11 +406,11 @@ function generateSuccessHtml(
       <a class="button secondary" href="/plan-view?session_date=${session_date}">View Full Session Plan</a>
     `;
   }
-  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Success</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css"></head><body><div class="container" style="text-align:center; padding:32px;"><div class="success-icon">✅</div><h2 style="color:#2f9e44;">Bhajan Submitted!</h2><div style="font-size:20px; margin-bottom:24px;">🙏 Sai Ram, ${escapeHtml(singer_name)}!</div><div class="details-box" style="text-align:left;"><div><strong>Deity:</strong> ${deity}</div><div><strong>Bhajan:</strong> ${escapeHtml(title)}</div><div><strong>Speed:</strong> ${escapeHtml(speed)}</div><div><strong>Scale:</strong> ${escapeHtml(scale || "Not specified")}</div><div><strong>Session:</strong> ${session_date}</div></div><p>Your bhajan has been recorded.</p><div style="display:flex; flex-direction:column; gap:12px; margin-top:24px;">${actionButtons}</div></div></body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Success</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtnHtml}<div class="container" style="text-align:center; padding:32px;"><div class="success-icon">✅</div><h2 style="color:#2f9e44;">Bhajan Submitted!</h2><div style="font-size:20px; margin-bottom:24px;">🙏 Sai Ram, ${escapeHtml(singer_name)}!</div><div class="details-box" style="text-align:left;"><div><strong>Deity:</strong> ${deity}</div><div><strong>Bhajan:</strong> ${escapeHtml(title)}</div><div><strong>Speed:</strong> ${escapeHtml(speed)}</div><div><strong>Scale:</strong> ${escapeHtml(scale || "Not specified")}</div><div><strong>Session:</strong> ${session_date}</div></div><p>Your bhajan has been recorded.</p><div style="display:flex; flex-direction:column; gap:12px; margin-top:24px;">${actionButtons}</div></div><script src="/js/script.js"></script></body></html>`;
 }
 
 function generateDatePickerHtml(today) {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Select Date</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css"></head><body style="justify-content: center;"><div class="container" style="max-width:480px; padding:24px;"><h2 style="text-align: center; margin-bottom: 16px;">🕉️ View Bhajan Plan</h2><form method="get" action="/plan-view"><label style="display:block; margin-bottom:8px;">Bhajan Date</label><input type="date" name="session_date" value="${today}" required style="width:100%; padding:12px; margin-bottom:16px;" /><button type="submit" class="button" style="width:100%;">Show Plan</button></form></div></body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Select Date</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body style="justify-content: center;">${themeToggleBtnHtml}<div class="container" style="max-width:480px; padding:24px;"><h2 style="text-align: center; margin-bottom: 16px;">🕉️ View Bhajan Plan</h2><form method="get" action="/plan-view"><label style="display:block; margin-bottom:8px;">Bhajan Date</label><input type="date" name="session_date" value="${today}" required style="width:100%; padding:12px; margin-bottom:16px;" /><button type="submit" class="button" style="width:100%;">Show Plan</button></form></div><script src="/js/script.js"></script></body></html>`;
 }
 
 function generateAdminSessionViewHtml(date, submissions, isLocked) {

@@ -110,6 +110,7 @@ html, body {
   gap: 8px;
 }
 .notif-mark-all {
+  display: none !important;
   background: none;
   border: 1px solid #ddd;
   border-radius: 6px;
@@ -722,4 +723,156 @@ html, body {
   margin-top: 6px;
   display: none;
 }
+
+/* ============================================================
+   DARK MODE — NOTIFICATION CENTER & SETTINGS
+   ============================================================ */
+
+[data-theme="dark"] .notif-panel {
+  background: #151824;
+  border-left: 1px solid #262d40;
+  border-top: 1px solid #262d40;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="dark"] .notif-panel-header {
+  border-bottom-color: #262d40;
+}
+
+[data-theme="dark"] .notif-panel-header h3 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .notif-mark-all {
+  border-color: #262d40;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .notif-mark-all:hover {
+  background: #1e2538;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .notif-close-btn {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .notif-close-btn:hover {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .notif-item {
+  background: #151824;
+  border-bottom-color: #1f2537;
+}
+
+[data-theme="dark"] .notif-item:hover {
+  background: #1a1f2e;
+}
+
+[data-theme="dark"] .notif-item.unread {
+  background: #1a2236;
+}
+
+[data-theme="dark"] .notif-item-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .notif-item-body {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .notif-item-time {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .notif-empty {
+  color: #94a3b8;
+}
+
+/* Settings Page */
+[data-theme="dark"] .notif-settings-card {
+  background: #151824;
+  border: 1px solid #262d40;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark"] .notif-settings-card h2 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .notif-settings-card .subtitle {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .notif-benefits-box {
+  background: #1a1f2e;
+  border-color: #262d40;
+}
+
+[data-theme="dark"] .notif-benefits-title {
+  color: #f59e0b;
+}
+
+[data-theme="dark"] .notif-benefits-list li {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .notif-status-card {
+  background: #1a1f2e;
+  border-color: #262d40;
+}
+
+[data-theme="dark"] .notif-status-label {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .notif-status-value {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .notif-singer-select {
+  background: #1a1f2e;
+  border-color: #2e374c;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .notif-pin-section {
+  background: #1a1f2e;
+  border-color: #262d40;
+}
+
+[data-theme="dark"] .notif-pin-security-notice {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .notif-pin-input {
+  background: #131722;
+  border-color: #2e374c;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .notif-pin-input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+}
+
+[data-theme="dark"] .notif-pin-toggle-btn {
+  background: #202638;
+  border-color: #2e374c;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .notif-pin-help {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .notif-prompt-banner {
+  background: #151824;
+  border-color: #262d40;
+  color: #f8fafc;
+}
+
 

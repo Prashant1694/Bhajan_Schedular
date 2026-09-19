@@ -1,6 +1,6 @@
 <div class="container container-lg">
-    <div class="header" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #0277bd;">
-      <h1 style="color: #0277bd;">📖 Singer Dictionary</h1>
+    <div class="header">
+      <h1>📖 Singer Dictionary</h1>
       <p>Manage the Master List of Approved Singer Names</p>
     </div>
     
@@ -8,8 +8,8 @@
       <a href="/admin" class="button secondary">⬅️ Back to Admin</a>
     </div>
 
-    <div style="background:#f8f9fa; padding:20px; border-radius:12px; border:1px solid #dee2e6; margin-bottom:24px;">
-      <h3 style="margin-bottom:12px; color:#495057;">➕ Add New Singer</h3>
+    <div class="card add-singer-card" style="margin-bottom:24px;">
+      <h3 style="margin-bottom:14px; font-size:16px; display:flex; align-items:center; gap:8px;">➕ Add New Singer</h3>
       <form action="/api/admin/add-singer" method="POST" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <input type="text" name="name" required class="filter-input" placeholder="e.g., Rahul S." style="max-width:300px;">
         <select name="gender" required class="filter-input" style="max-width:150px;">
@@ -18,7 +18,7 @@
           <option value="Female">Female</option>
           <option value="Other">Other</option>
         </select>
-        <button type="submit" class="button" style="background:#28a745; border:none; padding:10px 20px;">Add Singer</button>
+        <button type="submit" class="button button-success">Add Singer</button>
       </form>
     </div>
 
@@ -37,32 +37,33 @@
             <% singers.forEach(s => { %>
               <tr>
                 <td><strong><%= s.name %></strong></td>
-                <td><%= s.gender || 'Not set' %></td>
+                <td><span class="gender-cell <%= s.gender ? s.gender.toLowerCase() : 'unset' %>"><%= s.gender || 'Not set' %></span></td>
                 <td>
                   <% if (s.pin) { %>
-                    <span style="display:inline-block; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:600; background:#e6fcf5; color:#0ca678; border:1px solid #c3fae8;">🔒 Protected</span>
+                    <span class="badge-pin badge-pin-protected">🔒 Protected</span>
                     <form action="/api/admin/reset-singer-pin/<%= s.id %>" method="POST" style="margin:0; display:inline; margin-left:6px;" onsubmit="return confirm('Reset the 4-digit PIN for <%= s.name.replace(/'/g, "\\'") %>? The singer will be able to set a new PIN on their next visit.');">
-                      <button type="submit" class="button secondary" style="padding:3px 8px; font-size:11px; border:1px solid #ffa94d; color:#d9480f; background:#fff4e6; cursor:pointer;" title="Reset PIN">🔄 Reset</button>
+                      <button type="submit" class="btn-pin-reset" title="Reset PIN">🔄 Reset</button>
                     </form>
                   <% } else { %>
-                    <span style="display:inline-block; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:500; background:#f1f3f5; color:#868e96;">🔓 Not Set</span>
+                    <span class="badge-pin badge-pin-unset">🔓 Not Set</span>
                   <% } %>
                 </td>
                 <td style="text-align:right;">
                   <form action="/api/admin/edit-singer/<%= s.id %>" method="POST" style="margin:0; display:inline;" id="edit-form-<%= s.id %>">
                     <input type="hidden" name="name" id="edit-input-<%= s.id %>" value="<%= s.name %>">
                     <input type="hidden" name="gender" id="edit-gender-<%= s.id %>" value="<%= s.gender || '' %>">
-                    <button type="button" class="button" style="padding:6px 12px; font-size:12px; background:#4dabf7; border:none;" onclick="editSinger(<%= s.id %>, '<%= s.name.replace(/'/g, "\\'") %>')">✏️ Edit</button>
+                    <button type="button" class="btn-table-action btn-table-edit" onclick="editSinger(<%= s.id %>, '<%= s.name.replace(/'/g, "\\'") %>')">✏️ Edit</button>
                   </form>
-                  <form action="/api/admin/delete-singer/<%= s.id %>" method="POST" style="margin:0; display:inline;" onsubmit="return confirm('Delete this singer from the dictionary?');"><button type="submit" class="button" style="padding:6px 12px; font-size:12px; background:#e03131; border:none;">❌ Delete</button></form>
+                  <form action="/api/admin/delete-singer/<%= s.id %>" method="POST" style="margin:0; display:inline;" onsubmit="return confirm('Delete this singer from the dictionary?');">
+                    <button type="submit" class="btn-table-action btn-table-delete">❌ Delete</button>
+                  </form>
                 </td>
               </tr>
             <% }) %>
           <% } else { %>
-            <tr><td colspan="3" style="text-align:center;">No singers in dictionary yet. Add one above!</td></tr>
+            <tr><td colspan="4" style="text-align:center; padding:24px; color:var(--muted);">No singers in dictionary yet. Add one above!</td></tr>
           <% } %>
         </tbody>
       </table>
     </div>
   </div>
-  <script src="/js/script.js"></script>

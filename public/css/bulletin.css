@@ -1,6 +1,7 @@
 /* ============================================================
    Bulletin / Notice Board — Bhajan Planner
    Mobile-first bulletin list, detail, and admin styles
+   All hardcoded hex values replaced with design-system tokens.
    ============================================================ */
 
 /* ── Bulletin Section on Home Page ────────────────────────── */
@@ -18,11 +19,11 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: var(--ink);
 }
 .bulletin-view-all {
   font-size: 13px;
-  color: #e65100;
+  color: var(--saffron-dk);
   text-decoration: none;
   font-weight: 500;
 }
@@ -33,18 +34,19 @@
 /* ── Bulletin Card ────────────────────────────────────────── */
 .bulletin-card {
   display: block;
-  background: #fff;
+  background: var(--surface);
   border-radius: 12px;
   padding: 16px 18px;
   margin-bottom: 10px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 .bulletin-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow);
+  border-color: var(--saffron);
 }
 .bulletin-card-header {
   display: flex;
@@ -71,7 +73,7 @@
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 4px;
-  background: #ff6b6b;
+  background: var(--clay);
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -82,13 +84,13 @@
 .bulletin-card-title {
   font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: var(--ink);
   margin: 0 0 4px;
   line-height: 1.3;
 }
 .bulletin-card-preview {
   font-size: 13px;
-  color: #777;
+  color: var(--ink-soft);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -98,7 +100,7 @@
 }
 .bulletin-card-date {
   font-size: 12px;
-  color: #aaa;
+  color: var(--muted);
 }
 
 /* ── Bulletin List Page ───────────────────────────────────── */
@@ -114,12 +116,12 @@
 .bulletin-list-header h1 {
   font-size: 24px;
   font-weight: 700;
-  color: #333;
+  color: var(--ink);
   margin: 0 0 4px;
 }
 .bulletin-list-header p {
   font-size: 14px;
-  color: #888;
+  color: var(--muted);
   margin: 0;
 }
 .bulletin-back-link {
@@ -127,7 +129,7 @@
   align-items: center;
   gap: 4px;
   font-size: 14px;
-  color: #e65100;
+  color: var(--saffron-dk);
   text-decoration: none;
   margin-bottom: 16px;
 }
@@ -142,11 +144,11 @@
   padding: 24px 16px;
 }
 .bulletin-detail-card {
-  background: #fff;
+  background: var(--surface);
   border-radius: 16px;
   padding: 24px 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  border: 1px solid #f0f0f0;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
 }
 .bulletin-detail-meta {
   display: flex;
@@ -158,13 +160,13 @@
 .bulletin-detail-card h1 {
   font-size: 22px;
   font-weight: 700;
-  color: #333;
+  color: var(--ink);
   margin: 0 0 16px;
   line-height: 1.3;
 }
 .bulletin-detail-content {
   font-size: 15px;
-  color: #444;
+  color: var(--ink-soft);
   line-height: 1.7;
   word-wrap: break-word;
 }
@@ -183,19 +185,20 @@
   padding: 10px 12px;
   font-size: 12px;
   font-weight: 600;
-  color: #666;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #eee;
+  border-bottom: 2px solid var(--border);
 }
 .admin-bulletin-table td {
   padding: 12px;
   font-size: 14px;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid var(--border-soft);
   vertical-align: top;
+  color: var(--ink-soft);
 }
 .admin-bulletin-table tr:hover td {
-  background: #faf8f5;
+  background: var(--paper);
 }
 .admin-bulletin-status {
   display: inline-block;
@@ -206,16 +209,16 @@
   text-transform: uppercase;
 }
 .admin-bulletin-status.published {
-  background: #d3f9d8;
-  color: #2b8a3e;
+  background: var(--sage-bg);
+  color: var(--sage);
 }
 .admin-bulletin-status.draft {
-  background: #fff3bf;
-  color: #e67700;
+  background: var(--gold-bg);
+  color: var(--saffron-dk);
 }
 .admin-bulletin-status.archived {
-  background: #f1f3f5;
-  color: #868e96;
+  background: var(--paper);
+  color: var(--muted);
 }
 .admin-bulletin-actions {
   display: flex;
@@ -228,24 +231,26 @@
   padding: 4px 10px;
   border-radius: 6px;
   text-decoration: none;
-  border: 1px solid #ddd;
-  background: #fff;
-  color: #555;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-soft);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
 }
 .admin-bulletin-actions a:hover,
 .admin-bulletin-actions button:hover {
-  background: #f5f5f5;
-  color: #333;
+  background: var(--paper);
+  color: var(--ink);
+  border-color: var(--saffron);
 }
 .admin-bulletin-actions .btn-delete {
-  border-color: #ffa8a8;
-  color: #e03131;
+  border-color: rgba(178, 59, 50, 0.3);
+  color: var(--clay);
 }
 .admin-bulletin-actions .btn-delete:hover {
-  background: #fff5f5;
+  background: var(--clay-bg);
+  border-color: var(--clay);
 }
 
 /* ── Admin Bulletin Form ──────────────────────────────────── */
@@ -259,7 +264,7 @@
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: #555;
+  color: var(--ink-soft);
   margin-bottom: 6px;
 }
 .admin-bulletin-form input[type="text"],
@@ -268,19 +273,21 @@
 .admin-bulletin-form input[type="datetime-local"] {
   width: 100%;
   padding: 10px 14px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 14px;
-  background: #fafafa;
-  transition: border-color 0.2s;
+  background: var(--paper);
+  color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
 }
 .admin-bulletin-form input:focus,
 .admin-bulletin-form select:focus,
 .admin-bulletin-form textarea:focus {
   outline: none;
-  border-color: #ff9933;
-  background: #fff;
+  border-color: var(--saffron);
+  box-shadow: 0 0 0 3px rgba(217, 138, 43, 0.16);
+  background: var(--surface);
 }
 .admin-bulletin-form textarea {
   min-height: 160px;
@@ -295,7 +302,7 @@
 .admin-bulletin-form .checkbox-group input[type="checkbox"] {
   width: 18px;
   height: 18px;
-  accent-color: #ff9933;
+  accent-color: var(--saffron);
 }
 .admin-bulletin-form .form-actions {
   display: flex;
@@ -306,34 +313,41 @@
   padding: 10px 24px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #ff9933 0%, #e65100 100%);
+  background: linear-gradient(135deg, var(--saffron) 0%, var(--saffron-dk) 100%);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 .admin-bulletin-form .btn-save:hover {
   transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 .admin-bulletin-form .btn-cancel {
   padding: 10px 24px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
-  color: #555;
+  background: var(--surface);
+  color: var(--ink-soft);
   font-size: 14px;
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+.admin-bulletin-form .btn-cancel:hover {
+  background: var(--paper);
+  border-color: var(--saffron);
+  color: var(--saffron-dk);
 }
 
 /* ── Empty State ──────────────────────────────────────────── */
 .bulletin-empty {
   text-align: center;
   padding: 40px 20px;
-  color: #999;
+  color: var(--muted);
 }
 .bulletin-empty-icon {
   font-size: 48px;

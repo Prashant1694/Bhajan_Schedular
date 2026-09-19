@@ -73,8 +73,9 @@ exports.showSubmitForm = async (req, res) => {
         optionsHtml += `<a href="/submit-form?session_date=${date}${adminParam}" class="button" style="${btnStyle}">${displayLabel}</a>`;
       });
       const homeUrl = isAdmin ? '/admin' : '/';
-      const homeText = isAdmin ? '🏠 Return to Dashboard' : '🏠 Return Home';
-      return res.send(`<!DOCTYPE html><html><head><title>Select Session</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css"></head><body><div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:#e65100; margin-bottom:20px;">🗓️ Select Session</h2><p style="color:#555; margin-bottom:20px;">${msg}</p><div style="background:#f8f9fa; padding:20px; border-radius:12px; border:1px solid #eee;"><div style="display:flex; flex-direction:column; gap:10px;">${optionsHtml}</div></div><div style="margin-top:25px;"><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div></body></html>`);
+      const themeHeadScript = `<script>(function(){try{var t=localStorage.getItem('bp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>`;
+      const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">🌙</span><span class="icon-sun">☀️</span></button>`;
+      return res.send(`<!DOCTYPE html><html><head><title>Select Session</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">🗓️ Select Session</h2><p style="color:var(--ink-soft); margin-bottom:20px;">${msg}</p><div style="background:var(--surface); padding:20px; border-radius:12px; border:1px solid var(--border);"><div style="display:flex; flex-direction:column; gap:10px;">${optionsHtml}</div></div><div style="margin-top:25px;"><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`);
     };
 
     // If no date provided, check if we should show selection screen or 8pm notice
@@ -88,7 +89,9 @@ exports.showSubmitForm = async (req, res) => {
         } else {
           const homeUrl = isAdmin ? '/admin' : '/';
           const homeText = isAdmin ? '🏠 Return to Dashboard' : '🏠 Return Home';
-          return res.send(`<!DOCTYPE html><html><head><title>Submissions Opening at 8:00 PM</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css"></head><body><div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:#e65100; margin-bottom:20px;">🔒 Submissions Opening at 8:00 PM</h2><p style="color:#555; margin-bottom:25px; line-height:1.6;">${msg}</p><div><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div></body></html>`);
+          const themeHeadScript = `<script>(function(){try{var t=localStorage.getItem('bp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>`;
+          const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">🌙</span><span class="icon-sun">☀️</span></button>`;
+          return res.send(`<!DOCTYPE html><html><head><title>Submissions Opening at 8:00 PM</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">🔒 Submissions Opening at 8:00 PM</h2><p style="color:var(--ink-soft); margin-bottom:25px; line-height:1.6;">${msg}</p><div><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`);
         }
       }
 

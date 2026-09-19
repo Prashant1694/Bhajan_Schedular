@@ -1,3 +1,47 @@
+// Global Dark Mode Controller
+(function initGlobalTheme() {
+  function syncAllThemeToggles() {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var btns = document.querySelectorAll('.theme-toggle');
+    btns.forEach(function(btn) {
+      btn.setAttribute('data-tooltip', isDark ? 'Switch to Light' : 'Switch to Dark');
+      btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+    });
+  }
+
+  function handleToggleClick(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      try { localStorage.setItem('bp-theme', 'light'); } catch(err){}
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      try { localStorage.setItem('bp-theme', 'dark'); } catch(err){}
+    }
+    syncAllThemeToggles();
+  }
+
+  window.toggleTheme = handleToggleClick;
+
+  function bindThemeButtons() {
+    syncAllThemeToggles();
+    var btns = document.querySelectorAll('.theme-toggle');
+    btns.forEach(function(btn) {
+      if (!btn._themeAttached) {
+        btn._themeAttached = true;
+        btn.addEventListener('click', handleToggleClick);
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindThemeButtons);
+  } else {
+    bindThemeButtons();
+  }
+})();
+
 function switchTab(tabName, element) {
   document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));

@@ -39,6 +39,16 @@
 <% if (pageCSS) { %>
 <link rel="stylesheet" href="/css/<%= pageCSS %>">
 <% } %>
+
+<!-- Dark mode: read preference BEFORE page renders to prevent flash -->
+<script>
+(function(){
+  try {
+    var t = localStorage.getItem('bp-theme');
+    if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  } catch(e){}
+})();
+</script>
 </head>
 
 <body class="<%= (typeof isAdminPage !== 'undefined' && isAdminPage && currentAdmin) ? 'admin-page' : '' %>">
@@ -73,6 +83,18 @@
     <% if (typeof showLoader !== "undefined" && showLoader) { %>
     <%- include("../partials/loading") %>
     <% } %>
+
+    <!-- Dark Mode Toggle (floating, above notification bell) -->
+    <button
+      class="theme-toggle"
+      id="themeToggle"
+      aria-label="Toggle dark mode"
+      aria-pressed="false"
+      data-tooltip="Switch to Dark"
+    >
+      <span class="icon-moon" aria-hidden="true">🌙</span>
+      <span class="icon-sun"  aria-hidden="true">☀️</span>
+    </button>
 
     <!-- Notification Center (user-facing) -->
     <%- include("../partials/notification-bell") %>

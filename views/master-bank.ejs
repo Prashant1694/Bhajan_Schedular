@@ -53,16 +53,16 @@
         
         <!-- Searchable Deity Dropdown -->
         <input type="hidden" id="filterBankDeity" value="" onchange="filterMasterBank()">
-        <div class="searchable-dropdown" id="dd-deity" style="position:relative; inline-block;">
-          <button type="button" class="filter-chip dd-toggle" onclick="toggleSearchDropdown('dd-deity')" style="background:#fff; border:1px solid #cbd5e1; border-radius:20px; padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer; color:#334155; display:inline-flex; align-items:center; gap:6px;">
+        <div class="searchable-dropdown" id="dd-deity" style="position:relative;">
+          <button type="button" class="filter-chip dd-toggle" onclick="toggleSearchDropdown('dd-deity')">
             <span class="dd-label">All Deities</span> ▾
           </button>
-          <div class="dd-menu" style="display:none; position:fixed; z-index:9999; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.18); width:220px; padding:8px; max-height:300px; overflow:auto;">
-            <input type="search" class="dd-search" placeholder="🔍 Search deity..." onkeyup="if(event.key==='Enter'){this.blur();}else{filterDropdownOptions('dd-deity');}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" enterkeyhint="search" style="width:100%; padding:6px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; margin-bottom:6px; box-sizing:border-box;">
+          <div class="dd-menu" style="display:none; position:fixed; z-index:9999; width:220px; padding:8px; max-height:300px; overflow:auto;">
+            <input type="search" class="dd-search filter-input" placeholder="🔍 Search deity..." onkeyup="if(event.key==='Enter'){this.blur();}else{filterDropdownOptions('dd-deity');}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" enterkeyhint="search" style="width:100%; padding:6px 10px; font-size:12px; margin-bottom:6px; box-sizing:border-box;">
             <div class="dd-options" style="max-height:180px; overflow-y:auto;">
-              <div class="dd-option selected" data-val="" onclick="selectDropdownOption('dd-deity', '', 'All Deities')" style="padding:6px 10px; font-size:13px; border-radius:4px; cursor:pointer;">All Deities</div>
+              <div class="dd-option selected" data-val="" onclick="selectDropdownOption('dd-deity', '', 'All Deities')" style="padding:6px 10px; font-size:13px; border-radius:6px; cursor:pointer;">All Deities</div>
               <% uniqueDeities.forEach(d => { %>
-                <div class="dd-option" data-val="<%= d %>" onclick="selectDropdownOption('dd-deity', '<%= d.replace(/'/g, "\\'") %>', '<%= d.replace(/'/g, "\\'") %>')" style="padding:6px 10px; font-size:13px; border-radius:4px; cursor:pointer;"><%= d %></div>
+                <div class="dd-option" data-val="<%= d %>" onclick="selectDropdownOption('dd-deity', '<%= d.replace(/'/g, "\\'") %>', '<%= d.replace(/'/g, "\\'") %>')" style="padding:6px 10px; font-size:13px; border-radius:6px; cursor:pointer;"><%= d %></div>
               <% }) %>
             </div>
           </div>
@@ -70,16 +70,16 @@
 
         <!-- Searchable Tempo Dropdown -->
         <input type="hidden" id="filterBankTempo" value="" onchange="filterMasterBank()">
-        <div class="searchable-dropdown" id="dd-tempo" style="position:relative; inline-block;">
-          <button type="button" class="filter-chip dd-toggle" onclick="toggleSearchDropdown('dd-tempo')" style="background:#fff; border:1px solid #cbd5e1; border-radius:20px; padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer; color:#334155; display:inline-flex; align-items:center; gap:6px;">
+        <div class="searchable-dropdown" id="dd-tempo" style="position:relative;">
+          <button type="button" class="filter-chip dd-toggle" onclick="toggleSearchDropdown('dd-tempo')">
             <span class="dd-label">All Tempos</span> ▾
           </button>
-          <div class="dd-menu" style="display:none; position:fixed; z-index:9999; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.18); width:200px; padding:8px; max-height:300px; overflow:auto;">
-            <input type="search" class="dd-search" placeholder="🔍 Search tempo..." onkeyup="if(event.key==='Enter'){this.blur();}else{filterDropdownOptions('dd-tempo');}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" enterkeyhint="search" style="width:100%; padding:6px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; margin-bottom:6px; box-sizing:border-box;">
+          <div class="dd-menu" style="display:none; position:fixed; z-index:9999; width:200px; padding:8px; max-height:300px; overflow:auto;">
+            <input type="search" class="dd-search filter-input" placeholder="🔍 Search tempo..." onkeyup="if(event.key==='Enter'){this.blur();}else{filterDropdownOptions('dd-tempo');}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" enterkeyhint="search" style="width:100%; padding:6px 10px; font-size:12px; margin-bottom:6px; box-sizing:border-box;">
             <div class="dd-options" style="max-height:180px; overflow-y:auto;">
-              <div class="dd-option selected" data-val="" onclick="selectDropdownOption('dd-tempo', '', 'All Tempos')" style="padding:6px 10px; font-size:13px; border-radius:4px; cursor:pointer;">All Tempos</div>
+              <div class="dd-option selected" data-val="" onclick="selectDropdownOption('dd-tempo', '', 'All Tempos')" style="padding:6px 10px; font-size:13px; border-radius:6px; cursor:pointer;">All Tempos</div>
               <% uniqueTempos.forEach(t => { %>
-                <div class="dd-option" data-val="<%= t %>" onclick="selectDropdownOption('dd-tempo', '<%= t.replace(/'/g, "\\'") %>', '<%= t.replace(/'/g, "\\'") %>')" style="padding:6px 10px; font-size:13px; border-radius:4px; cursor:pointer;"><%= t %></div>
+                <div class="dd-option" data-val="<%= t %>" onclick="selectDropdownOption('dd-tempo', '<%= t.replace(/'/g, "\\'") %>', '<%= t.replace(/'/g, "\\'") %>')" style="padding:6px 10px; font-size:13px; border-radius:6px; cursor:pointer;"><%= t %></div>
               <% }) %>
             </div>
           </div>
@@ -87,16 +87,16 @@
 
         <!-- Searchable Raga Dropdown -->
         <input type="hidden" id="filterBankRaga" value="" onchange="filterMasterBank()">
-        <div class="searchable-dropdown" id="dd-raga" style="position:relative; inline-block;">
-          <button type="button" class="filter-chip dd-toggle" onclick="toggleSearchDropdown('dd-raga')" style="background:#fff; border:1px solid #cbd5e1; border-radius:20px; padding:6px 14px; font-size:13px; font-weight:600; cursor:pointer; color:#334155; display:inline-flex; align-items:center; gap:6px;">
+        <div class="searchable-dropdown" id="dd-raga" style="position:relative;">
+          <button type="button" class="filter-chip dd-toggle" onclick="toggleSearchDropdown('dd-raga')">
             <span class="dd-label">All Ragas</span> ▾
           </button>
-          <div class="dd-menu" style="display:none; position:fixed; z-index:9999; background:#ffffff; border:1px solid #cbd5e1; border-radius:10px; box-shadow:0 10px 25px rgba(0,0,0,0.18); width:240px; padding:8px; max-height:300px; overflow:auto;">
-            <input type="search" class="dd-search" placeholder="🔍 Search raga..." onkeyup="if(event.key==='Enter'){this.blur();}else{filterDropdownOptions('dd-raga');}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" enterkeyhint="search" style="width:100%; padding:6px 10px; border:1px solid #e2e8f0; border-radius:6px; font-size:12px; margin-bottom:6px; box-sizing:border-box;">
+          <div class="dd-menu" style="display:none; position:fixed; z-index:9999; width:240px; padding:8px; max-height:300px; overflow:auto;">
+            <input type="search" class="dd-search filter-input" placeholder="🔍 Search raga..." onkeyup="if(event.key==='Enter'){this.blur();}else{filterDropdownOptions('dd-raga');}" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}" enterkeyhint="search" style="width:100%; padding:6px 10px; font-size:12px; margin-bottom:6px; box-sizing:border-box;">
             <div class="dd-options" style="max-height:180px; overflow-y:auto;">
-              <div class="dd-option selected" data-val="" onclick="selectDropdownOption('dd-raga', '', 'All Ragas')" style="padding:6px 10px; font-size:13px; border-radius:4px; cursor:pointer;">All Ragas</div>
+              <div class="dd-option selected" data-val="" onclick="selectDropdownOption('dd-raga', '', 'All Ragas')" style="padding:6px 10px; font-size:13px; border-radius:6px; cursor:pointer;">All Ragas</div>
               <% uniqueRagas.forEach(r => { %>
-                <div class="dd-option" data-val="<%= r %>" onclick="selectDropdownOption('dd-raga', '<%= r.replace(/'/g, "\\'") %>', '<%= r.replace(/'/g, "\\'") %>')" style="padding:6px 10px; font-size:13px; border-radius:4px; cursor:pointer;"><%= r %></div>
+                <div class="dd-option" data-val="<%= r %>" onclick="selectDropdownOption('dd-raga', '<%= r.replace(/'/g, "\\'") %>', '<%= r.replace(/'/g, "\\'") %>')" style="padding:6px 10px; font-size:13px; border-radius:6px; cursor:pointer;"><%= r %></div>
               <% }) %>
             </div>
           </div>
@@ -138,8 +138,8 @@
                 <td data-label="Language" class="<%= isAdmin ? 'edit-cell' : '' %>" data-field="language"><%= b.language || '-' %></td>
                 <% if (isAdmin) { %>
                   <td data-label="Actions" class="action-cell" style="white-space: nowrap;">
-                    <button class="button" style="padding:6px 12px; font-size:12px; background:#2e6f86; border:none; margin-right:4px;" onclick="editMasterRow(<%= b.id %>)">✏️ Edit</button>
-                    <button class="button" style="padding:6px 12px; font-size:12px; background:#b23b32; border:none;" onclick="deleteMasterRow(<%= b.id %>)">❌ Del</button>
+                    <button class="btn-table-action btn-table-edit" onclick="editMasterRow(<%= b.id %>)">✏️ Edit</button>
+                    <button class="btn-table-action btn-table-delete" onclick="deleteMasterRow(<%= b.id %>)">❌ Del</button>
                   </td>
                 <% } %>
               </tr>
