@@ -58,29 +58,10 @@
 
   /**
    * Calculate the total size of assets in the service-worker cache.
-   * Falls back to the Storage Estimate API, then to a hardcoded default.
+   * Uses the Storage Estimate API safely, falling back to '< 2 MB'.
    */
   async function getEstimatedSize() {
     try {
-      // Method 1: measure actual cached content
-      const cacheNames = await caches.keys();
-      if (cacheNames.length > 0) {
-        let totalBytes = 0;
-        for (const name of cacheNames) {
-          const cache     = await caches.open(name);
-          const requests  = await cache.keys();
-          for (const req of requests) {
-            const res = await cache.match(req);
-            if (res) {
-              const blob = await res.clone().blob();
-              totalBytes += blob.size;
-            }
-          }
-        }
-        if (totalBytes > 0) return formatBytes(totalBytes);
-      }
-
-      // Method 2: Storage Estimate API
       if (navigator.storage && navigator.storage.estimate) {
         const { usage } = await navigator.storage.estimate();
         if (usage > 0) return formatBytes(usage);
@@ -99,7 +80,7 @@
   }
 
   // ── Banner Show / Hide ──────────────────────────────────────
-  function showBanner() {
+  function showBanner(customDelay) {
     const overlay = document.getElementById('pwaInstallOverlay');
     if (!overlay) return;
 
@@ -113,16 +94,68 @@
     if (isIOS()) {
       const iosEl = document.getElementById('pwaIosInstructions');
       const installBtn = document.getElementById('pwaBtnInstall');
-      if (iosEl) iosEl.style.display = '';
+      if (iosEl) iosEl.style.display = 'block';
       if (installBtn) installBtn.style.display = 'none';
     }
 
-    setTimeout(() => overlay.classList.add('show'), BANNER_DELAY);
+    const delay = typeof customDelay === 'number' ? customDelay : BANNER_DELAY;
+    setTimeout(() => overlay.classList.add('show'), delay);
   }
 
   function hideBanner() {
     const overlay = document.getElementById('pwaInstallOverlay');
     if (overlay) overlay.classList.remove('show');
+  }
+
+  // ── Global trigger for manual install buttons (e.g. footer) ─
+  window.triggerPwaInstall = function () {
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+
+    if (isStandalone) {
+      alert('✅ Bhajan Planner is already installed and running on your device!');
+      return;
+    }
+
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choice) => {
+        console.log('[PWA] Install prompt outcome:', choice.outcome);
+        deferredPrompt = null;
+        hideBanner();
+      });
+    } else {
+      showBanner(0);
+    }
+  };
+
+  // ── Wire up footer install button if present ────────────────
+  function wireFooterInstallBtn() {
+    const btn = document.getElementById('footerPwaInstallBtn');
+    if (!btn) return;
+
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+
+    if (isStandalone) {
+      btn.innerHTML = '<span>✅</span> Installed on Device';
+      btn.classList.add('installed');
+      btn.disabled = true;
+      return;
+    }
+
+    if (isIOS()) {
+      btn.innerHTML = '<span>📲</span> Install on iPhone / iPad';
+    } else {
+      btn.innerHTML = '<span>📲</span> Install Bhajan Planner App';
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.triggerPwaInstall();
+    });
   }
 
   // ── Intercept Chrome / Edge install prompt ──────────────────
@@ -141,9 +174,14 @@
     const dismissBtn  = document.getElementById('pwaBtnDismiss');
     const closeBtn    = document.getElementById('pwaBannerClose');
 
+    wireFooterInstallBtn();
+
     // Install
     installBtn?.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
+      if (!deferredPrompt) {
+        showBanner(0);
+        return;
+      }
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       console.log('[PWA] Install prompt outcome:', outcome);
@@ -167,7 +205,6 @@
 
     // ── iOS: no beforeinstallprompt event, show manual banner ─
     if (isIOS() && !wasDismissedRecently()) {
-      // Wait a little longer on iOS since there is no install event
       setTimeout(() => showBanner(), 4000);
     }
   });
@@ -176,6 +213,11 @@
   window.addEventListener('appinstalled', () => {
     hideBanner();
     deferredPrompt = null;
+    const btn = document.getElementById('footerPwaInstallBtn');
+    if (btn) {
+      btn.innerHTML = '<span>✅</span> Installed on Device';
+      btn.disabled = true;
+    }
     console.log('[PWA] Bhajan Planner installed successfully!');
   });
 })();

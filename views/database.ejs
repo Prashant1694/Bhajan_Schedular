@@ -27,7 +27,8 @@
       <p style="font-size: 15px; color: var(--muted);">No session found for the selected date.</p>
     </div>
 
-    <% sessions.forEach(session => { %>
+    <% const initialSessions = sessions.slice(0, 12); %>
+    <% initialSessions.forEach((session, sIdx) => { %>
       <section class="submitted-bhajans history-session" data-date="<%= session.date %>">
         <div class="submitted-bhajans-heading">
           <div>
@@ -50,12 +51,12 @@
             <tbody>
               <% session.bhajans.forEach((s, i) => { %>
                 <tr>
-                  <td data-label="#"><%= i + 1 %></td>
-                  <td data-label="Singer"><%= s.singer_name %></td>
-                  <td data-label="Deity"><span class="deity-pill"><%= s.deity %></span></td>
-                  <td data-label="Bhajan"><%= s.title %></td>
-                  <td data-label="Speed"><%= s.speed || '-' %></td>
-                  <td data-label="Scale"><%= s.scale || '-' %></td>
+                  <td><%= i + 1 %></td>
+                  <td><strong><%= s.singer_name %></strong></td>
+                  <td><span class="deity-pill"><%= s.deity %></span></td>
+                  <td><%= s.title %></td>
+                  <td><%= s.speed || '-' %></td>
+                  <td><%= s.scale || '-' %></td>
                 </tr>
               <% }) %>
             </tbody>
@@ -63,37 +64,142 @@
         </div>
       </section>
     <% }) %>
+
+    <div id="historyDynamicContainer"></div>
+
+    <% if (sessions.length > 12) { %>
+      <div id="historyLoadMoreContainer" style="text-align: center; margin: 28px 0 40px;">
+        <button type="button" id="historyLoadMoreBtn" class="button secondary" style="padding: 12px 28px; font-size: 15px; font-weight: 600; border-radius: 10px;">
+          📜 Load More Past Sessions (<span id="historyRemainingCount"><%= sessions.length - 12 %></span> remaining)
+        </button>
+      </div>
+    <% } %>
   <% } %>
 </div>
+
+<script id="remainingSessionsData" type="application/json">
+  <%- JSON.stringify(sessions.slice(12)) %>
+</script>
 
 <script>
 (function() {
   var dateInput = document.getElementById('historyDateFilter');
   var clearBtn = document.getElementById('historyDateClear');
   var noMatch  = document.getElementById('historyNoMatch');
-  if (!dateInput) return;
+  var loadMoreBtn = document.getElementById('historyLoadMoreBtn');
+  var loadMoreContainer = document.getElementById('historyLoadMoreContainer');
+  var remainingCount = document.getElementById('historyRemainingCount');
+  var dynamicContainer = document.getElementById('historyDynamicContainer');
+
+  var remainingSessions = [];
+  try {
+    var rawData = document.getElementById('remainingSessionsData');
+    if (rawData) remainingSessions = JSON.parse(rawData.textContent);
+  } catch (e) {}
+
+  var currentIndex = 0;
+  var BATCH_SIZE = 12;
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function renderSessionHtml(session) {
+    var rows = session.bhajans.map(function(s, i) {
+      return '<tr>' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td><strong>' + escapeHtml(s.singer_name) + '</strong></td>' +
+        '<td><span class="deity-pill">' + escapeHtml(s.deity) + '</span></td>' +
+        '<td>' + escapeHtml(s.title) + '</td>' +
+        '<td>' + escapeHtml(s.speed || '-') + '</td>' +
+        '<td>' + escapeHtml(s.scale || '-') + '</td>' +
+        '</tr>';
+    }).join('');
+
+    return '<section class="submitted-bhajans history-session" data-date="' + escapeHtml(session.date) + '">' +
+      '<div class="submitted-bhajans-heading">' +
+        '<div>' +
+          '<h3>📅 ' + escapeHtml(session.heading) + '</h3>' +
+          '<p>' + session.bhajans.length + ' bhajan' + (session.bhajans.length === 1 ? '' : 's') + ' in this session</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="table-container">' +
+        '<table>' +
+          '<thead>' +
+            '<tr><th>#</th><th>Singer</th><th>Deity</th><th>Bhajan</th><th>Speed</th><th>Scale</th></tr>' +
+          '</thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</section>';
+  }
+
+  function loadNextBatch() {
+    if (currentIndex >= remainingSessions.length) return;
+    var nextBatch = remainingSessions.slice(currentIndex, currentIndex + BATCH_SIZE);
+    var html = nextBatch.map(renderSessionHtml).join('');
+    if (dynamicContainer) dynamicContainer.insertAdjacentHTML('beforeend', html);
+    currentIndex += nextBatch.length;
+
+    var left = remainingSessions.length - currentIndex;
+    if (left > 0) {
+      if (remainingCount) remainingCount.textContent = left;
+    } else {
+      if (loadMoreContainer) loadMoreContainer.style.display = 'none';
+    }
+  }
+
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', loadNextBatch);
+  }
 
   function filterSessions() {
-    var val = dateInput.value; // YYYY-MM-DD or empty
-    var sections = document.querySelectorAll('.history-session');
-    var anyVisible = false;
+    var val = (dateInput ? dateInput.value : '').trim(); // YYYY-MM-DD or empty
+    var rendered = document.querySelectorAll('.history-session');
 
-    sections.forEach(function(sec) {
-      if (!val || sec.getAttribute('data-date') === val) {
+    if (!val) {
+      if (noMatch) noMatch.style.display = 'none';
+      rendered.forEach(function(sec) { sec.style.display = ''; });
+      var left = remainingSessions.length - currentIndex;
+      if (loadMoreContainer) loadMoreContainer.style.display = left > 0 ? '' : 'none';
+      return;
+    }
+
+    if (loadMoreContainer) loadMoreContainer.style.display = 'none';
+
+    // Check if the session is already rendered
+    var found = false;
+    rendered.forEach(function(sec) {
+      if (sec.getAttribute('data-date') === val) {
         sec.style.display = '';
-        anyVisible = true;
+        found = true;
       } else {
         sec.style.display = 'none';
       }
     });
 
-    noMatch.style.display = (val && !anyVisible) ? '' : 'none';
+    // If not found in currently rendered DOM, search unrendered remainingSessions
+    if (!found) {
+      var targetSession = remainingSessions.find(function(s) { return s.date === val; });
+      if (targetSession && dynamicContainer) {
+        var html = renderSessionHtml(targetSession);
+        dynamicContainer.insertAdjacentHTML('beforeend', html);
+        found = true;
+      }
+    }
+
+    if (noMatch) noMatch.style.display = !found ? '' : 'none';
   }
 
-  dateInput.addEventListener('change', filterSessions);
-  clearBtn.addEventListener('click', function() {
-    dateInput.value = '';
-    filterSessions();
-  });
+  if (dateInput) {
+    dateInput.addEventListener('change', filterSessions);
+  }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function() {
+      if (dateInput) dateInput.value = '';
+      filterSessions();
+    });
+  }
 })();
 </script>

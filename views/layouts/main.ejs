@@ -40,6 +40,30 @@
 <link rel="stylesheet" href="/css/<%= pageCSS %>">
 <% } %>
 
+<!-- Critical Anti-FOUC for Floating Theme Toggle -->
+<style>
+.theme-toggle {
+  position: fixed !important;
+  bottom: 88px !important;
+  right: 24px !important;
+  z-index: 9998 !important;
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+@media (max-width: 360px) {
+  .theme-toggle {
+    width: 46px !important;
+    height: 46px !important;
+    bottom: 74px !important;
+    right: 16px !important;
+  }
+}
+</style>
+
 <!-- Dark mode: read preference BEFORE page renders to prevent flash -->
 <script>
 (function(){
@@ -91,6 +115,7 @@
       aria-label="Toggle dark mode"
       aria-pressed="false"
       data-tooltip="Switch to Dark"
+      style="position: fixed; bottom: 88px; right: 24px; z-index: 9998; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"
     >
       <span class="icon-moon" aria-hidden="true">🌙</span>
       <span class="icon-sun"  aria-hidden="true">☀️</span>

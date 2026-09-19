@@ -79,7 +79,19 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
-        .catch(() => caches.match('/offline.html'))
+        .catch(async () => {
+          try {
+            const cachedFallback = await caches.match('/offline.html');
+            if (cachedFallback) return cachedFallback;
+          } catch (_) {}
+          return new Response(
+            '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bhajan Planner - Offline</title><style>body{font-family:system-ui,sans-serif;text-align:center;padding:50px 20px;background:#fbf8f2;color:#221e2a;}button{padding:12px 24px;border:none;border-radius:10px;background:#ff9933;color:#fff;font-weight:700;font-size:16px;cursor:pointer;margin-top:20px;}</style></head><body><h2>🕉️ Bhajan Planner</h2><p>Connection issue or offline. Please check your network and retry.</p><button onclick="location.reload()">Retry Connection</button></body></html>',
+            {
+              status: 200,
+              headers: { 'Content-Type': 'text/html; charset=utf-8' }
+            }
+          );
+        })
     );
     return;
   }
@@ -111,7 +123,13 @@ self.addEventListener('fetch', (event) => {
 
   // ─ Everything else: network-first ─
   event.respondWith(
-    fetch(request).catch(() => caches.match(request))
+    fetch(request).catch(async () => {
+      try {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+      } catch (_) {}
+      return new Response('', { status: 408, statusText: 'Network timeout or offline' });
+    })
   );
 });
 

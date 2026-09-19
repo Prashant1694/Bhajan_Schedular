@@ -123,8 +123,9 @@
           </tr>
         </thead>
         <tbody>
-          <% if (bhajans.length > 0) { %>
-            <% bhajans.forEach(b => { %>
+          <% const initialBhajans = bhajans.slice(0, 60); %>
+          <% if (initialBhajans.length > 0) { %>
+            <% initialBhajans.forEach(b => { %>
               <tr id="row-<%= b.id %>" data-deity="<%= (b.deity || '').toLowerCase() %>">
                 <td data-label="Title" class="<%= isAdmin ? 'edit-cell' : '' %>" data-field="title"><%= b.title %></td>
                 <td data-label="Deity" class="<%= isAdmin ? 'edit-cell' : '' %>" data-field="deity"><span class="deity-pill"><%= b.deity || '-' %></span></td>
@@ -150,4 +151,132 @@
         </tbody>
       </table>
     </div>
+
+    <% if (bhajans.length > 60) { %>
+      <div id="masterBankLoadMore" style="text-align: center; margin: 24px 0 40px;">
+        <button type="button" id="bankLoadMoreBtn" class="button secondary" style="padding: 12px 28px; font-size: 14px; font-weight: 600; border-radius: 10px;">
+          📜 Load More Bhajans (<span id="bankRemainingCount"><%= bhajans.length - 60 %></span> remaining)
+        </button>
+      </div>
+    <% } %>
   </div>
+
+  <script id="allMasterBhajansData" type="application/json">
+    <%- JSON.stringify(bhajans.map(b => ({
+      id: b.id,
+      title: b.title,
+      deity: b.deity || '',
+      tempo: b.tempo || '',
+      raga: b.raga || '',
+      shruti: b.shruti || '',
+      shruti_female: b.shruti_female || '',
+      wm: getWesternScale(b.shruti),
+      wf: getWesternScale(b.shruti_female),
+      level: b.level || '',
+      language: b.language || ''
+    }))) %>
+  </script>
+
+  <script>
+  (function() {
+    var dataElem = document.getElementById('allMasterBhajansData');
+    if (!dataElem) return;
+    var allData = [];
+    try { allData = JSON.parse(dataElem.textContent); } catch (e) { return; }
+    window.ALL_MASTER_BHAJANS = allData;
+    window.IS_ADMIN_MASTER_BANK = <%= isAdmin ? 'true' : 'false' %>;
+
+    var tbody = document.querySelector('#masterBankTable tbody');
+    var loadMoreBtn = document.getElementById('bankLoadMoreBtn');
+    var loadMoreDiv = document.getElementById('masterBankLoadMore');
+    var remCount = document.getElementById('bankRemainingCount');
+    
+    var currentMatches = allData;
+    var renderedCount = Math.min(60, allData.length);
+    var BATCH_SIZE = 60;
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function createRowHtml(b) {
+      var isAdmin = window.IS_ADMIN_MASTER_BANK;
+      var editClass = isAdmin ? ' class="edit-cell"' : '';
+      var deityPill = b.deity ? '<span class="deity-pill">' + escapeHtml(b.deity) + '</span>' : '-';
+      var actionsHtml = '';
+      if (isAdmin) {
+        actionsHtml = '<td data-label="Actions" class="action-cell" style="white-space: nowrap;">' +
+          '<button class="btn-table-action btn-table-edit" onclick="editMasterRow(' + b.id + ')">✏️ Edit</button> ' +
+          '<button class="btn-table-action btn-table-delete" onclick="deleteMasterRow(' + b.id + ')">❌ Del</button>' +
+          '</td>';
+      }
+      return '<tr id="row-' + b.id + '" data-deity="' + escapeHtml((b.deity || '').toLowerCase()) + '">' +
+        '<td data-label="Title"' + editClass + ' data-field="title">' + escapeHtml(b.title) + '</td>' +
+        '<td data-label="Deity"' + editClass + ' data-field="deity">' + deityPill + '</td>' +
+        '<td data-label="Tempo"' + editClass + ' data-field="tempo">' + escapeHtml(b.tempo || '-') + '</td>' +
+        '<td data-label="Raga"' + editClass + ' data-field="raga">' + escapeHtml(b.raga || '-') + '</td>' +
+        '<td data-label="Scale (M)"' + editClass + ' data-field="shruti">' + escapeHtml(b.shruti || '-') + '</td>' +
+        '<td data-label="West (M)" id="west-m-' + b.id + '" style="color:#8b8394; font-weight:600;">' + escapeHtml(b.wm || '-') + '</td>' +
+        '<td data-label="Scale (F)"' + editClass + ' data-field="shruti_female">' + escapeHtml(b.shruti_female || '-') + '</td>' +
+        '<td data-label="West (F)" id="west-f-' + b.id + '" style="color:#8b8394; font-weight:600;">' + escapeHtml(b.wf || '-') + '</td>' +
+        '<td data-label="Level"' + editClass + ' data-field="level">' + escapeHtml(b.level || '-') + '</td>' +
+        '<td data-label="Language"' + editClass + ' data-field="language">' + escapeHtml(b.language || '-') + '</td>' +
+        actionsHtml +
+        '</tr>';
+    }
+
+    function updateLoadMoreUI() {
+      if (!loadMoreDiv) return;
+      var remaining = currentMatches.length - renderedCount;
+      if (remaining > 0) {
+        loadMoreDiv.style.display = '';
+        if (remCount) remCount.textContent = remaining;
+      } else {
+        loadMoreDiv.style.display = 'none';
+      }
+    }
+
+    window.renderMoreMasterBank = function() {
+      if (!tbody) return;
+      var nextBatch = currentMatches.slice(renderedCount, renderedCount + BATCH_SIZE);
+      if (nextBatch.length === 0) return;
+      var html = nextBatch.map(createRowHtml).join('');
+      tbody.insertAdjacentHTML('beforeend', html);
+      renderedCount += nextBatch.length;
+      updateLoadMoreUI();
+    };
+
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', window.renderMoreMasterBank);
+    }
+
+    // Replace the DOM search loop with instant array search
+    window.filterMasterBank = function() {
+      var titleFilter = (document.getElementById('filterBankTitle') ? document.getElementById('filterBankTitle').value : '').trim().toLowerCase();
+      var deityFilter = (document.getElementById('filterBankDeity') ? document.getElementById('filterBankDeity').value : '').trim().toLowerCase();
+      var tempoFilter = (document.getElementById('filterBankTempo') ? document.getElementById('filterBankTempo').value : '').trim().toLowerCase();
+      var ragaFilter  = (document.getElementById('filterBankRaga') ? document.getElementById('filterBankRaga').value : '').trim().toLowerCase();
+
+      currentMatches = allData.filter(function(b) {
+        var mTitle = !titleFilter || (b.title || '').toLowerCase().indexOf(titleFilter) !== -1;
+        var mDeity = !deityFilter || (b.deity || '').toLowerCase() === deityFilter;
+        var mTempo = !tempoFilter || (b.tempo || '').toLowerCase() === tempoFilter;
+        var mRaga  = !ragaFilter  || (b.raga || '').toLowerCase() === ragaFilter;
+        return mTitle && mDeity && mTempo && mRaga;
+      });
+
+      renderedCount = Math.min(BATCH_SIZE, currentMatches.length);
+      if (currentMatches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="' + (window.IS_ADMIN_MASTER_BANK ? 11 : 10) + '" style="text-align:center; padding: 24px; color: var(--muted);">No matching bhajans found.</td></tr>';
+      } else {
+        tbody.innerHTML = currentMatches.slice(0, renderedCount).map(createRowHtml).join('');
+      }
+      updateLoadMoreUI();
+    };
+  })();
+  </script>
