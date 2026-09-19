@@ -20,6 +20,8 @@ database_backup/
 .env.*.local
 .env.production
 .env.staging
+.env.development
+.env.test
 !.env.example
 vapid-keys.json
 vapid.json
@@ -29,30 +31,39 @@ vapid.json
 *.crt
 
 # ============================================================
-# DEPENDENCIES
+# DEPENDENCIES & PACKAGE MANAGERS
 # ============================================================
 node_modules/
 .npm
+.pnpm-store/
 
 # ============================================================
-# LOGS
+# LOGS, PIDS & RUNTIME
 # ============================================================
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+*.pid
+*.seed
+*.pid.lock
 
 # ============================================================
-# OS FILES
+# OS SYSTEM FILES
 # ============================================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
-desktop.ini
 ehthumbs.db
+desktop.ini
 
 # ============================================================
-# IDE & AI AGENT ARTIFACTS
+# IDE, EDITORS & AI AGENT ARTIFACTS
 # ============================================================
 .vscode/
 .idea/
@@ -61,9 +72,11 @@ ehthumbs.db
 *~
 .gemini/
 .agents/
+.playwright/
+test-results/
 
 # ============================================================
-# BUILD & TEMPORARY
+# BUILD, CACHES & TEMPORARY
 # ============================================================
 dist/
 build/
@@ -72,6 +85,7 @@ temp/
 coverage/
 scratch/
 test_*.js
+*.tsbuildinfo
 
 # ============================================================
 # DECOMPILED APK / UNRELATED ASSETS
