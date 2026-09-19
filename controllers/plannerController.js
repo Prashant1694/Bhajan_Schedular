@@ -6,6 +6,7 @@ const SessionPermission = require("../models/SessionPermission");
 const SessionMeta = require("../models/SessionMeta");
 const DeityRule = require("../models/DeityRule");
 const Singer = require("../models/Singer");
+const MasterBhajan = require("../models/MasterBhajan");
 
 const {
     getNextThursday,
@@ -226,11 +227,42 @@ exports.showSubmitForm = async (req, res) => {
 
   exports.submitForm = async (req, res) => {
   try {
-    const { session_date, singer_name, gender, locked_gender, partner_name, deity, title, speed, scale, raga, level, language, admin } = req.body;
+    const { session_date, singer_name, gender, locked_gender, partner_name, deity, title, speed, scale, raga, level, language, admin, master_bhajan_id } = req.body;
     const isAdmin = admin === 'true' || !!(req.session && req.session.admin);
     
     if (!session_date || !singer_name || !deity || !title) {
       return res.status(400).send('<h1>Error</h1><p>Missing required fields.</p><a class="button" href="javascript:history.back()">Go Back</a>');
+    }
+
+    // Dropdown selection enforcement: Must be selected from the master bhajan database
+    if (!master_bhajan_id) {
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Cannot submit bhajan without selecting from dropdown</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Selection Required</h2><p>Cannot submit bhajan without selecting from dropdown. Manual entry without selecting a suggested bhajan is not allowed.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+    }
+
+    const masterBhajan = await MasterBhajan.findByPk(master_bhajan_id);
+    if (!masterBhajan) {
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan was not found in the master list.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+    }
+
+    // Verify title matches canonical master bhajan title
+    if (normalizeBhajanTitle(masterBhajan.title) !== normalizeBhajanTitle(title)) {
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. Title does not match the selected suggestion.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+    }
+
+    const DEITY_ALIASES = {
+      Vitthala: ["Vitthala", "Vittala"],
+      Mata: ["Mata", "Devi"],
+      Hanuman: ["Hanuman", "Anjaneya"]
+    };
+    const DEITY_TITLE_MATCHERS = {
+      Vitthala: /vitt?hala|vithoba|pandurang/i,
+      Hanuman: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i
+    };
+    const aliases = DEITY_ALIASES[deity] || [deity];
+    const titleMatcher = DEITY_TITLE_MATCHERS[deity];
+    const deityMatches = aliases.includes(masterBhajan.deity) || (titleMatcher && titleMatcher.test(masterBhajan.title));
+    if (!deityMatches) {
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan does not belong to ${escapeHtml(deity)}.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
     }
     
     const todayStr = getLocalDateStr();

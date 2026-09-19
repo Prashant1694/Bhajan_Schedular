@@ -130,6 +130,7 @@ function generateSubmitFormHtml(
             <div class="form-group" style="flex: 2;">
               <label>Bhajan Title <span class="required">*</span></label>
               <div class="bhajan-autocomplete">
+                <input type="hidden" name="master_bhajan_id" id="selectedMasterBhajanId" />
                 <input name="title" id="bhajanTitleInput" required placeholder="Select Deity to search..." autocomplete="off" aria-autocomplete="list" aria-controls="bhajanSuggestions" aria-expanded="false" />
                 <div id="bhajanSuggestions" class="bhajan-suggestions" role="listbox" aria-label="Bhajan suggestions"></div>
               </div>
@@ -242,6 +243,23 @@ function generateSubmitFormHtml(
       <div style="display:flex; gap:12px; margin-top:24px; justify-content: flex-end;">
         <button type="button" id="editBtn" class="button secondary">Edit</button>
         <button type="button" id="confirmBtn" class="button" style="background:#28a745; border:none; color:white; padding:8px 24px; border-radius:8px; font-weight:600;">Confirm</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="selectBhajanModal" class="modal">
+    <div class="modal-content" style="max-width: 420px; text-align: center; padding: 28px 24px;">
+      <div style="font-size: 42px; line-height: 1; margin-bottom: 14px;">🎵</div>
+      <h3 style="color: #d9480f; margin-bottom: 10px; font-size: 19px; font-weight: 700;">
+        Select Bhajan from Suggestions
+      </h3>
+      <p style="color: #495057; font-size: 14px; line-height: 1.55; margin-bottom: 24px;">
+        Cannot submit bhajan without selecting from dropdown. Manual entry without selecting a suggested bhajan is not allowed.
+      </p>
+      <div style="display:flex; justify-content:center;">
+        <button type="button" id="closeSelectBhajanModalBtn" class="button" style="width: 100%; padding: 12px 20px; font-weight: 600; font-size: 14.5px; background: linear-gradient(135deg, #ff9933 0%, #ff7700 100%); border: none; color: white; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 119, 0, 0.25);">
+          Select from Dropdown
+        </button>
       </div>
     </div>
   </div>

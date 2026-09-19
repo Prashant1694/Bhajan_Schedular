@@ -30,6 +30,20 @@ function closeConfirmModal() {
   if(modal) modal.classList.remove('show');
 }
 
+function closeSelectBhajanModal() {
+  const modal = document.getElementById('selectBhajanModal');
+  if(modal) modal.classList.remove('show');
+  const titleInput = document.getElementById('bhajanTitleInput');
+  if (titleInput) {
+    titleInput.focus();
+  }
+}
+
+function openSelectBhajanModal() {
+  const modal = document.getElementById('selectBhajanModal');
+  if(modal) modal.classList.add('show');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const sidebarToggle = document.getElementById('sidebarToggle');
   const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
@@ -198,8 +212,10 @@ document.addEventListener('DOMContentLoaded', function() {
   window.onclick = function(event) {
     const modal = document.getElementById('detailsModal');
     const confirmModal = document.getElementById('confirmSubmitModal');
+    const selectModal = document.getElementById('selectBhajanModal');
     if (event.target == modal) closeModal();
     if (confirmModal && event.target == confirmModal) closeConfirmModal();
+    if (selectModal && event.target == selectModal) closeSelectBhajanModal();
   }
 
   let selectedDeity = null;
@@ -227,6 +243,8 @@ document.addEventListener('DOMContentLoaded', function() {
       option.addEventListener('mousedown', event => {
         event.preventDefault(); // Keep focus in the input while selecting.
         titleInput.value = bhajan.title;
+        const masterIdInput = document.getElementById('selectedMasterBhajanId');
+        if (masterIdInput) masterIdInput.value = bhajan.id;
         hideBhajanSuggestions();
         titleInput.dispatchEvent(new Event('input', { bubbles: true }));
       });
@@ -282,6 +300,8 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Reset fields
       titleInput.value = '';
+      const masterIdInput = document.getElementById('selectedMasterBhajanId');
+      if (masterIdInput) masterIdInput.value = '';
       titleInput.placeholder = `Loading ${selectedDeity} bhajans...`;
       document.getElementById('masterDataBadge').style.display = 'none';
 
@@ -304,6 +324,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // MAGIC AUTO-FILL LOGIC: Listen for when they select a title
   let searchTimeout;
   titleInput.addEventListener('input', function(e) {
+    if (e.isTrusted) {
+      // User typed or edited manually: require explicit dropdown selection
+      const masterIdInput = document.getElementById('selectedMasterBhajanId');
+      if (masterIdInput) masterIdInput.value = '';
+    }
     const enteredTitle = e.target.value.trim().toLocaleLowerCase();
     const isExactBhajan = currentMasterBhajans.some(
       bhajan => bhajan.title.trim().toLocaleLowerCase() === enteredTitle
@@ -436,9 +461,13 @@ document.addEventListener('DOMContentLoaded', function() {
         : (activeSuggestionIndex - 1 + options.length) % options.length;
       options.forEach((option, index) => option.classList.toggle('active', index === activeSuggestionIndex));
       titleInput.setAttribute('aria-activedescendant', options[activeSuggestionIndex].id);
-    } else if (event.key === 'Enter' && activeSuggestionIndex >= 0) {
+    } else if (event.key === 'Enter') {
       event.preventDefault();
-      options[activeSuggestionIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      if (activeSuggestionIndex >= 0 && options[activeSuggestionIndex]) {
+        options[activeSuggestionIndex].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      } else if (options.length > 0) {
+        options[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      }
     } else if (event.key === 'Escape') {
       suggestions.classList.remove('show');
       titleInput.setAttribute('aria-expanded', 'false');
@@ -478,6 +507,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
+      // Check if bhajan was explicitly selected from the dropdown
+      const masterIdInput = document.getElementById('selectedMasterBhajanId');
+      if (!masterIdInput || !masterIdInput.value) {
+        openSelectBhajanModal();
+        return;
+      }
+
       // Populate Modal
       const singer = document.getElementById('singerName').value;
       const partner = document.getElementById('partnerName').value;
@@ -510,6 +546,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (form) {
     form.addEventListener('submit', function(e) {
+      const masterIdInput = document.getElementById('selectedMasterBhajanId');
+      if (!masterIdInput || !masterIdInput.value) {
+        e.preventDefault();
+        openSelectBhajanModal();
+        return;
+      }
       // If the modal isn't open yet, prevent native submit and trigger the pre-submit flow
       if (confirmSubmitModal && !confirmSubmitModal.classList.contains('show')) {
         e.preventDefault();
@@ -517,6 +559,20 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }
+
+  const closeSelectBhajanBtn = document.getElementById('closeSelectBhajanModalBtn');
+  if (closeSelectBhajanBtn) {
+    closeSelectBhajanBtn.addEventListener('click', closeSelectBhajanModal);
+  }
+
+  window.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      const selectModal = document.getElementById('selectBhajanModal');
+      if (selectModal && selectModal.classList.contains('show')) {
+        closeSelectBhajanModal();
+      }
+    }
+  });
 });
 
 let filterTableTimeout;
