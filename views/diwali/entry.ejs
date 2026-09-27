@@ -1,0 +1,186 @@
+<link rel="stylesheet" href="/css/diwali.css">
+
+<div class="container container-lg">
+
+  <div style="margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center;">
+    <a href="/admin/diwali?year=<%= selectedEvent.year %>" class="btn-diwali btn-diwali-secondary">
+      ⬅️ Back to Diwali Dashboard
+    </a>
+    <span class="badge-pill" style="font-size:13.5px; background:var(--diwali-gold-light); color:var(--diwali-amber); padding:6px 12px;">
+      Event: <strong><%= selectedEvent.name %></strong>
+    </span>
+  </div>
+
+  <% if (typeof errorMsg !== 'undefined' && errorMsg) { %>
+    <div class="alert alert-danger" style="margin-bottom:20px; padding:12px 16px; border-radius:8px; background:#fbeae8; color:#b23b32; font-weight:600;">
+      ❌ <%= errorMsg %>
+    </div>
+  <% } %>
+
+  <div class="diwali-form-container">
+    <form action="/admin/diwali/entry" method="POST" id="diwaliEntryForm">
+      <input type="hidden" name="year" value="<%= selectedEvent.year %>">
+
+      <!-- Participant Pair Section -->
+      <div class="diwali-form-card">
+        <h2>👥 Audition Participant Pair</h2>
+        <p style="margin: -10px 0 20px 0; color:var(--text-light); font-size:13.5px;">
+          Both Lead Singer and Partner names are strictly mandatory for Diwali Audition pairs.
+        </p>
+
+        <!-- EQUAL VISUAL WEIGHT FOR BOTH NAMES -->
+        <div class="diwali-pair-row">
+          <div class="diwali-field-group">
+            <label class="diwali-field-label">
+              Lead Singer Name <span class="req-star">*</span>
+            </label>
+            <input
+              type="text"
+              name="lead_name"
+              required
+              class="diwali-input-text"
+              placeholder="e.g. Prashant Bhatt"
+              value="<%= formData ? formData.lead_name : '' %>"
+            >
+          </div>
+
+          <div class="diwali-field-group">
+            <label class="diwali-field-label">
+              Partner Name <span class="req-star">*</span>
+            </label>
+            <input
+              type="text"
+              name="partner_name"
+              required
+              class="diwali-input-text"
+              placeholder="e.g. Rahul Patel"
+              value="<%= formData ? formData.partner_name : '' %>"
+            >
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items:center;">
+          <div class="diwali-field-group">
+            <label class="diwali-field-label">
+              Gender <span class="req-star">*</span>
+            </label>
+            <div class="gender-radio-group">
+              <label class="gender-radio-label">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="Gents"
+                  <%= (!formData || formData.gender === 'Gents') ? 'checked' : '' %>
+                >
+                👔 Gents
+              </label>
+              <label class="gender-radio-label">
+                <input
+                  type="radio"
+                  name="gender"
+                  value="Ladies"
+                  <%= (formData && formData.gender === 'Ladies') ? 'checked' : '' %>
+                >
+                👗 Ladies
+              </label>
+            </div>
+          </div>
+
+          <div class="diwali-field-group">
+            <label class="diwali-field-label">Pair Remarks (Optional)</label>
+            <input
+              type="text"
+              name="remarks"
+              class="diwali-input-text"
+              placeholder="Any pair audition notes or availability comments..."
+              value="<%= formData ? formData.remarks : '' %>"
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Multiple Bhajans Section -->
+      <div class="diwali-form-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid var(--diwali-gold-border); padding-bottom: 10px; margin-bottom: 16px;">
+          <h2 style="margin:0; border:none; padding:0;">🎼 Selected Bhajans for this Pair</h2>
+          <small style="color:var(--text-light); font-size:13px;">Add one or multiple bhajans for this pair</small>
+        </div>
+
+        <div id="bhajanRepeaterContainer" class="bhajan-repeater-wrap">
+          <!-- Bhajan Card 1 -->
+          <div class="bhajan-item-card">
+            <div class="bhajan-card-header">
+              <span class="bhajan-num-badge">Bhajan #1</span>
+              <button type="button" class="btn-remove-bhajan" onclick="removeBhajanCard(this)">✕ Remove</button>
+            </div>
+
+            <div class="bhajan-card-content">
+              <div class="diwali-field-group bhajan-field-title">
+                <label class="diwali-field-label">
+                  Bhajan Title <span class="req-star">*</span>
+                </label>
+                <div class="autocomplete-container">
+                  <input
+                    type="text"
+                    name="bhajan_title"
+                    required
+                    class="diwali-input-text bhajan-autocomplete-input"
+                    placeholder="Search Master Bhajan bank or type title..."
+                    autocomplete="off"
+                  >
+                  <input type="hidden" name="master_bhajan_id" class="bhajan-master-id" value="">
+                  <div class="autocomplete-dropdown"></div>
+                </div>
+              </div>
+
+              <div class="bhajan-meta-grid">
+                <div class="diwali-field-group">
+                  <label class="diwali-field-label">Deity</label>
+                  <input type="text" name="deity" class="diwali-input-text bhajan-deity-input" placeholder="e.g. Ganesha, Krishna, Shiva...">
+                </div>
+
+                <div class="diwali-field-group">
+                  <label class="diwali-field-label">
+                    Scale <span class="field-hint-tag">Auto-filled</span>
+                  </label>
+                  <input type="text" name="scale" class="diwali-input-text bhajan-scale-input" placeholder="e.g. C#">
+                </div>
+
+                <div class="diwali-field-group">
+                  <label class="diwali-field-label">Tabla Shruti</label>
+                  <input type="text" name="tabla" class="diwali-input-text bhajan-tabla-input" placeholder="e.g. 1.5, 2...">
+                </div>
+              </div>
+
+              <div class="diwali-field-group bhajan-field-remarks">
+                <label class="diwali-field-label">Bhajan Remarks</label>
+                <input type="text" name="bhajan_remarks" class="diwali-input-text" placeholder="Audition comments or notes...">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          id="btnAddAnotherBhajan"
+          class="btn-diwali btn-diwali-secondary"
+          style="width:100%; justify-content:center; padding:12px; border-style:dashed; margin-bottom:20px;"
+        >
+          ➕ Add Another Bhajan for this Pair
+        </button>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; padding-top:16px; border-top:1px solid var(--diwali-border);">
+          <a href="/admin/diwali?year=<%= selectedEvent.year %>" class="btn-diwali btn-diwali-secondary">
+            Cancel
+          </a>
+          <button type="submit" class="btn-diwali btn-diwali-primary" style="padding:12px 28px; font-size:16px;">
+            💾 Save Participant &amp; Bhajans
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script src="/js/diwali.js"></script>

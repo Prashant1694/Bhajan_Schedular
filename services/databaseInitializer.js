@@ -206,6 +206,8 @@ async function initializeDatabase() {
     await ensureSingerPinColumn();
     await ensureActivityTables();
     await ensureNotificationTables();
+    const { runDiwaliMigration } = require("./diwaliMigration");
+    await runDiwaliMigration();
 
     await initializeSuperAdmin();
     await migrateLegacySubmissions();

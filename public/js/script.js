@@ -56,17 +56,32 @@ function switchTab(tabName, element) {
 }
 
 function showDetails(deity, singer, bhajan, scale, speed) {
-  document.getElementById('modalDeityName').textContent = deity + ' Bhajan';
-  document.getElementById('modalSinger').textContent = singer;
-  document.getElementById('modalBhajan').textContent = bhajan;
-  document.getElementById('modalScale').textContent = scale || 'Not specified';
+  const mDeity = document.getElementById('modalDeityName');
+  if (mDeity) mDeity.textContent = deity + ' Bhajan';
+  const mSinger = document.getElementById('modalSinger');
+  if (mSinger) mSinger.textContent = singer;
+  const mBhajan = document.getElementById('modalBhajan');
+  if (mBhajan) mBhajan.textContent = bhajan;
+  const mScale = document.getElementById('modalScale');
+  if (mScale) mScale.textContent = scale || 'Not specified';
   const formattedSpeed = speed ? speed.charAt(0).toUpperCase() + speed.slice(1) : '';
-  document.getElementById('modalSpeed').textContent = formattedSpeed;
-  document.getElementById('detailsModal').classList.add('show');
+  const mSpeed = document.getElementById('modalSpeed');
+  if (mSpeed) mSpeed.textContent = formattedSpeed;
+  const modal = document.getElementById('detailsModal');
+  if (modal) modal.classList.add('show');
 }
 
-function closeModal() {
-  document.getElementById('detailsModal').classList.remove('show');
+function closeModal(modalId) {
+  if (modalId) {
+    const el = document.getElementById(modalId);
+    if (el) {
+      el.style.display = 'none';
+      el.classList.remove('show');
+      return;
+    }
+  }
+  const modal = document.getElementById('detailsModal');
+  if (modal) modal.classList.remove('show');
 }
 
 function closeConfirmModal() {

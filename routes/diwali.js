@@ -1,0 +1,53 @@
+const express = require("express");
+const router = express.Router();
+const multer = require("multer");
+const diwaliController = require("../controllers/diwaliController");
+const { requireLogin, requireSuperAdmin, requireApiLogin, requireApiSuperAdmin } = require("../middleware/auth");
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }
+});
+
+// Diwali module is strictly restricted to Super Admins only
+router.use("/admin/diwali", requireLogin, requireSuperAdmin);
+
+// Diwali Main Dashboard
+router.get("/admin/diwali", requireSuperAdmin, diwaliController.dashboard);
+
+// Participant Entry Form
+router.get("/admin/diwali/entry", requireLogin, diwaliController.showEntryForm);
+router.post("/admin/diwali/entry", requireLogin, diwaliController.createParticipant);
+
+// Participant Edit & Delete
+router.get("/admin/diwali/participant/:id", requireLogin, diwaliController.getParticipantJson);
+router.post("/admin/diwali/participant/update/:id", requireLogin, diwaliController.updateParticipant);
+router.post("/admin/diwali/participant/delete/:id", requireLogin, diwaliController.deleteParticipant);
+router.post("/admin/diwali/bhajan/delete/:id", requireLogin, diwaliController.deleteBhajan);
+
+// Event Management
+router.post("/admin/diwali/event/create", requireLogin, diwaliController.createEvent);
+
+// Import Workflow
+router.get("/admin/diwali/import", requireLogin, diwaliController.showImport);
+router.post("/admin/diwali/import/preview", requireLogin, upload.single("file"), diwaliController.previewImport);
+router.post("/admin/diwali/import/confirm", requireLogin, diwaliController.confirmImport);
+
+// Yearly Data Export (Independent of sequence generation)
+router.get("/admin/diwali/export/yearly", requireLogin, diwaliController.exportYearly);
+
+// Sequence Generation & Management
+router.post("/admin/diwali/sequence/generate", requireLogin, diwaliController.makeSequence);
+router.get("/admin/diwali/sequence/editor", requireLogin, diwaliController.showSequenceEditor);
+router.post("/admin/diwali/sequence/save-order", requireLogin, diwaliController.saveSequenceOrder);
+router.post("/admin/diwali/sequence/move-entry", requireLogin, diwaliController.moveSequenceEntry);
+router.post("/admin/diwali/sequence/assign-date", requireLogin, diwaliController.assignDate);
+router.post("/admin/diwali/sequence/finalize/:id", requireLogin, diwaliController.finalizeSequence);
+
+// Sequence Export
+router.get("/admin/diwali/export/sequence", requireLogin, diwaliController.exportSequence);
+
+// Master Bhajan Bank Autocomplete Search API
+router.get("/admin/diwali/api/search-master", requireLogin, diwaliController.searchMasterBhajans);
+
+module.exports = router;

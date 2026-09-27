@@ -1,0 +1,600 @@
+<link rel="stylesheet" href="/css/diwali.css">
+
+<div class="container container-xl">
+
+  <!-- Header Banner & Event Selector -->
+  <div class="diwali-header-banner">
+    <div class="diwali-title-group">
+      <h1>🪔 Diwali Bhajans Management</h1>
+      <p>Auditions, Selected Bhajans &amp; Fair Session Planning</p>
+    </div>
+
+    <div class="diwali-year-selector-wrap">
+      <label for="diwaliYearSelect" style="font-weight:700; font-size:14px; color:var(--diwali-maroon);">
+        Diwali Year:
+      </label>
+      <select id="diwaliYearSelect" class="diwali-year-select" onchange="onDiwaliYearChange(this)">
+        <% (allEvents || []).forEach(e => { if (!e) return; %>
+          <option value="<%= e.year %>" <%= (selectedEvent && e.year === selectedEvent.year) ? 'selected' : '' %>>
+            <%= e.name %> <%= e.status === 'Archived' ? '(Archived)' : '' %>
+          </option>
+        <% }) %>
+      </select>
+      <button type="button" class="btn-diwali btn-diwali-secondary" onclick="diwaliOpenModal('modalAddYear')" title="Create New Diwali Year">
+        ➕ New Year
+      </button>
+    </div>
+  </div>
+
+  <% if (typeof successMsg !== 'undefined' && successMsg) { %>
+    <div class="alert alert-success" style="margin-bottom:20px; padding:12px 16px; border-radius:8px; background:#e8f1e9; color:#4f7a5b; font-weight:600;">
+      ✅ <%= successMsg %>
+    </div>
+  <% } %>
+  <% if (typeof errorMsg !== 'undefined' && errorMsg) { %>
+    <div class="alert alert-danger" style="margin-bottom:20px; padding:12px 16px; border-radius:8px; background:#fbeae8; color:#b23b32; font-weight:600;">
+      ❌ <%= errorMsg %>
+    </div>
+  <% } %>
+
+  <!-- Statistics Grid -->
+  <div class="diwali-stats-grid">
+    <div class="diwali-stat-card">
+      <div class="diwali-stat-label">Total Pairs</div>
+      <div class="diwali-stat-val"><%= stats.totalPairs %></div>
+      <div class="diwali-stat-sub">Audition groups</div>
+    </div>
+
+    <div class="diwali-stat-card">
+      <div class="diwali-stat-label">Total Bhajans</div>
+      <div class="diwali-stat-val"><%= stats.totalBhajans %></div>
+      <div class="diwali-stat-sub">Selected songs</div>
+    </div>
+
+    <div class="diwali-stat-card gents">
+      <div class="diwali-stat-label">Gents Auditions</div>
+      <div class="diwali-stat-val"><%= stats.gentsPairs %> <span style="font-size:14px; font-weight:500; color:var(--text-light);">pairs</span></div>
+      <div class="diwali-stat-sub"><%= stats.gentsBhajans %> total bhajans</div>
+    </div>
+
+    <div class="diwali-stat-card ladies">
+      <div class="diwali-stat-label">Ladies Auditions</div>
+      <div class="diwali-stat-val"><%= stats.ladiesPairs %> <span style="font-size:14px; font-weight:500; color:var(--text-light);">pairs</span></div>
+      <div class="diwali-stat-sub"><%= stats.ladiesBhajans %> total bhajans</div>
+    </div>
+
+    <div class="diwali-stat-card sequences">
+      <div class="diwali-stat-label">Sequences</div>
+      <div class="diwali-stat-val"><%= stats.generatedSequences %></div>
+      <div class="diwali-stat-sub">Status: <strong><%= stats.sequenceStatus %></strong></div>
+    </div>
+  </div>
+
+  <!-- Action Bar -->
+  <div class="diwali-action-bar">
+    <a href="/admin/diwali/entry" class="btn-diwali btn-diwali-primary">
+      ➕ Add Diwali Entry
+    </a>
+
+    <a href="/admin/diwali/import" class="btn-diwali btn-diwali-secondary">
+      📥 Import Excel
+    </a>
+
+    <!-- Direct 1-Click Yearly Data Download -->
+    <a href="/admin/diwali/export/yearly?format=excel&category=Both" class="btn-diwali btn-diwali-secondary" title="Download Complete Yearly Audition Data in Excel (.xlsx)">
+      📊 Download Yearly Data (.xlsx)
+    </a>
+
+    <button type="button" class="btn-diwali btn-diwali-secondary" onclick="diwaliOpenModal('modalExportYearly')" title="More export options">
+      📤 More Export Options
+    </button>
+
+    <button type="button" class="btn-diwali btn-diwali-maroon" onclick="diwaliOpenModal('modalMakeSequence')">
+      🎛️ Make Sequence
+    </button>
+
+    <% if (stats.generatedSequences > 0) { %>
+      <a href="/admin/diwali/sequence/editor" class="btn-diwali btn-diwali-secondary">
+        📝 Sequence Editor
+      </a>
+      <a href="/admin/diwali/export/sequence?format=pdf&category=Both" class="btn-diwali btn-diwali-secondary" style="border-color:var(--diwali-maroon); color:var(--diwali-maroon); font-weight:700;" title="Print Sequence PDF directly">
+        🖨️ Print Sequence (PDF)
+      </a>
+      <button type="button" class="btn-diwali btn-diwali-secondary" onclick="diwaliOpenModal('modalExportSequence')">
+        📋 Export Sequences
+      </button>
+    <% } %>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="diwali-tabs">
+    <button type="button" class="diwali-tab active" data-tab="gents">
+      👔 Gents Bhajans <span class="diwali-tab-badge"><%= gentsBhajans.length %></span>
+    </button>
+    <button type="button" class="diwali-tab" data-tab="ladies">
+      👗 Ladies Bhajans <span class="diwali-tab-badge"><%= ladiesBhajans.length %></span>
+    </button>
+    <button type="button" class="diwali-tab" data-tab="sequences">
+      🎼 Generated Sequences <span class="diwali-tab-badge"><%= sequences.length %></span>
+    </button>
+  </div>
+
+  <!-- Filter Toolbar -->
+  <div class="diwali-filter-toolbar">
+    <input type="text" id="diwaliTableSearch" class="diwali-search-input" placeholder="🔍 Search Lead, Partner, Bhajan, Deity, Scale...">
+
+    <select id="diwaliDeityFilter" class="diwali-select-filter">
+      <option value="">All Deities</option>
+      <% deities.forEach(d => { %>
+        <option value="<%= d %>"><%= d %></option>
+      <% }) %>
+    </select>
+
+    <select id="diwaliScaleFilter" class="diwali-select-filter">
+      <option value="">All Scales</option>
+      <% scales.forEach(s => { %>
+        <option value="<%= s %>"><%= s %></option>
+      <% }) %>
+    </select>
+
+    <button type="button" class="btn-diwali btn-diwali-secondary" style="padding:8px 14px;" onclick="document.getElementById('diwaliTableSearch').value=''; document.getElementById('diwaliDeityFilter').value=''; document.getElementById('diwaliScaleFilter').value=''; document.getElementById('diwaliTableSearch').dispatchEvent(new Event('input'));">
+      Reset
+    </button>
+  </div>
+
+  <!-- Tab 1: Gents -->
+  <div id="tab-gents" class="diwali-tab-content" style="display:block;">
+    <div class="diwali-table-card">
+      <div style="overflow-x:auto;">
+        <table class="diwali-table">
+          <thead>
+            <tr>
+              <th style="width:45px;">Sr.</th>
+              <th>Lead Singer</th>
+              <th>Partner</th>
+              <th style="width:80px;">Gender</th>
+              <th>Bhajan</th>
+              <th>Scale</th>
+              <th>Tabla Shruti</th>
+              <th>Deity</th>
+              <th>Remarks</th>
+              <th style="text-align:right; width:120px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (gentsBhajans.length === 0) { %>
+              <tr>
+                <td colspan="10" style="text-align:center; padding:30px; color:var(--text-light);">
+                  No Gents bhajans recorded yet for <%= selectedEvent.name %>. Click "Add Diwali Entry" to add one!
+                </td>
+              </tr>
+            <% } else { %>
+              <% gentsBhajans.forEach((b, idx) => { %>
+                <tr data-deity="<%= b.deity || '' %>" data-scale="<%= b.scale || '' %>">
+                  <td><%= idx + 1 %></td>
+                  <td><strong><%= b.participant ? b.participant.lead_name : '-' %></strong></td>
+                  <td><strong><%= b.participant ? b.participant.partner_name : '-' %></strong></td>
+                  <td><span class="badge-gender gents">Gents</span></td>
+                  <td>
+                    <span style="font-weight:700; color:var(--diwali-maroon);"><%= b.bhajan_title %></span>
+                    <% if (b.master_bhajan_id) { %>
+                      <span class="badge-pill" title="Linked to Master Bhajan Bank">✓ MB</span>
+                    <% } %>
+                  </td>
+                  <td><span class="badge-pill"><%= b.scale || '-' %></span></td>
+                  <td><%= b.tabla || '-' %></td>
+                  <td><span class="badge-pill"><%= b.deity || '-' %></span></td>
+                  <td style="max-width:180px; font-size:12px; color:var(--text-light);"><%= b.remarks || '-' %></td>
+                  <td style="text-align:right; white-space:nowrap;">
+                    <% if (b.participant) { %>
+                      <button type="button" class="btn-diwali btn-diwali-secondary" style="padding:4px 8px; font-size:12px;" onclick="openEditParticipantModal(<%= b.participant.id %>)" title="Edit Pair & Bhajans">
+                        ✏️ Edit
+                      </button>
+                      <form action="/admin/diwali/participant/delete/<%= b.participant.id %>" method="POST" style="display:inline; margin:0;" onsubmit="return confirm('Delete participant pair <%= b.participant.lead_name %> & <%= b.participant.partner_name %> and all their bhajans?');">
+                        <button type="submit" class="btn-diwali btn-diwali-secondary" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete Pair">
+                          ❌
+                        </button>
+                      </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: Ladies -->
+  <div id="tab-ladies" class="diwali-tab-content" style="display:none;">
+    <div class="diwali-table-card">
+      <div style="overflow-x:auto;">
+        <table class="diwali-table">
+          <thead>
+            <tr>
+              <th style="width:45px;">Sr.</th>
+              <th>Lead Singer</th>
+              <th>Partner</th>
+              <th style="width:80px;">Gender</th>
+              <th>Bhajan</th>
+              <th>Scale</th>
+              <th>Tabla Shruti</th>
+              <th>Deity</th>
+              <th>Remarks</th>
+              <th style="text-align:right; width:120px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (ladiesBhajans.length === 0) { %>
+              <tr>
+                <td colspan="10" style="text-align:center; padding:30px; color:var(--text-light);">
+                  No Ladies bhajans recorded yet for <%= selectedEvent.name %>. Click "Add Diwali Entry" to add one!
+                </td>
+              </tr>
+            <% } else { %>
+              <% ladiesBhajans.forEach((b, idx) => { %>
+                <tr data-deity="<%= b.deity || '' %>" data-scale="<%= b.scale || '' %>">
+                  <td><%= idx + 1 %></td>
+                  <td><strong><%= b.participant ? b.participant.lead_name : '-' %></strong></td>
+                  <td><strong><%= b.participant ? b.participant.partner_name : '-' %></strong></td>
+                  <td><span class="badge-gender ladies">Ladies</span></td>
+                  <td>
+                    <span style="font-weight:700; color:var(--diwali-maroon);"><%= b.bhajan_title %></span>
+                    <% if (b.master_bhajan_id) { %>
+                      <span class="badge-pill" title="Linked to Master Bhajan Bank">✓ MB</span>
+                    <% } %>
+                  </td>
+                  <td><span class="badge-pill"><%= b.scale || '-' %></span></td>
+                  <td><%= b.tabla || '-' %></td>
+                  <td><span class="badge-pill"><%= b.deity || '-' %></span></td>
+                  <td style="max-width:180px; font-size:12px; color:var(--text-light);"><%= b.remarks || '-' %></td>
+                  <td style="text-align:right; white-space:nowrap;">
+                    <% if (b.participant) { %>
+                      <button type="button" class="btn-diwali btn-diwali-secondary" style="padding:4px 8px; font-size:12px;" onclick="openEditParticipantModal(<%= b.participant.id %>)" title="Edit Pair & Bhajans">
+                        ✏️ Edit
+                      </button>
+                      <form action="/admin/diwali/participant/delete/<%= b.participant.id %>" method="POST" style="display:inline; margin:0;" onsubmit="return confirm('Delete participant pair <%= b.participant.lead_name %> & <%= b.participant.partner_name %> and all their bhajans?');">
+                        <button type="submit" class="btn-diwali btn-diwali-secondary" style="padding:4px 8px; font-size:12px; color:var(--danger);" title="Delete Pair">
+                          ❌
+                        </button>
+                      </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 3: Sequences Overview -->
+  <div id="tab-sequences" class="diwali-tab-content" style="display:none;">
+    <% if (sequences.length === 0) { %>
+      <div class="card" style="text-align:center; padding:40px;">
+        <h3 style="color:var(--diwali-maroon); margin-bottom:10px;">No Sequences Generated Yet</h3>
+        <p style="color:var(--text-light); margin-bottom:20px;">
+          When the number of Diwali sessions is decided, click "Make Sequence" to automatically and fairly distribute all selected bhajans.
+        </p>
+        <button type="button" class="btn-diwali btn-diwali-primary" onclick="diwaliOpenModal('modalMakeSequence')">
+          🎛️ Make Sequence Now
+        </button>
+      </div>
+    <% } else { %>
+      <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; color:var(--diwali-maroon);">
+          <%= sequences.length %> Generated Sequences (<%= selectedEvent.name %>)
+        </h3>
+        <div style="display:flex; gap:10px;">
+          <a href="/admin/diwali/sequence/editor" class="btn-diwali btn-diwali-primary">
+            📝 Open Interactive Sequence Editor
+          </a>
+          <button type="button" class="btn-diwali btn-diwali-secondary" onclick="diwaliOpenModal('modalExportSequence')">
+            📋 Export Sequences
+          </button>
+        </div>
+      </div>
+
+      <div class="sequences-board-grid">
+        <% sequences.forEach(seq => { %>
+          <div class="sequence-column-card">
+            <div class="sequence-col-header">
+              <div class="sequence-title-row">
+                <h3>Sequence <%= seq.sequence_number %></h3>
+                <span class="badge-pill" style="background:var(--diwali-gold-light); color:var(--diwali-amber);">
+                  <%= seq.entries ? seq.entries.length : 0 %> Bhajans
+                </span>
+              </div>
+              <div class="sequence-date-wrap">
+                <span>Date:</span>
+                <strong><%= seq.assigned_date || 'Not assigned yet (Optional)' %></strong>
+              </div>
+            </div>
+
+            <div class="sequence-entries-list">
+              <% (seq.entries || []).forEach(e => { %>
+                <% const pb = e.participantBhajan || {}; const p = pb.participant || {}; %>
+                <div class="sequence-entry-card">
+                  <div class="sequence-entry-top">
+                    <span class="sequence-entry-title"><%= e.sequence_order %>. <%= pb.bhajan_title || '-' %></span>
+                    <span class="badge-gender <%= p.gender === 'Ladies' ? 'ladies' : 'gents' %>" style="font-size:10.5px;">
+                      <%= p.gender || '-' %>
+                    </span>
+                  </div>
+                  <div class="sequence-entry-pair">
+                    Lead: <strong><%= p.lead_name || '-' %></strong> &bull; Partner: <strong><%= p.partner_name || '-' %></strong>
+                  </div>
+                  <div class="sequence-entry-meta">
+                    <% if (pb.scale) { %><span class="badge-pill">Scale: <%= pb.scale %></span><% } %>
+                    <% if (pb.tabla) { %><span class="badge-pill">Tabla Shruti: <%= pb.tabla %></span><% } %>
+                    <% if (pb.deity) { %><span class="badge-pill"><%= pb.deity %></span><% } %>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     MODAL 1: EXPORT YEARLY DATA
+     ============================================================ -->
+<div id="modalExportYearly" class="diwali-modal-overlay" style="display:none;">
+  <div class="diwali-modal-box">
+    <div class="diwali-modal-header">
+      <h3>📤 Export Yearly Diwali Data</h3>
+      <button type="button" class="close-btn" onclick="diwaliCloseModal('modalExportYearly')">&times;</button>
+    </div>
+    <div class="diwali-modal-body">
+      <p style="margin:0; font-size:13.5px; color:var(--text-light);">
+        Export the complete selected bhajan list for <strong><%= selectedEvent.name %></strong>.
+        Works anytime independently of sequence generation.
+      </p>
+
+      <div class="diwali-field-group">
+        <label class="diwali-field-label">Format:</label>
+        <div style="display:flex; gap:16px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="exportFormat" value="excel" checked> Excel (.xlsx)
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="exportFormat" value="pdf"> PDF (Printable)
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="exportFormat" value="both"> Excel + PDF
+          </label>
+        </div>
+      </div>
+
+      <div class="diwali-field-group">
+        <label class="diwali-field-label">Category:</label>
+        <div style="display:flex; gap:16px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="exportCategory" value="Both" checked> Gents + Ladies
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="exportCategory" value="Gents"> Gents Only
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="exportCategory" value="Ladies"> Ladies Only
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="diwali-modal-footer">
+      <button type="button" class="btn-diwali btn-diwali-secondary" onclick="diwaliCloseModal('modalExportYearly')">Cancel</button>
+      <button type="button" class="btn-diwali btn-diwali-primary" onclick="triggerYearlyExport()">📥 Download Export</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL 2: MAKE SEQUENCE
+     ============================================================ -->
+<div id="modalMakeSequence" class="diwali-modal-overlay" style="display:none;">
+  <div class="diwali-modal-box">
+    <div class="diwali-modal-header">
+      <h3>🎛️ Make Diwali Sequences</h3>
+      <button type="button" class="close-btn" onclick="diwaliCloseModal('modalMakeSequence')">&times;</button>
+    </div>
+    <div class="diwali-modal-body">
+      <p style="margin:0; font-size:13.5px; color:var(--text-light);">
+        The generator will distribute all selected bhajans fairly across the requested number of sequences.
+        Dates are optional and can be set later.
+      </p>
+
+      <div class="diwali-field-group">
+        <label class="diwali-field-label">How many sequences / sessions are required? <span class="req-star">*</span></label>
+        <input type="number" id="numSequencesInput" min="2" max="20" value="4" class="diwali-input-text" style="max-width:120px;">
+        <small style="color:var(--text-light); font-size:12px;">Enter 2, 3, 4, 5, 6... (Dynamic number of sessions)</small>
+      </div>
+
+      <div class="diwali-field-group">
+        <label class="diwali-field-label">Categories to Include:</label>
+        <div style="display:flex; gap:20px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="chkCategoryGents" value="Gents" checked> Gents
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="checkbox" id="chkCategoryLadies" value="Ladies" checked> Ladies
+          </label>
+        </div>
+      </div>
+
+      <div style="background:var(--diwali-gold-light); padding:12px 14px; border-radius:8px; font-size:12.5px; color:var(--diwali-amber); line-height:1.4;">
+        ✨ <strong>Fair Distribution Guarantee:</strong><br>
+        &bull; Every selected bhajan appears exactly once.<br>
+        &bull; Multi-bhajans from the same pair are spread across different sessions.<br>
+        &bull; Avoids placing the same pair back-to-back in any sequence.
+      </div>
+    </div>
+    <div class="diwali-modal-footer">
+      <button type="button" class="btn-diwali btn-diwali-secondary" onclick="diwaliCloseModal('modalMakeSequence')">Cancel</button>
+      <button type="button" id="btnConfirmGenerate" class="btn-diwali btn-diwali-maroon" onclick="triggerGenerateSequences()">Generate Sequences</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL 3: FAIRNESS SUMMARY
+     ============================================================ -->
+<div id="modalFairnessSummary" class="diwali-modal-overlay" style="display:none;">
+  <div class="diwali-modal-box" style="max-width:560px;">
+    <div class="diwali-modal-header">
+      <h3>⚖️ Sequence Fairness Summary</h3>
+      <button type="button" class="close-btn" onclick="diwaliCloseModal('modalFairnessSummary'); window.location.reload();">&times;</button>
+    </div>
+    <div class="diwali-modal-body" id="fairnessSummaryContent">
+      <!-- Injected via diwali.js -->
+    </div>
+    <div class="diwali-modal-footer">
+      <button type="button" class="btn-diwali btn-diwali-secondary" onclick="diwaliCloseModal('modalFairnessSummary'); window.location.reload();">Done</button>
+      <a href="/admin/diwali/sequence/editor" class="btn-diwali btn-diwali-primary">Open Sequence Editor</a>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL 4: EXPORT SEQUENCES
+     ============================================================ -->
+<div id="modalExportSequence" class="diwali-modal-overlay" style="display:none;">
+  <div class="diwali-modal-box">
+    <div class="diwali-modal-header">
+      <h3>📋 Export Final Sequences</h3>
+      <button type="button" class="close-btn" onclick="diwaliCloseModal('modalExportSequence')">&times;</button>
+    </div>
+    <div class="diwali-modal-body">
+      <p style="margin:0; font-size:13.5px; color:var(--text-light);">
+        Exports the final edited sequence order.
+      </p>
+
+      <div class="diwali-field-group">
+        <label class="diwali-field-label">Format:</label>
+        <div style="display:flex; gap:16px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="seqExportFormat" value="excel" checked> Excel (.xlsx)
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="seqExportFormat" value="pdf"> PDF (Printable)
+          </label>
+        </div>
+      </div>
+
+      <div class="diwali-field-group">
+        <label class="diwali-field-label">Scope:</label>
+        <div style="display:flex; gap:16px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="seqExportScope" value="all" checked> All Sequences
+          </label>
+        </div>
+      </div>
+
+      <div class="diwali-field-group">
+        <label class="diwali-field-label">Category:</label>
+        <div style="display:flex; gap:16px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="seqExportCategory" value="Both" checked> Gents + Ladies
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="seqExportCategory" value="Gents"> Gents Only
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+            <input type="radio" name="seqExportCategory" value="Ladies"> Ladies Only
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="diwali-modal-footer">
+      <button type="button" class="btn-diwali btn-diwali-secondary" onclick="diwaliCloseModal('modalExportSequence')">Cancel</button>
+      <button type="button" class="btn-diwali btn-diwali-primary" onclick="triggerSequenceExport()">📥 Download Sequence</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL 5: EDIT PARTICIPANT & BHAJANS
+     ============================================================ -->
+<div id="modalEditParticipant" class="diwali-modal-overlay" style="display:none;">
+  <div class="diwali-modal-box" style="max-width:760px; max-height:90vh; display:flex; flex-direction:column;">
+    <div class="diwali-modal-header">
+      <h3>✏️ Edit Participant Pair &amp; Bhajans</h3>
+      <button type="button" class="close-btn" onclick="diwaliCloseModal('modalEditParticipant')">&times;</button>
+    </div>
+    <div class="diwali-modal-body" style="overflow-y:auto; flex:1;">
+      <input type="hidden" id="editParticipantId">
+
+      <div class="diwali-pair-row">
+        <div class="diwali-field-group">
+          <label class="diwali-field-label">Lead Singer Name <span class="req-star">*</span></label>
+          <input type="text" id="editLeadName" class="diwali-input-text" required>
+        </div>
+        <div class="diwali-field-group">
+          <label class="diwali-field-label">Partner Name <span class="req-star">*</span></label>
+          <input type="text" id="editPartnerName" class="diwali-input-text" required>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 2fr; gap:16px; margin-bottom:14px;">
+        <div class="diwali-field-group">
+          <label class="diwali-field-label">Gender <span class="req-star">*</span></label>
+          <select id="editGender" class="diwali-input-text">
+            <option value="Gents">Gents</option>
+            <option value="Ladies">Ladies</option>
+          </select>
+        </div>
+        <div class="diwali-field-group">
+          <label class="diwali-field-label">Remarks</label>
+          <input type="text" id="editRemarks" class="diwali-input-text" placeholder="General remarks...">
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin:16px 0 10px 0;">
+        <h4 style="margin:0; color:var(--diwali-maroon);">Selected Bhajans</h4>
+        <button type="button" class="btn-diwali btn-diwali-secondary" style="font-size:12px; padding:4px 10px;" onclick="addBhajanToEditModal()">➕ Add Bhajan</button>
+      </div>
+      <div id="editBhajansContainer">
+        <!-- Injected via diwali.js -->
+      </div>
+    </div>
+    <div class="diwali-modal-footer">
+      <button type="button" class="btn-diwali btn-diwali-secondary" onclick="diwaliCloseModal('modalEditParticipant')">Cancel</button>
+      <button type="button" class="btn-diwali btn-diwali-primary" onclick="saveParticipantEdits()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     MODAL 6: ADD NEW DIWALI YEAR
+     ============================================================ -->
+<div id="modalAddYear" class="diwali-modal-overlay" style="display:none;">
+  <div class="diwali-modal-box">
+    <div class="diwali-modal-header">
+      <h3>➕ Create New Diwali Event Year</h3>
+      <button type="button" class="close-btn" onclick="diwaliCloseModal('modalAddYear')">&times;</button>
+    </div>
+    <form action="/admin/diwali/event/create" method="POST">
+      <div class="diwali-modal-body">
+        <div class="diwali-field-group">
+          <label class="diwali-field-label">Year (e.g. 2026, 2027) <span class="req-star">*</span></label>
+          <input type="number" name="year" min="2020" max="2050" value="<%= new Date().getFullYear() + 1 %>" required class="diwali-input-text">
+        </div>
+        <div class="diwali-field-group">
+          <label class="diwali-field-label">Event Name</label>
+          <input type="text" name="name" placeholder="Diwali 2026" class="diwali-input-text">
+        </div>
+      </div>
+      <div class="diwali-modal-footer">
+        <button type="button" class="btn-diwali btn-diwali-secondary" onclick="diwaliCloseModal('modalAddYear')">Cancel</button>
+        <button type="submit" class="btn-diwali btn-diwali-primary">Create Event</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/js/diwali.js"></script>

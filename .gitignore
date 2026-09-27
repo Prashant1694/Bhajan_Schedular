@@ -98,3 +98,14 @@ sairhythms/Sai Rhythms.zip
 # ============================================================
 convert.js
 migrate-layouts.js
+
+# ============================================================
+# UPLOADS & LOCAL EXPORTS (Excel, PDF, CSV temporary downloads)
+# ============================================================
+uploads/
+exports/
+*.xlsx
+*.xls
+*.pdf
+*.csv
+playwright-report/

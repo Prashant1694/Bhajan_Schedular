@@ -1,0 +1,301 @@
+<link rel="stylesheet" href="/css/diwali.css">
+
+<div class="container container-xl">
+
+  <div style="margin-bottom: 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <a href="/admin/diwali?year=<%= selectedEvent.year %>" class="btn-diwali btn-diwali-secondary">
+      ⬅️ Back to Diwali Dashboard
+    </a>
+    <span class="badge-pill" style="font-size:13.5px; background:var(--diwali-gold-light); color:var(--diwali-amber); padding:6px 12px;">
+      Target Event: <strong><%= selectedEvent.name %></strong>
+    </span>
+  </div>
+
+  <div class="card" style="margin-bottom:24px; padding:28px;">
+    <h2 style="color:var(--diwali-maroon); margin:0 0 10px 0;">📥 Import Diwali Audition Excel</h2>
+    <p style="color:var(--text-light); font-size:14px; margin-bottom:20px; line-height:1.5;">
+      Upload an Excel file (.xlsx or .xls) from previous years (such as 2025) or standard template.
+      The importer supports legacy sheet formats (Gents &amp; Ladies) with repeated singers.
+      <strong>Note:</strong> Both Lead Singer and Partner names are mandatory in the new application. If the old sheet is missing Partner names, you can provide them in the preview before finalizing.
+    </p>
+
+    <!-- File Upload Form -->
+    <div style="background:var(--bg); border:2px dashed var(--diwali-gold); border-radius:12px; padding:32px; text-align:center;">
+      <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display:none;" onchange="onFileSelected(this)">
+      <div style="font-size:42px; margin-bottom:12px;">📑</div>
+      <h3 style="margin:0 0 8px 0; color:var(--text);" id="uploadPrompt">Drag &amp; Drop Excel file here or click to browse</h3>
+      <p style="margin:0 0 16px 0; color:var(--text-light); font-size:13px;" id="selectedFileName">Supports .xlsx and .xls workbooks</p>
+      <button type="button" class="btn-diwali btn-diwali-primary" onclick="document.getElementById('excelFileInput').click()">
+        Select File
+      </button>
+      <button type="button" id="btnAnalyze" class="btn-diwali btn-diwali-maroon" style="display:none; margin-left:10px;" onclick="uploadAndPreview()">
+        🔍 Analyze &amp; Preview
+      </button>
+    </div>
+  </div>
+
+  <!-- Preview Section (Hidden initially) -->
+  <div id="previewSection" style="display:none;">
+    <!-- Summary Counter Cards -->
+    <div class="diwali-stats-grid" id="previewSummaryCards">
+      <!-- Injected via JS -->
+    </div>
+
+    <!-- Warning / Alert if Missing Partners -->
+    <div id="missingPartnersAlert" style="display:none; margin-bottom:20px; padding:16px 20px; border-radius:10px; background:#fff9db; border:1px solid #ffe066; color:#d9480f; font-size:14px;">
+      ⚠️ <strong>Missing Partner Names Detected:</strong> The uploaded file did not contain a Partner column for some or all rows. Because both Lead and Partner are mandatory in the new database, please fill in the Partner names in the table below before confirming the import.
+    </div>
+
+    <!-- Review Table -->
+    <div class="diwali-table-card" style="margin-bottom:24px;">
+      <div style="padding:16px 20px; background:var(--diwali-gold-light); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:16px; color:var(--diwali-maroon);">
+          Previewing Detected Participants &amp; Bhajans
+        </h3>
+        <span id="previewRecordCount" style="font-size:13px; font-weight:700; color:var(--diwali-amber);"></span>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="diwali-table" id="importPreviewTable">
+          <thead>
+            <tr>
+              <th style="width:40px;">#</th>
+              <th>Lead Singer <span style="color:var(--danger)">*</span></th>
+              <th>Partner Name <span style="color:var(--danger)">*</span></th>
+              <th style="width:80px;">Gender</th>
+              <th>Bhajans to Import</th>
+              <th style="width:80px;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="previewTableBody">
+            <!-- Injected via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Confirm Import Actions -->
+    <div style="display:flex; justify-content:flex-end; gap:12px; margin-bottom:40px;">
+      <button type="button" class="btn-diwali btn-diwali-secondary" onclick="window.location.reload()">
+        Cancel
+      </button>
+      <button type="button" id="btnConfirmImport" class="btn-diwali btn-diwali-primary" style="padding:12px 28px; font-size:16px;" onclick="commitConfirmedImport()">
+        ✅ Confirm Import
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let globalPreviewData = null;
+
+function onFileSelected(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    document.getElementById("selectedFileName").textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    document.getElementById("uploadPrompt").textContent = "File Ready for Analysis";
+    document.getElementById("btnAnalyze").style.display = "inline-flex";
+  }
+}
+
+async function uploadAndPreview() {
+  const input = document.getElementById("excelFileInput");
+  if (!input.files || !input.files[0]) return;
+
+  const btn = document.getElementById("btnAnalyze");
+  btn.disabled = true;
+  btn.textContent = "Analyzing Excel...";
+
+  const formData = new FormData();
+  formData.append("file", input.files[0]);
+
+  try {
+    const res = await fetch("/admin/diwali/import/preview", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+    if (!data.success) {
+      alert("Error: " + data.error);
+      btn.disabled = false;
+      btn.textContent = "🔍 Analyze & Preview";
+      return;
+    }
+
+    globalPreviewData = data;
+    renderPreview(data);
+  } catch (err) {
+    alert("Network or parse error: " + err.message);
+    btn.disabled = false;
+    btn.textContent = "🔍 Analyze & Preview";
+  }
+}
+
+function renderPreview(data) {
+  const s = data.summary;
+  document.getElementById("previewSection").style.display = "block";
+
+  // Render Summary Cards
+  const cardsContainer = document.getElementById("previewSummaryCards");
+  cardsContainer.innerHTML = `
+    <div class="diwali-stat-card">
+      <div class="diwali-stat-label">Total Rows</div>
+      <div class="diwali-stat-val">${s.totalRows}</div>
+      <div class="diwali-stat-sub">Scanned from sheets</div>
+    </div>
+    <div class="diwali-stat-card">
+      <div class="diwali-stat-label">Participants Detected</div>
+      <div class="diwali-stat-val">${s.participantsDetected}</div>
+      <div class="diwali-stat-sub">Distinct singer pairs</div>
+    </div>
+    <div class="diwali-stat-card">
+      <div class="diwali-stat-label">Bhajans Detected</div>
+      <div class="diwali-stat-val">${s.bhajansDetected}</div>
+      <div class="diwali-stat-sub">Across all pairs</div>
+    </div>
+    <div class="diwali-stat-card ${s.missingPartnerCount > 0 ? 'ladies' : ''}">
+      <div class="diwali-stat-label">Missing Partners</div>
+      <div class="diwali-stat-val" style="${s.missingPartnerCount > 0 ? 'color:var(--danger);' : ''}">${s.missingPartnerCount}</div>
+      <div class="diwali-stat-sub">${s.missingPartnerCount > 0 ? 'Requires Partner Name' : 'None missing'}</div>
+    </div>
+    <div class="diwali-stat-card ${s.duplicateBhajansCount > 0 ? 'sequences' : ''}">
+      <div class="diwali-stat-label">Duplicates</div>
+      <div class="diwali-stat-val">${s.duplicateBhajansCount}</div>
+      <div class="diwali-stat-sub">Duplicate titles in sheet</div>
+    </div>
+  `;
+
+  if (s.missingPartnerCount > 0) {
+    document.getElementById("missingPartnersAlert").style.display = "block";
+  } else {
+    document.getElementById("missingPartnersAlert").style.display = "none";
+  }
+
+  // Render Table
+  const tbody = document.getElementById("previewTableBody");
+  tbody.innerHTML = "";
+
+  data.participants.forEach((p, idx) => {
+    const tr = document.createElement("tr");
+
+    let bhajansHtml = `<ul style="margin:0; padding-left:18px; font-size:12.5px;">`;
+    p.bhajans.forEach(b => {
+      const matchBadge = b.master_bhajan_id ? `<span class="badge-pill" style="color:var(--success);">✓ MB</span>` : '';
+      const scaleStr = b.scale ? ` (${b.scale})` : '';
+      bhajansHtml += `<li><strong>${escapeHtml(b.bhajan_title)}</strong>${scaleStr} ${b.deity ? `&bull; ${b.deity}` : ''} ${matchBadge}</li>`;
+    });
+    bhajansHtml += `</ul>`;
+
+    const isPartnerMissing = !p.partner_name || p.partner_name.trim().length === 0;
+
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>
+        <input type="text" class="diwali-input-text preview-lead-input" value="${escapeHtml(p.lead_name)}" data-idx="${idx}" style="height:36px; font-size:13.5px;" oninput="onLeadChange(${idx}, this.value)">
+      </td>
+      <td>
+        <input type="text" class="diwali-input-text preview-partner-input" value="${escapeHtml(p.partner_name || '')}" placeholder="Required Partner Name..." data-idx="${idx}" style="height:36px; font-size:13.5px; ${isPartnerMissing ? 'border-color:var(--danger); background:#fff5f5;' : ''}" oninput="onPartnerChange(${idx}, this.value)">
+      </td>
+      <td>
+        <span class="badge-gender ${p.gender === 'Ladies' ? 'ladies' : 'gents'}">${p.gender}</span>
+      </td>
+      <td>${bhajansHtml}</td>
+      <td id="status-cell-${idx}">
+        ${isPartnerMissing ? '<span style="color:var(--danger); font-weight:700; font-size:12px;">⚠️ Missing</span>' : '<span style="color:var(--success); font-weight:700; font-size:12px;">✅ Ready</span>'}
+      </td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("previewRecordCount").textContent = `${data.participants.length} pairs ready for review`;
+  window.scrollTo({ top: document.getElementById("previewSection").offsetTop - 40, behavior: "smooth" });
+}
+
+function onLeadChange(idx, val) {
+  if (globalPreviewData && globalPreviewData.participants[idx]) {
+    globalPreviewData.participants[idx].lead_name = val.trim();
+    checkRowStatus(idx);
+  }
+}
+
+function onPartnerChange(idx, val) {
+  if (globalPreviewData && globalPreviewData.participants[idx]) {
+    globalPreviewData.participants[idx].partner_name = val.trim();
+    checkRowStatus(idx);
+  }
+}
+
+function checkRowStatus(idx) {
+  const p = globalPreviewData.participants[idx];
+  const cell = document.getElementById(`status-cell-${idx}`);
+  const input = document.querySelector(`.preview-partner-input[data-idx="${idx}"]`);
+
+  if (!p.lead_name || !p.partner_name) {
+    if (cell) cell.innerHTML = '<span style="color:var(--danger); font-weight:700; font-size:12px;">⚠️ Missing</span>';
+    if (input) {
+      input.style.borderColor = "var(--danger)";
+      input.style.background = "#fff5f5";
+    }
+  } else {
+    if (cell) cell.innerHTML = '<span style="color:var(--success); font-weight:700; font-size:12px;">✅ Ready</span>';
+    if (input) {
+      input.style.borderColor = "var(--diwali-border)";
+      input.style.background = "var(--bg)";
+    }
+  }
+}
+
+async function commitConfirmedImport() {
+  if (!globalPreviewData || !globalPreviewData.participants) return;
+
+  // Validate that all partner names are entered
+  const missing = globalPreviewData.participants.filter(p => !p.lead_name || !p.partner_name || !p.partner_name.trim());
+  if (missing.length > 0) {
+    alert(`Cannot import yet: ${missing.length} participant record(s) are missing Partner Name. Please enter Partner names for all highlighted rows before confirming.`);
+    return;
+  }
+
+  const btn = document.getElementById("btnConfirmImport");
+  btn.disabled = true;
+  btn.textContent = "Importing Records...";
+
+  try {
+    const res = await fetch("/admin/diwali/import/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        year: "<%= selectedEvent.year %>",
+        participants: globalPreviewData.participants
+      })
+    });
+
+    const data = await res.json();
+    if (!data.success) {
+      alert("Error committing import: " + data.error);
+      btn.disabled = false;
+      btn.textContent = "✅ Confirm Import";
+      return;
+    }
+
+    alert(`Successfully imported ${data.createdParticipantsCount} participant pairs and ${data.createdBhajansCount} bhajans!`);
+    window.location.href = "/admin/diwali?year=<%= selectedEvent.year %>&success=Import+completed+successfully";
+  } catch (err) {
+    alert("Network error: " + err.message);
+    btn.disabled = false;
+    btn.textContent = "✅ Confirm Import";
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+</script>

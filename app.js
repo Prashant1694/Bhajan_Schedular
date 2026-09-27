@@ -107,6 +107,7 @@ const singerRoutes = require("./routes/singer");
 const adminUserRoutes = require("./routes/adminUsers");
 const notificationRoutes = require("./routes/notifications");
 const bulletinRoutes = require("./routes/bulletin");
+const diwaliRoutes = require("./routes/diwali");
 
 app.use("/", homeRoutes);
 app.use("/", plannerRoutes);
@@ -119,6 +120,7 @@ app.use("/", singerRoutes);
 app.use("/", adminUserRoutes);
 app.use("/", notificationRoutes);
 app.use("/", bulletinRoutes);
+app.use("/", diwaliRoutes);
 
 // Do not expose stack traces or database details to visitors.
 app.use((error, req, res, next) => {

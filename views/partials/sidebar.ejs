@@ -70,6 +70,13 @@
             Master Bank
         </a>
 
+        <% if (currentAdmin && currentAdmin.role === "super_admin") { %>
+        <a href="/admin/diwali" class="<%= page === 'diwali' ? 'active' : '' %>">
+            <span>🪔</span>
+            Diwali Bhajans
+        </a>
+        <% } %>
+
         <a href="/admin/missing-bhajans" class="<%= page === 'missing-bhajans' ? 'active' : '' %>">
             <span class="nav-icon-wrap">
                 🚨

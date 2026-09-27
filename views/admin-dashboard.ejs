@@ -51,6 +51,16 @@
             📈 Analytics
         </a>
 
+        <% if (currentAdmin && currentAdmin.role === "super_admin") { %>
+        <a
+            href="/admin/diwali"
+            class="button secondary"
+            style="background:#fff9db;color:#d9480f;border-color:#ffe066;"
+        >
+            🪔 Diwali Bhajans
+        </a>
+        <% } %>
+
     </nav>
 
 
