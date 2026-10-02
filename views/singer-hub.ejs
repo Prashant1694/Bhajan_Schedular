@@ -1,0 +1,801 @@
+<div class="container singer-hub-container" style="max-width: 960px; margin: 30px auto; padding: 24px 20px 32px 20px;">
+
+  <!-- Navigation Bar -->
+  <div class="singer-hub-top-nav" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; padding: 4px 0 2px 0; flex-wrap: wrap; gap: 12px;">
+    <a href="/" style="display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); text-decoration: none; font-size: 14px; font-weight: 600; padding: 4px 0;">
+      <span>←</span> Back to Home
+    </a>
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <button type="button" onclick="openChangePinModal()" class="button secondary" style="padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+        🔑 Change PIN
+      </button>
+      <a href="/singer/logout" class="button secondary" style="padding: 8px 14px; font-size: 13px; color: #dc2626; border-color: #fca5a5; display: inline-flex; align-items: center; gap: 6px;">
+        🚪 Logout
+      </a>
+    </div>
+  </div>
+
+  <!-- Profile Hero Header -->
+  <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 28px 26px; border-radius: 20px; margin-bottom: 24px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); position: relative; overflow: hidden;">
+    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+      
+      <!-- Avatar -->
+      <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #ea580c 0%, #f59e0b 100%); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; color: #fff; box-shadow: 0 4px 10px rgba(234,88,12,0.4);">
+        <%= singer.name.charAt(0).toUpperCase() %>
+      </div>
+
+      <!-- Info -->
+      <div style="flex: 1; min-width: 220px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <h1 style="font-size: 24px; font-weight: 800; margin: 0; color: #f8fafc;"><%= singer.name %></h1>
+          <% if (singer.gender) { %>
+            <span style="background: rgba(255,255,255,0.15); font-size: 12px; padding: 2px 10px; border-radius: 999px; font-weight: 600;">
+              <%= singer.gender %>
+            </span>
+          <% } %>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; font-size: 13px; color: #94a3b8;">
+          <span style="display: flex; align-items: center; gap: 5px;">
+            <span>🛡️</span> 4-Digit PIN Protected
+          </span>
+          <span>•</span>
+          <span style="display: flex; align-items: center; gap: 5px; color: #38bdf8;">
+            <span>⏳</span> <strong><%= daysRemaining %> days</strong> active on this device
+          </span>
+        </div>
+        <div style="margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); padding: 4px 12px; border-radius: 999px; font-size: 12.5px;">
+          <span>🎵 Default Singing Scale:</span>
+          <strong id="displayPreferredScale" style="color: #fbbf24;"><%= singer.preferred_scale || 'Not configured' %></strong>
+          <button type="button" onclick="openPreferredScaleModal()" style="background: none; border: none; color: #93c5fd; cursor: pointer; text-decoration: underline; font-size: 12px; padding: 0 4px; font-weight: 600;">Edit</button>
+        </div>
+      </div>
+
+      <!-- Quick Action -->
+      <div>
+        <a href="/submit-form" class="button primary" style="background: #ea580c; border-color: #ea580c; text-decoration: none; padding: 10px 18px; font-size: 13.5px; font-weight: 700;">
+          🎤 Submit for Thursday
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Key Metrics Row -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 26px;">
+    
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow);">
+      <div style="font-size: 12px; color: var(--ink-soft); font-weight: 700; text-transform: uppercase;">Upcoming Slots</div>
+      <div style="font-size: 26px; font-weight: 800; color: #ea580c; margin-top: 4px;">
+        <%= upcomingSubmissions.length %>
+      </div>
+      <div style="font-size: 12px; color: var(--ink-soft); margin-top: 2px;">Scheduled in next session</div>
+    </div>
+
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow);">
+      <div style="font-size: 12px; color: var(--ink-soft); font-weight: 700; text-transform: uppercase;">My Songbook</div>
+      <div style="font-size: 26px; font-weight: 800; color: #8b5cf6; margin-top: 4px;">
+        <%= songbook.length %>
+      </div>
+      <div style="font-size: 12px; color: var(--ink-soft); margin-top: 2px;">Prepared repertoire</div>
+    </div>
+
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow);">
+      <div style="font-size: 12px; color: var(--ink-soft); font-weight: 700; text-transform: uppercase;">Past Bhajans Sung</div>
+      <div style="font-size: 26px; font-weight: 800; color: #16a34a; margin-top: 4px;">
+        <%= pastHistory.length %>
+      </div>
+      <div style="font-size: 12px; color: var(--ink-soft); margin-top: 2px;">In Samiti records</div>
+    </div>
+
+    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow);">
+      <div style="font-size: 12px; color: var(--ink-soft); font-weight: 700; text-transform: uppercase;">Correction Tickets</div>
+      <div style="font-size: 26px; font-weight: 800; color: #0284c7; margin-top: 4px;">
+        <%= myReportsCount %>
+      </div>
+      <a href="/my-reports" style="font-size: 12px; color: #0284c7; text-decoration: none; margin-top: 2px; display: inline-block; font-weight: 600;">
+        Track reports →
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Interactive Hub Tabs -->
+  <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--border); margin-bottom: 24px; overflow-x: auto; padding-bottom: 2px;">
+    <button type="button" class="hub-tab-btn active" onclick="switchHubTab('upcoming', this)">
+      📅 Upcoming Schedule (<%= upcomingSubmissions.length %>)
+    </button>
+    <button type="button" class="hub-tab-btn" onclick="switchHubTab('songbook', this)">
+      📖 My Songbook & Scales (<%= songbook.length %>)
+    </button>
+    <button type="button" class="hub-tab-btn" onclick="switchHubTab('history', this)">
+      📜 Singing History (<%= pastHistory.length %>)
+    </button>
+    <button type="button" class="hub-tab-btn" onclick="switchHubTab('reports', this)">
+      🎫 My Reports & Tickets (<%= myReportsCount %>)
+    </button>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAB 1: UPCOMING SCHEDULE                   -->
+  <!-- ========================================== -->
+  <div id="tab-upcoming" class="hub-tab-pane" style="display: block;">
+    <% if (upcomingSubmissions && upcomingSubmissions.length > 0) { %>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <% upcomingSubmissions.forEach(function(sub) { %>
+          <div style="background: var(--surface); border: 1px solid var(--border); border-left: 5px solid #ea580c; border-radius: 14px; padding: 20px; box-shadow: var(--shadow);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 6px;">
+                  📅 <%= sub.session_date %>
+                </span>
+                <% if (sub.list_order) { %>
+                  <span style="background: #e0e7ff; color: #3730a3; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px;">
+                    Slot #<%= sub.list_order %>
+                  </span>
+                <% } %>
+                <span style="background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 6px;">
+                  🕉️ <%= sub.deity %>
+                </span>
+              </div>
+              <span style="font-size: 12px; font-weight: 700; color: <%= sub.singer_name.toLowerCase() === singer.name.toLowerCase() ? '#16a34a' : '#0284c7' %>;">
+                <%= sub.singer_name.toLowerCase() === singer.name.toLowerCase() ? '🎤 Lead Singer' : '🤝 Partner Singer' %>
+              </span>
+            </div>
+
+            <h3 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0 0 10px 0;">
+              <%= sub.title %>
+            </h3>
+
+            <div style="display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--ink-soft); margin-bottom: 14px;">
+              <span><strong>Tempo:</strong> <%= sub.speed || 'Medium' %></span>
+              <span>•</span>
+              <span><strong>Scale:</strong> <%= sub.scale || 'Standard' %></span>
+              <% if (sub.partner_name) { %>
+                <span>•</span>
+                <span><strong>Partner:</strong> <%= sub.partner_name %></span>
+              <% } %>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border); padding-top: 12px;">
+              <a href="/plan-view?session_date=<%= sub.session_date %>" class="button secondary" style="padding: 6px 12px; font-size: 12.5px; text-decoration: none;">
+                📊 View Full Session Plan
+              </a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div style="background: var(--surface); border: 1px dashed var(--border); border-radius: 16px; padding: 40px 20px; text-align: center;">
+        <div style="font-size: 38px; margin-bottom: 10px;">📋</div>
+        <h3 style="font-size: 17px; font-weight: 700; color: var(--ink); margin: 0 0 6px 0;">No Upcoming Bhajans Scheduled</h3>
+        <p style="font-size: 13.5px; color: var(--ink-soft); max-width: 440px; margin: 0 auto 18px auto; line-height: 1.5;">
+          You haven't submitted a bhajan for the upcoming session yet. Submissions open every Thursday after 8:00 PM.
+        </p>
+        <a href="/submit-form" class="button primary" style="padding: 10px 20px; font-size: 13.5px; font-weight: 700; background: #ea580c; border-color: #ea580c; text-decoration: none;">
+          🎤 Submit Bhajan for Thursday
+        </a>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAB 2: MY SONGBOOK & REPERTOIRE           -->
+  <!-- ========================================== -->
+  <div id="tab-songbook" class="hub-tab-pane" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h3 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0;">📖 My Repertoire</h3>
+        <p style="font-size: 13px; color: var(--ink-soft); margin: 2px 0 0 0;">
+          Bhajans you have prepared, along with your personal singing pitch and notes.
+        </p>
+      </div>
+      <a href="/master-bank" class="button secondary" style="padding: 8px 14px; font-size: 13px; text-decoration: none;">
+        ➕ Browse &amp; Add Bhajans
+      </a>
+    </div>
+
+    <% if (songbook && songbook.length > 0) { %>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
+        <% songbook.forEach(function(item) { %>
+          <% const b = item.masterBhajan; %>
+          <% if (!b) return; %>
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="background: #f1f5f9; color: #475569; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px;">
+                  🕉️ <%= b.deity %>
+                </span>
+                <button type="button" class="sb-remove-btn" data-id="<%= b.id %>" data-title="<%= b.title %>" title="Remove from Songbook" style="background: none; border: none; font-size: 16px; cursor: pointer; color: #94a3b8;">
+                  🗑️
+                </button>
+              </div>
+
+              <h4 style="font-size: 16px; font-weight: 700; color: var(--ink); margin: 0 0 8px 0; line-height: 1.4;">
+                <a href="/bhajan/<%= b.id %>" style="color: inherit; text-decoration: none;">
+                  <%= b.title %> ↗
+                </a>
+              </h4>
+
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                  <span style="color: #64748b;">My Singing Pitch:</span>
+                  <strong style="color: #8b5cf6;"><%= item.custom_scale || b.shruti || 'Not specified' %></strong>
+                </div>
+                <% if (item.notes) { %>
+                  <div style="color: #475569; font-style: italic; font-size: 12px; margin-top: 4px; border-top: 1px dashed #cbd5e1; padding-top: 4px;">
+                    "<%= item.notes %>"
+                  </div>
+                <% } %>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 8px;">
+              <a href="/bhajan/<%= b.id %>" class="button secondary" style="padding: 6px 12px; font-size: 12px; text-decoration: none;">
+                📜 Practice Lyrics
+              </a>
+              <button type="button" class="button secondary sb-edit-btn" data-id="<%= b.id %>" data-title="<%= b.title %>" data-scale="<%= item.custom_scale || b.shruti || '' %>" data-notes="<%= item.notes || '' %>" style="padding: 6px 10px; font-size: 12px;">
+                ✏️ Edit Pitch
+              </button>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div style="background: var(--surface); border: 1px dashed var(--border); border-radius: 16px; padding: 40px 20px; text-align: center;">
+        <div style="font-size: 38px; margin-bottom: 10px;">📖</div>
+        <h3 style="font-size: 17px; font-weight: 700; color: var(--ink); margin: 0 0 6px 0;">Your Songbook is Empty</h3>
+        <p style="font-size: 13.5px; color: var(--ink-soft); max-width: 440px; margin: 0 auto 18px auto; line-height: 1.5;">
+          Build your personal repertoire! When viewing any bhajan in the Master Bank, click <strong>"⭐ Add to My Songbook"</strong> to bookmark it with your personal vocal pitch.
+        </p>
+        <a href="/master-bank" class="button primary" style="padding: 10px 20px; font-size: 13.5px; font-weight: 700; background: #8b5cf6; border-color: #8b5cf6; text-decoration: none;">
+          🔍 Explore Master Bhajan Bank
+        </a>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAB 3: SINGING HISTORY                     -->
+  <!-- ========================================== -->
+  <div id="tab-history" class="hub-tab-pane" style="display: none;">
+    <div style="margin-bottom: 18px;">
+      <h3 style="font-size: 18px; font-weight: 800; color: var(--ink); margin: 0 0 6px 0;">📜 My Samiti Bhajan History</h3>
+      <p style="font-size: 13px; color: var(--ink-soft); margin: 0 0 14px 0;">
+        Every bhajan you have sung in Gandhinagar sessions, with deity breakdown to help you maintain variety.
+      </p>
+
+      <!-- Deity Summary Badges -->
+      <% const deityKeys = Object.keys(deitySummary); %>
+      <% if (deityKeys.length > 0) { %>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+          <% deityKeys.forEach(function(d) { %>
+            <span style="background: var(--surface); border: 1px solid var(--border); font-size: 12px; font-weight: 700; color: var(--ink); padding: 4px 10px; border-radius: 8px;">
+              <%= d %>: <span style="color: #ea580c;"><%= deitySummary[d] %></span>
+            </span>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+
+    <% if (pastHistory && pastHistory.length > 0) { %>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <% pastHistory.forEach(function(item) { %>
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span style="font-size: 12px; font-weight: 700; color: var(--ink-soft); font-family: monospace;">
+                  <%= item.session_date %>
+                </span>
+                <span style="background: #f1f5f9; color: #475569; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 6px;">
+                  <%= item.deity %>
+                </span>
+                <span style="font-size: 11px; font-weight: 700; color: <%= item.singer_name.toLowerCase() === singer.name.toLowerCase() ? '#16a34a' : '#0284c7' %>;">
+                  <%= item.singer_name.toLowerCase() === singer.name.toLowerCase() ? '🎤 Lead' : '🤝 Partner' %>
+                </span>
+              </div>
+              <div style="font-size: 15px; font-weight: 700; color: var(--ink);">
+                <%= item.title %>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--ink-soft);">
+              <span>Pitch: <strong><%= item.scale || '-' %></strong></span>
+              <a href="/database?search=<%= encodeURIComponent(item.title) %>" class="button secondary" style="padding: 5px 10px; font-size: 12px; text-decoration: none;">
+                Session Details
+              </a>
+            </div>
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div style="background: var(--surface); border: 1px dashed var(--border); border-radius: 16px; padding: 36px 20px; text-align: center;">
+        <div style="font-size: 36px; margin-bottom: 10px;">📜</div>
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--ink); margin: 0 0 6px 0;">No Past Sessions Recorded</h3>
+        <p style="font-size: 13.5px; color: var(--ink-soft); margin: 0;">
+          Past bhajans sung under "<%= singer.name %>" will automatically show up here after each session!
+        </p>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- TAB 4: MY REPORTS & TICKETS               -->
+  <!-- ========================================== -->
+  <div id="tab-reports" class="hub-tab-pane" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+      <div>
+        <h3 style="font-size: 17px; font-weight: 800; color: var(--ink); margin: 0 0 4px 0;">Correction Tickets &amp; Feedback</h3>
+        <p style="font-size: 13px; color: var(--ink-soft); margin: 0;">Track bhajan issues reported by you and responses from coordinators.</p>
+      </div>
+      <a href="/master-bank" class="button secondary" style="font-size: 12.5px; padding: 6px 12px; text-decoration: none;">
+        🔍 Browse &amp; Report Bhajan
+      </a>
+    </div>
+
+    <% if (myReports && myReports.length > 0) { %>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <% myReports.forEach(function(r) { %>
+          <%
+            let statusBg = '#fef3c7'; let statusColor = '#92400e'; let statusLabel = '🟡 Pending Review';
+            if (r.status === 'under_review') {
+              statusBg = '#e0f2fe'; statusColor = '#0369a1'; statusLabel = '🔵 Under Review';
+            } else if (r.status === 'resolved') {
+              statusBg = '#dcfce7'; statusColor = '#15803d'; statusLabel = '🟢 Resolved';
+            } else if (r.status === 'closed') {
+              statusBg = '#f1f5f9'; statusColor = '#475569'; statusLabel = '⚪ Closed';
+            }
+
+            const catMap = {
+              lyrics: '📝 Lyrics', scale: '🎵 Scale', raga: '🎼 Raga',
+              deity: '🕉️ Deity', tempo: '⏱️ Tempo', sheet: '📄 Sheet',
+              spelling: '✏️ Typo', other: '❓ Other'
+            };
+          %>
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow);">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+              <div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px;">
+                  <span style="background: #1e293b; color: #f8fafc; font-family: monospace; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; letter-spacing: 0.5px;">
+                    <%= r.ticket_code %>
+                  </span>
+                  <span style="background: <%= statusBg %>; color: <%= statusColor %>; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px;">
+                    <%= statusLabel %>
+                  </span>
+                  <span style="font-size: 12px; color: var(--ink-soft);">
+                    <%= new Date(r.created_at).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" }) %>
+                  </span>
+                </div>
+
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--ink); margin: 0 0 6px 0;">
+                  <% if (r.master_id) { %>
+                    <a href="/bhajan/<%= r.master_id %>" style="color: inherit; text-decoration: none;">
+                      <%= r.bhajan_title %> ↗
+                    </a>
+                  <% } else { %>
+                    <%= r.bhajan_title %>
+                  <% } %>
+                </h4>
+              </div>
+
+              <% if (r.master_id) { %>
+                <a href="/bhajan/<%= r.master_id %>" class="button secondary" style="padding: 5px 12px; font-size: 12px; text-decoration: none;">
+                  View Bhajan
+                </a>
+              <% } %>
+            </div>
+
+            <!-- Categories tags -->
+            <% if (r.categories && r.categories.length > 0) { %>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
+                <% r.categories.forEach(function(cat) { %>
+                  <span style="background: var(--bg); border: 1px solid var(--border); font-size: 11.5px; padding: 2px 8px; border-radius: 6px; color: var(--ink-soft); font-weight: 600;">
+                    <%= catMap[cat] || cat %>
+                  </span>
+                <% }); %>
+              </div>
+            <% } %>
+
+            <!-- Issue Description -->
+            <div style="background: var(--bg); border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--ink); margin-bottom: 8px; line-height: 1.45;">
+              <strong>Reported Issue:</strong> <%= r.description %>
+              <% if (r.suggested_correction) { %>
+                <div style="margin-top: 6px; color: #16a34a; font-weight: 600;">
+                  💡 <em>Suggested Correction:</em> <%= r.suggested_correction %>
+                </div>
+              <% } %>
+            </div>
+
+            <!-- Admin Response Callout -->
+            <% if (r.admin_response) { %>
+              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 8px; padding: 10px 14px; margin-top: 10px; font-size: 13px;">
+                <div style="font-weight: 800; color: #166534; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                  <span>💬 Response from Coordinator <%= r.reviewed_by ? `(${r.reviewed_by})` : '' %></span>
+                  <% if (r.reviewed_at) { %>
+                    <span style="font-size: 11.5px; font-weight: normal; color: #15803d;">
+                      <%= new Date(r.reviewed_at).toLocaleDateString("en-IN", { month: "short", day: "numeric" }) %>
+                    </span>
+                  <% } %>
+                </div>
+                <div style="color: #14532d; line-height: 1.45;"><%= r.admin_response %></div>
+              </div>
+            <% } else { %>
+              <div style="font-size: 12px; color: var(--ink-soft); font-style: italic; margin-top: 6px;">
+                ⏳ Under queue for coordinator verification.
+              </div>
+            <% } %>
+
+          </div>
+        <% }); %>
+      </div>
+    <% } else { %>
+      <div style="background: var(--surface); border: 1px dashed var(--border); border-radius: 16px; padding: 36px 20px; text-align: center;">
+        <div style="font-size: 36px; margin-bottom: 10px;">🎫</div>
+        <h3 style="font-size: 16px; font-weight: 700; color: var(--ink); margin: 0 0 6px 0;">No Reports Submitted Yet</h3>
+        <p style="font-size: 13.5px; color: var(--ink-soft); margin: 0 0 16px 0;">
+          Notice incorrect lyrics, shruti, or sheet notation? Use the "Report" button on any bhajan page to notify coordinators.
+        </p>
+        <a href="/master-bank" class="button primary" style="text-decoration: none; padding: 8px 18px; font-size: 13px;">
+          Explore Master Bhajan Bank
+        </a>
+      </div>
+    <% } %>
+  </div>
+
+</div>
+
+<!-- Edit Songbook Details Modal -->
+<div id="editSongbookModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--surface); border-radius: 18px; max-width: 440px; width: 100%; padding: 26px; box-shadow: var(--shadow);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--ink);">✏️ Personal Pitch &amp; Notes</h3>
+      <button type="button" onclick="closeEditSongbookModal()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: var(--ink-soft);">&times;</button>
+    </div>
+    
+    <div id="modalBhajanTitle" style="font-size: 14px; font-weight: 700; color: #ea580c; margin-bottom: 16px;"></div>
+
+    <form onsubmit="handleSongbookUpdateSubmit(event)">
+      <input type="hidden" id="modalMasterId">
+      
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--ink);">My Preferred Scale / Pitch</label>
+        <input type="text" id="modalCustomScale" placeholder="e.g. 4.5 Safed, G#, 5 Kaali" style="width: 100%; padding: 9px 12px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px;">
+        <small style="color: var(--ink-soft); font-size: 11.5px; margin-top: 3px; display: block;">Your custom harmonium scale for this bhajan.</small>
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--ink);">Personal Practice Notes (Optional)</label>
+        <textarea id="modalNotes" rows="3" placeholder="e.g. Lead with slow alaap, speed up in 2nd tempo..." style="width: 100%; padding: 9px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 8px; resize: vertical;"></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" onclick="closeEditSongbookModal()" class="button secondary" style="padding: 8px 14px;">Cancel</button>
+        <button type="submit" id="saveSongbookBtn" class="button primary" style="padding: 8px 18px; background: #8b5cf6; border-color: #8b5cf6;">Save Details</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Change PIN Modal -->
+<div id="changePinModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--surface); border-radius: 18px; max-width: 400px; width: 100%; padding: 26px; box-shadow: var(--shadow);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--ink);">🔑 Change 4-Digit PIN</h3>
+      <button type="button" onclick="closeChangePinModal()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: var(--ink-soft);">&times;</button>
+    </div>
+    
+    <div id="pinChangeAlert" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 14px;"></div>
+
+    <form onsubmit="handleChangePinSubmit(event)">
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--ink);">Current 4-Digit PIN</label>
+        <input type="password" id="currentPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required style="width: 100%; padding: 10px; font-size: 18px; text-align: center; font-family: monospace; letter-spacing: 6px; border: 1px solid var(--border); border-radius: 8px;">
+      </div>
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--ink);">New 4-Digit PIN</label>
+        <input type="password" id="newPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required style="width: 100%; padding: 10px; font-size: 18px; text-align: center; font-family: monospace; letter-spacing: 6px; border: 1px solid var(--border); border-radius: 8px;">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" onclick="closeChangePinModal()" class="button secondary" style="padding: 8px 14px;">Cancel</button>
+        <button type="submit" id="changePinBtn" class="button primary" style="padding: 8px 18px; background: #ea580c; border-color: #ea580c;">Update PIN</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Preferred Scale Modal -->
+<div id="preferredScaleModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--surface); border-radius: 18px; max-width: 420px; width: 100%; padding: 26px; box-shadow: var(--shadow);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: var(--ink);">🎵 Default Vocal Scale / Pitch</h3>
+      <button type="button" onclick="closePreferredScaleModal()" style="background: none; border: none; font-size: 22px; cursor: pointer; color: var(--ink-soft);">&times;</button>
+    </div>
+
+    <p style="font-size: 13px; color: var(--ink-soft); margin-bottom: 14px; line-height: 1.45;">
+      Set your default harmonium vocal scale. When picking or submitting bhajans, this pitch will be pre-filled automatically.
+    </p>
+    
+    <div id="preferredScaleAlert" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 14px;"></div>
+
+    <form onsubmit="handlePreferredScaleSubmit(event)">
+      <div style="margin-bottom: 12px;">
+        <label style="display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--ink);">Your Scale</label>
+        <input type="text" id="inputPreferredScale" value="<%= singer.preferred_scale || '' %>" placeholder="e.g. 1.5P, 4.5 Safed, C#, 5 Kaali" style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px;">
+      </div>
+
+      <div style="margin-bottom: 18px;">
+        <div style="font-size: 11.5px; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; text-transform: uppercase;">Quick Suggestions:</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <% ['1.5P', '2P', '2.5P', '4P', '4.5P', '5P', '5.5P', '1 Kaali', '4 Kaali', '5 Kaali'].forEach(function(sc) { %>
+            <button type="button" onclick="document.getElementById('inputPreferredScale').value='<%= sc %>'" style="background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; font-size: 12px; cursor: pointer; color: var(--ink);">
+              <%= sc %>
+            </button>
+          <% }); %>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button type="button" onclick="closePreferredScaleModal()" class="button secondary" style="padding: 8px 14px;">Cancel</button>
+        <button type="submit" id="savePreferredScaleBtn" class="button primary" style="padding: 8px 18px; background: #8b5cf6; border-color: #8b5cf6;">Save Default Pitch</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Welcome Onboarding Modal -->
+<% if (showWelcome) { %>
+<div id="welcomeHubModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px);">
+  <div style="background: var(--surface); border-radius: 20px; max-width: 500px; width: 100%; padding: 32px 28px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; position: relative; overflow: hidden;">
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #ea580c, #f59e0b);"></div>
+    
+    <div style="font-size: 48px; margin-bottom: 12px;">🎉</div>
+    <h2 style="font-size: 22px; font-weight: 800; color: var(--ink); margin: 0 0 8px 0;">Welcome to Your Singer Hub!</h2>
+    <p style="font-size: 14px; color: var(--ink-soft); line-height: 1.5; margin: 0 auto 20px auto; max-width: 420px;">
+      Your devotee account for <strong><%= singer.name %></strong> is now active and protected with your 4-digit PIN.
+    </p>
+
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; text-align: left; margin-bottom: 24px;">
+      <div style="font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">✨ What you can do now:</div>
+      <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #475569; line-height: 1.6;">
+        <li>🏠 <strong>Home Card:</strong> A dedicated <em>My Hub</em> card will now appear on your homepage.</li>
+        <li>📖 <strong>Songbook:</strong> Bookmark prepared bhajans with your preferred vocal scales.</li>
+        <li>🎤 <strong>1-Click Submissions:</strong> Your name is verified and locked on `/submit-form`.</li>
+        <li>🛡️ <strong>90-Day Stay-In:</strong> You remain logged in for 90 days on this device.</li>
+      </ul>
+    </div>
+
+    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+      <a href="/submit-form" class="button primary" style="padding: 10px 20px; font-size: 14px; font-weight: 700; background: #ea580c; border-color: #ea580c; text-decoration: none;">
+        🎤 Continue to Bhajan Submission
+      </a>
+      <button type="button" onclick="document.getElementById('welcomeHubModal').style.display='none'" class="button secondary" style="padding: 10px 16px; font-size: 14px;">
+        Explore Hub
+      </button>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<style>
+.hub-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.hub-tab-btn:hover {
+  color: var(--ink);
+}
+.hub-tab-btn.active {
+  color: #ea580c;
+  border-bottom-color: #ea580c;
+}
+</style>
+
+<script>
+function switchHubTab(tabName, btn) {
+  document.querySelectorAll('.hub-tab-pane').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.hub-tab-btn').forEach(el => el.classList.remove('active'));
+
+  const targetPane = document.getElementById('tab-' + tabName);
+  if (targetPane) targetPane.style.display = 'block';
+  if (btn) btn.classList.add('active');
+}
+
+function openChangePinModal() {
+  document.getElementById('changePinModal').style.display = 'flex';
+  document.getElementById('pinChangeAlert').style.display = 'none';
+  document.getElementById('currentPin').value = '';
+  document.getElementById('newPin').value = '';
+}
+
+function closeChangePinModal() {
+  document.getElementById('changePinModal').style.display = 'none';
+}
+
+async function handleChangePinSubmit(e) {
+  e.preventDefault();
+  const alertBox = document.getElementById('pinChangeAlert');
+  const btn = document.getElementById('changePinBtn');
+  const currentPin = document.getElementById('currentPin').value.trim();
+  const newPin = document.getElementById('newPin').value.trim();
+
+  alertBox.style.display = 'none';
+
+  if (!/^\d{4}$/.test(newPin)) {
+    alertBox.textContent = 'New PIN must be exactly 4 digits.';
+    alertBox.style.background = '#fee2e2';
+    alertBox.style.color = '#991b1b';
+    alertBox.style.display = 'block';
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Updating...';
+
+    const res = await fetch('/api/singer/change-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_pin: currentPin, new_pin: newPin })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update PIN');
+
+    alertBox.textContent = data.message || 'PIN updated successfully!';
+    alertBox.style.background = '#ecfdf5';
+    alertBox.style.color = '#065f46';
+    alertBox.style.display = 'block';
+
+    setTimeout(() => {
+      closeChangePinModal();
+    }, 1500);
+
+  } catch (err) {
+    alertBox.textContent = err.message;
+    alertBox.style.background = '#fee2e2';
+    alertBox.style.color = '#991b1b';
+    alertBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Update PIN';
+  }
+}
+
+function editSongbookDetails(masterId, title, scale, notes) {
+  document.getElementById('modalMasterId').value = masterId;
+  document.getElementById('modalBhajanTitle').textContent = 'Bhajan: ' + title;
+  document.getElementById('modalCustomScale').value = scale;
+  document.getElementById('modalNotes').value = notes;
+  document.getElementById('editSongbookModal').style.display = 'flex';
+}
+
+function closeEditSongbookModal() {
+  document.getElementById('editSongbookModal').style.display = 'none';
+}
+
+async function handleSongbookUpdateSubmit(e) {
+  e.preventDefault();
+  const masterId = document.getElementById('modalMasterId').value;
+  const scale = document.getElementById('modalCustomScale').value;
+  const notes = document.getElementById('modalNotes').value;
+  const btn = document.getElementById('saveSongbookBtn');
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const res = await fetch('/api/singer/songbook/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ master_id: masterId, custom_scale: scale, notes: notes })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update details');
+
+    location.reload();
+  } catch (err) {
+    alert('Error saving details: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Details';
+  }
+}
+
+async function removeSongbookEntry(masterId, title) {
+  if (!confirm('Remove "' + title + '" from your Songbook?')) return;
+
+  try {
+    const res = await fetch('/api/singer/songbook/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ master_id: masterId })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to remove');
+    location.reload();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+// Event delegation for songbook remove and edit buttons
+document.addEventListener('click', function(e) {
+  const removeBtn = e.target.closest('.sb-remove-btn');
+  if (removeBtn) {
+    const id = removeBtn.getAttribute('data-id');
+    const title = removeBtn.getAttribute('data-title');
+    removeSongbookEntry(id, title);
+    return;
+  }
+
+  const editBtn = e.target.closest('.sb-edit-btn');
+  if (editBtn) {
+    const id = editBtn.getAttribute('data-id');
+    const title = editBtn.getAttribute('data-title');
+    const scale = editBtn.getAttribute('data-scale') || '';
+    const notes = editBtn.getAttribute('data-notes') || '';
+    editSongbookDetails(id, title, scale, notes);
+    return;
+  }
+});
+
+function openPreferredScaleModal() {
+  document.getElementById('preferredScaleModal').style.display = 'flex';
+  document.getElementById('preferredScaleAlert').style.display = 'none';
+}
+
+function closePreferredScaleModal() {
+  document.getElementById('preferredScaleModal').style.display = 'none';
+}
+
+async function handlePreferredScaleSubmit(e) {
+  e.preventDefault();
+  const alertBox = document.getElementById('preferredScaleAlert');
+  const btn = document.getElementById('savePreferredScaleBtn');
+  const scale = document.getElementById('inputPreferredScale').value.trim();
+
+  alertBox.style.display = 'none';
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const res = await fetch('/api/singer/profile/scale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preferred_scale: scale })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update pitch');
+
+    document.getElementById('displayPreferredScale').textContent = data.preferred_scale || 'Not configured';
+    alertBox.textContent = data.message || 'Saved successfully!';
+    alertBox.style.background = '#ecfdf5';
+    alertBox.style.color = '#065f46';
+    alertBox.style.display = 'block';
+
+    setTimeout(() => {
+      closePreferredScaleModal();
+    }, 1200);
+
+  } catch (err) {
+    alertBox.textContent = err.message;
+    alertBox.style.background = '#fee2e2';
+    alertBox.style.color = '#991b1b';
+    alertBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Default Pitch';
+  }
+}
+</script>

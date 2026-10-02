@@ -1,0 +1,436 @@
+<div class="container container-xl">
+  <div class="header">
+    <h1>🚩 Bhajan Issue & Correction Reports</h1>
+    <p>Review devotee-submitted feedback, verify lyrics or pitch corrections, and communicate ticket resolutions.</p>
+  </div>
+
+  <div class="bank-body">
+    <!-- Stat Cards Overview -->
+    <div class="report-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      <a href="/admin/reports" class="stat-card <%= !selectedStatus ? 'active-stat' : '' %>" style="background: var(--bg-card, #fff); padding: 18px; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); text-decoration: none; color: inherit; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
+        <div style="font-size: 13px; color: var(--muted, #64748b); font-weight: 600; text-transform: uppercase;">Total Tickets</div>
+        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--text-main, #1e293b);"><%= counts.total %></div>
+      </a>
+      <a href="/admin/reports?status=pending" class="stat-card <%= selectedStatus === 'pending' ? 'active-stat' : '' %>" style="background: var(--bg-card, #fff); padding: 18px; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); text-decoration: none; color: inherit; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
+        <div style="font-size: 13px; color: #d97706; font-weight: 600; text-transform: uppercase;">🟡 Needs Review</div>
+        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: #d97706;"><%= counts.pending %></div>
+      </a>
+      <a href="/admin/reports?status=under_review" class="stat-card <%= selectedStatus === 'under_review' ? 'active-stat' : '' %>" style="background: var(--bg-card, #fff); padding: 18px; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); text-decoration: none; color: inherit; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
+        <div style="font-size: 13px; color: #2563eb; font-weight: 600; text-transform: uppercase;">🔵 In Progress</div>
+        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: #2563eb;"><%= counts.under_review %></div>
+      </a>
+      <a href="/admin/reports?status=resolved" class="stat-card <%= selectedStatus === 'resolved' ? 'active-stat' : '' %>" style="background: var(--bg-card, #fff); padding: 18px; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); text-decoration: none; color: inherit; display: block; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s;">
+        <div style="font-size: 13px; color: #16a34a; font-weight: 600; text-transform: uppercase;">🟢 Resolved</div>
+        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: #16a34a;"><%= counts.resolved %></div>
+      </a>
+    </div>
+
+    <!-- Filters & Search Toolbar -->
+    <div class="page-toolbar" style="background: var(--bg-card, #fff); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); margin-bottom: 20px;">
+      <form method="GET" action="/admin/reports" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; width: 100%;">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; flex: 1;">
+          <!-- Status Dropdown -->
+          <select name="status" onchange="this.form.submit()" style="padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border-color, #cbd5e1); font-weight: 600; font-size: 13px; background: var(--bg-input, #fff); color: var(--text-main, #1e293b);">
+            <option value="">All Statuses (<%= counts.total %>)</option>
+            <option value="pending" <%= selectedStatus === 'pending' ? 'selected' : '' %>>🟡 Needs Review (<%= counts.pending %>)</option>
+            <option value="under_review" <%= selectedStatus === 'under_review' ? 'selected' : '' %>>🔵 In Progress (<%= counts.under_review %>)</option>
+            <option value="resolved" <%= selectedStatus === 'resolved' ? 'selected' : '' %>>🟢 Resolved (<%= counts.resolved %>)</option>
+            <option value="closed" <%= selectedStatus === 'closed' ? 'selected' : '' %>>⚪ Closed (<%= counts.closed %>)</option>
+          </select>
+
+          <!-- Category Filter -->
+          <select name="category" onchange="this.form.submit()" style="padding: 9px 14px; border-radius: 8px; border: 1px solid var(--border-color, #cbd5e1); font-weight: 600; font-size: 13px; background: var(--bg-input, #fff); color: var(--text-main, #1e293b);">
+            <option value="">All Categories</option>
+            <option value="lyrics" <%= selectedCategory === 'lyrics' ? 'selected' : '' %>>📝 Lyrics</option>
+            <option value="scale" <%= selectedCategory === 'scale' ? 'selected' : '' %>>🎵 Scale / Pitch</option>
+            <option value="raga" <%= selectedCategory === 'raga' ? 'selected' : '' %>>🎼 Raga</option>
+            <option value="deity" <%= selectedCategory === 'deity' ? 'selected' : '' %>>🕉️ Deity</option>
+            <option value="tempo" <%= selectedCategory === 'tempo' ? 'selected' : '' %>>⏱️ Tempo</option>
+            <option value="sheet" <%= selectedCategory === 'sheet' ? 'selected' : '' %>>📄 Music Sheet</option>
+            <option value="spelling" <%= selectedCategory === 'spelling' ? 'selected' : '' %>>✏️ Spelling / Title</option>
+            <option value="other" <%= selectedCategory === 'other' ? 'selected' : '' %>>❓ Other</option>
+          </select>
+
+          <!-- Search Input -->
+          <div style="position: relative; flex: 1; min-width: 220px;">
+            <input
+              type="search"
+              name="search"
+              value="<%= searchQuery %>"
+              placeholder="Search by Title, Ticket (REP-...), or Reporter..."
+              style="width: 100%; padding: 9px 14px; padding-left: 36px; border-radius: 8px; border: 1px solid var(--border-color, #cbd5e1); font-size: 13px; background: var(--bg-input, #fff); color: var(--text-main, #1e293b);"
+            >
+            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: 0.6;">🔍</span>
+          </div>
+          <button type="submit" class="button primary" style="padding: 9px 16px; font-size: 13px; font-weight: 600;">Search</button>
+          <% if (selectedStatus || selectedCategory || searchQuery) { %>
+            <a href="/admin/reports" class="button secondary" style="padding: 9px 14px; font-size: 13px;">Clear</a>
+          <% } %>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <a href="/master-bank" class="button secondary" style="padding: 9px 14px; font-size: 13px;">📚 Master Bank</a>
+          <a href="/my-reports" target="_blank" class="button secondary" style="padding: 9px 14px; font-size: 13px;" title="Open user ticket tracker preview">👤 User Portal ↗</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="table-container bank-table" style="background: var(--bg-card, #fff); border-radius: 12px; border: 1px solid var(--border-color, #e2e8f0); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <table id="reportsTable" style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="background: var(--bg-table-head, #f8fafc); border-bottom: 2px solid var(--border-color, #e2e8f0); text-align: left;">
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: var(--muted, #64748b); text-transform: uppercase;">Ticket #</th>
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: var(--muted, #64748b); text-transform: uppercase;">Bhajan Title</th>
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: var(--muted, #64748b); text-transform: uppercase;">Categories</th>
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: var(--muted, #64748b); text-transform: uppercase;">Report Details</th>
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: var(--muted, #64748b); text-transform: uppercase;">Reporter</th>
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: var(--muted, #64748b); text-transform: uppercase;">Status</th>
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: var(--muted, #64748b); text-transform: uppercase; text-align: right;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (reports && reports.length > 0) { %>
+            <% reports.forEach(r => { %>
+              <%
+                let badgeStyle = "background: #fef3c7; color: #b45309;";
+                let statusLabel = "🟡 Pending";
+                if (r.status === 'under_review') {
+                  badgeStyle = "background: #dbeafe; color: #1d4ed8;";
+                  statusLabel = "🔵 In Progress";
+                } else if (r.status === 'resolved') {
+                  badgeStyle = "background: #dcfce7; color: #15803d;";
+                  statusLabel = "🟢 Resolved";
+                } else if (r.status === 'closed') {
+                  badgeStyle = "background: #f1f5f9; color: #64748b;";
+                  statusLabel = "⚪ Closed";
+                }
+
+                const catLabels = {
+                  lyrics: '📝 Lyrics',
+                  scale: '🎵 Scale',
+                  raga: '🎼 Raga',
+                  deity: '🕉️ Deity',
+                  tempo: '⏱️ Tempo',
+                  sheet: '📄 Sheet',
+                  spelling: '✏️ Typo',
+                  other: '❓ Other'
+                };
+              %>
+              <tr id="report-row-<%= r.id %>" style="border-bottom: 1px solid var(--border-color, #f1f5f9); transition: background 0.15s;">
+                <td style="padding: 14px 16px; font-family: monospace; font-weight: 700; font-size: 13px; color: #6366f1;">
+                  <%= r.ticket_code %>
+                  <div style="font-size: 11px; font-weight: 400; color: var(--muted, #94a3b8); margin-top: 2px;">
+                    <%= new Date(r.created_at).toLocaleDateString() %>
+                  </div>
+                </td>
+                <td style="padding: 14px 16px; font-weight: 600;">
+                  <% if (r.master_id) { %>
+                    <a href="/bhajan/<%= r.master_id %>" target="_blank" style="color: #2563eb; text-decoration: none;" title="Open live bhajan page">
+                      <%= r.bhajan_title %> ↗
+                    </a>
+                  <% } else { %>
+                    <%= r.bhajan_title %>
+                  <% } %>
+                </td>
+                <td style="padding: 14px 16px;">
+                  <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    <% (r.categories || []).forEach(cat => { %>
+                      <span style="font-size: 11px; background: rgba(99, 102, 241, 0.08); color: #4f46e5; padding: 2px 7px; border-radius: 4px; font-weight: 600;">
+                        <%= catLabels[cat] || cat %>
+                      </span>
+                    <% }) %>
+                  </div>
+                </td>
+                <td style="padding: 14px 16px; max-width: 280px;">
+                  <div style="font-size: 13px; color: var(--text-main, #334155); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+                    <%= r.description %>
+                  </div>
+                  <% if (r.suggested_correction) { %>
+                    <div style="font-size: 11px; color: #16a34a; font-weight: 600; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">
+                      💡 Suggestion: <%= r.suggested_correction %>
+                    </div>
+                  <% } %>
+                </td>
+                <td style="padding: 14px 16px; font-size: 13px;">
+                  <div style="font-weight: 600; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <% if (r.singer_id) { %>
+                      <span title="Registered &amp; PIN-verified Singer" style="background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 4px;">
+                        🎤 Singer
+                      </span>
+                    <% } %>
+                    <span><%= r.reporter_name || 'Anonymous' %></span>
+                  </div>
+                  <% if (r.reporter_contact) { %>
+                    <div style="font-size: 11px; color: var(--muted, #64748b);"><%= r.reporter_contact %></div>
+                  <% } %>
+                </td>
+                <td style="padding: 14px 16px;">
+                  <span style="display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; <%= badgeStyle %>">
+                    <%= statusLabel %>
+                  </span>
+                  <% if (r.admin_response) { %>
+                    <div style="font-size: 10px; color: #16a34a; margin-top: 3px; font-weight: 600;">💬 Replied</div>
+                  <% } %>
+                </td>
+                <td style="padding: 14px 16px; text-align: right;">
+                  <button
+                    type="button"
+                    class="button secondary"
+                    style="padding: 6px 12px; font-size: 12px; font-weight: 600;"
+                    onclick='openReportModal(<%= JSON.stringify(r) %>)'
+                  >
+                    Review / Reply 💬
+                  </button>
+                </td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" style="padding: 48px 16px; text-align: center; color: var(--muted, #64748b);">
+                <div style="font-size: 32px; margin-bottom: 8px;">🎉</div>
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">No Reports Found</h3>
+                <p style="font-size: 13px;">There are no reports matching the selected filters. Great job!</p>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================================== -->
+<!-- MODAL: REVIEW & REPLY TICKET                               -->
+<!-- ========================================================== -->
+<div id="reviewModal" style="display:none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+  <div style="background: #ffffff; width: 100%; max-width: 650px; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
+    
+    <!-- Modal Header -->
+    <div style="padding: 18px 24px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-family: monospace; font-size: 13px; font-weight: 800; background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 6px;" id="modalTicketCode">REP-0000</span>
+          <span id="modalStatusBadge" style="padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;">🟡 Pending</span>
+        </div>
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-top: 6px; margin-bottom: 0;" id="modalBhajanTitle">Bhajan Title</h2>
+      </div>
+      <button type="button" onclick="closeReportModal()" style="background: transparent; border: none; font-size: 24px; cursor: pointer; color: #64748b; line-height: 1;">&times;</button>
+    </div>
+
+    <!-- Modal Body -->
+    <div style="padding: 24px; overflow-y: auto; flex: 1;">
+      
+      <!-- Issue Categories & Reporter Box -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+          <div><strong>Reported By:</strong> <span id="modalReporterName">Devotee</span> (<span id="modalReporterContact">No contact</span>)</div>
+          <div style="color: #64748b;" id="modalCreatedAt">Date</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <strong style="font-size: 12px; color: #475569;">Issue Types:</strong>
+          <div id="modalCategoriesList" style="display: flex; gap: 4px; flex-wrap: wrap;"></div>
+        </div>
+      </div>
+
+      <!-- User's Description -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #475569; margin-bottom: 6px;">Devotee's Description:</label>
+        <div id="modalDescription" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; font-size: 14px; line-height: 1.5; color: #1e293b; white-space: pre-wrap;"></div>
+      </div>
+
+      <!-- Suggested Correction (if provided) -->
+      <div id="modalCorrectionBox" style="margin-bottom: 18px; display: none;">
+        <label style="display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #16a34a; margin-bottom: 6px;">💡 Suggested Correction / Lyrics:</label>
+        <div id="modalSuggestedCorrection" style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.5; color: #14532d; white-space: pre-wrap;"></div>
+      </div>
+
+      <div style="margin-bottom: 18px; text-align: right;">
+        <a id="modalMasterLink" href="#" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #2563eb; font-weight: 600; text-decoration: none;">
+          📖 Open Live Bhajan Details ↗
+        </a>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 18px 0;">
+
+      <!-- Admin Actions Form -->
+      <form id="updateReportForm" onsubmit="submitReportUpdate(event)">
+        <input type="hidden" id="modalReportId">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+          <div>
+            <label for="modalStatusSelect" style="display: block; font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">Update Status *</label>
+            <select id="modalStatusSelect" required style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 600; font-size: 13px;">
+              <option value="pending">🟡 Needs Review (Pending)</option>
+              <option value="under_review">🔵 In Progress (Under Review)</option>
+              <option value="resolved">🟢 Resolved (Fixed in Database)</option>
+              <option value="closed">⚪ Closed (No Action Needed)</option>
+            </select>
+          </div>
+          <div style="display: flex; align-items: flex-end;">
+            <p style="font-size: 11px; color: #64748b; margin: 0; line-height: 1.4;">
+              Marking <strong>Resolved</strong> timestamps the ticket and notifies the user in their ticket tracker.
+            </p>
+          </div>
+        </div>
+
+        <!-- Admin Response to User -->
+        <div style="margin-bottom: 16px;">
+          <label for="modalAdminResponse" style="display: block; font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+            💬 Response to Devotee <span style="font-weight: 400; color: #64748b;">(User will see this on their ticket tracker)</span>
+          </label>
+          <textarea
+            id="modalAdminResponse"
+            rows="3"
+            placeholder="e.g. Sai Ram! Thank you for pointing this out. We have corrected the lyrics and updated the pitch in the master bank."
+            style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; line-height: 1.4; resize: vertical;"
+          ></textarea>
+          <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px;">
+            <button type="button" class="button secondary" style="padding: 2px 8px; font-size: 11px;" onclick="document.getElementById('modalAdminResponse').value='Sai Ram! Thank you for pointing this out. We have corrected the lyrics and updated the master bank.'; document.getElementById('modalStatusSelect').value='resolved';">
+              ✅ Lyrics Corrected
+            </button>
+            <button type="button" class="button secondary" style="padding: 2px 8px; font-size: 11px;" onclick="document.getElementById('modalAdminResponse').value='Sai Ram! The singing pitch / scale has been updated in the master database.'; document.getElementById('modalStatusSelect').value='resolved';">
+              🎵 Scale Updated
+            </button>
+            <button type="button" class="button secondary" style="padding: 2px 8px; font-size: 11px;" onclick="document.getElementById('modalAdminResponse').value='Sai Ram! We verified the bhajan with official Prashanti Mandir audio records. Details are confirmed accurate.'; document.getElementById('modalStatusSelect').value='closed';">
+              ℹ️ Verified Accurate
+            </button>
+            <button type="button" class="button secondary" style="padding: 2px 8px; font-size: 11px;" onclick="document.getElementById('modalAdminResponse').value='Sai Ram! We have re-uploaded the official sheet music PDF with correct notation.'; document.getElementById('modalStatusSelect').value='resolved';">
+              📄 Sheet Updated
+            </button>
+          </div>
+        </div>
+
+        <!-- Admin Internal Notes -->
+        <div style="margin-bottom: 20px;">
+          <label for="modalAdminNotes" style="display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px;">
+            🔒 Internal Admin Notes <span style="font-weight: 400; color: #94a3b8;">(Only visible to admins)</span>
+          </label>
+          <input
+            type="text"
+            id="modalAdminNotes"
+            placeholder="e.g. Cross-referenced with Sathya Sai Bhajan Avali audio book page 42"
+            style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 12px;"
+          >
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" onclick="closeReportModal()" class="button secondary" style="padding: 9px 16px;">Cancel</button>
+          <button type="submit" id="saveReportBtn" class="button primary" style="padding: 9px 20px; font-weight: 700;">💾 Save &amp; Notify User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentEditingReport = null;
+
+function openReportModal(report) {
+  currentEditingReport = report;
+  document.getElementById('modalReportId').value = report.id;
+  document.getElementById('modalTicketCode').innerText = report.ticket_code;
+  document.getElementById('modalBhajanTitle').innerText = report.bhajan_title;
+  document.getElementById('modalReporterName').innerText = report.reporter_name || 'Anonymous';
+  document.getElementById('modalReporterContact').innerText = report.reporter_contact || 'No contact provided';
+  document.getElementById('modalCreatedAt').innerText = new Date(report.created_at).toLocaleString();
+  document.getElementById('modalDescription').innerText = report.description || '-';
+
+  if (report.suggested_correction) {
+    document.getElementById('modalSuggestedCorrection').innerText = report.suggested_correction;
+    document.getElementById('modalCorrectionBox').style.display = 'block';
+  } else {
+    document.getElementById('modalCorrectionBox').style.display = 'none';
+  }
+
+  const masterLink = document.getElementById('modalMasterLink');
+  if (report.master_id) {
+    masterLink.href = '/bhajan/' + report.master_id;
+    masterLink.style.display = 'inline-flex';
+  } else {
+    masterLink.style.display = 'none';
+  }
+
+  // Categories tags
+  const catContainer = document.getElementById('modalCategoriesList');
+  catContainer.innerHTML = '';
+  const catLabels = {
+    lyrics: '📝 Lyrics',
+    scale: '🎵 Scale',
+    raga: '🎼 Raga',
+    deity: '🕉️ Deity',
+    tempo: '⏱️ Tempo',
+    sheet: '📄 Sheet',
+    spelling: '✏️ Typo',
+    other: '❓ Other'
+  };
+  (report.categories || []).forEach(cat => {
+    const span = document.createElement('span');
+    span.style = 'font-size: 11px; background: #e0e7ff; color: #4338ca; padding: 2px 7px; border-radius: 4px; font-weight: 600;';
+    span.innerText = catLabels[cat] || cat;
+    catContainer.appendChild(span);
+  });
+
+  // Status & Fields
+  document.getElementById('modalStatusSelect').value = report.status || 'pending';
+  document.getElementById('modalAdminResponse').value = report.admin_response || '';
+  document.getElementById('modalAdminNotes').value = report.admin_notes || '';
+
+  const badge = document.getElementById('modalStatusBadge');
+  if (report.status === 'under_review') {
+    badge.innerText = '🔵 In Progress';
+    badge.style.background = '#dbeafe';
+    badge.style.color = '#1d4ed8';
+  } else if (report.status === 'resolved') {
+    badge.innerText = '🟢 Resolved';
+    badge.style.background = '#dcfce7';
+    badge.style.color = '#15803d';
+  } else if (report.status === 'closed') {
+    badge.innerText = '⚪ Closed';
+    badge.style.background = '#f1f5f9';
+    badge.style.color = '#64748b';
+  } else {
+    badge.innerText = '🟡 Pending';
+    badge.style.background = '#fef3c7';
+    badge.style.color = '#b45309';
+  }
+
+  const modal = document.getElementById('reviewModal');
+  modal.style.display = 'flex';
+}
+
+function closeReportModal() {
+  document.getElementById('reviewModal').style.display = 'none';
+}
+
+async function submitReportUpdate(e) {
+  e.preventDefault();
+  const id = document.getElementById('modalReportId').value;
+  const status = document.getElementById('modalStatusSelect').value;
+  const admin_response = document.getElementById('modalAdminResponse').value;
+  const admin_notes = document.getElementById('modalAdminNotes').value;
+  const saveBtn = document.getElementById('saveReportBtn');
+
+  try {
+    saveBtn.disabled = true;
+    saveBtn.innerText = 'Saving...';
+
+    const res = await fetch('/admin/reports/' + id + '/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, admin_response, admin_notes })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update report');
+
+    closeReportModal();
+    // Reload page to reflect updated counts and status
+    window.location.reload();
+  } catch (err) {
+    alert('Error updating report: ' + err.message);
+    saveBtn.disabled = false;
+    saveBtn.innerText = '💾 Save & Notify User';
+  }
+}
+</script>

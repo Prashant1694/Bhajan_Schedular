@@ -10,7 +10,20 @@ const expressLayouts = require("express-ejs-layouts");
 const path = require('path');
 const crypto = require('crypto');
 const session = require('express-session');
-const { securityHeaders, blockCrossSiteWrites, generalWriteLimit } = require("./middleware/security");
+const SequelizeStore = require('connect-session-sequelize')(session.Store);
+const sequelize = require('./config/database');
+
+const sessionStore = new SequelizeStore({
+  db: sequelize,
+  tableName: 'Sessions',
+  checkExpirationInterval: 15 * 60 * 1000, // Automatically prune expired sessions every 15 min
+  expiration: 90 * 24 * 60 * 60 * 1000     // 90 days persistent devotee session duration
+});
+
+// Ensure session table exists in SQLite
+sessionStore.sync();
+
+const { securityHeaders, blockCrossSiteWrites, generalWriteLimit, sanitizeInputs } = require("./middleware/security");
 const {initializeDatabase} = require("./services/databaseInitializer");
 
 // ============================================================
@@ -32,6 +45,7 @@ app.use(securityHeaders);
 // Reject oversized payloads before they can consume server resources.
 app.use(express.urlencoded({ extended: true, limit: "100kb", parameterLimit: 100 }));
 app.use(express.json({ limit: "100kb" }));
+app.use(sanitizeInputs);
 app.use(blockCrossSiteWrites);
 app.use((req, res, next) => {
   if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return generalWriteLimit(req, res, next);
@@ -53,27 +67,34 @@ app.use((req, res, next) => {
   next();
 });
 
-// Session Setup
+// Session Setup with persistent SQLite storage (no MemoryStore leak)
 app.use(session({
-  secret: process.env.SESSION_SECRET || crypto.randomBytes(48).toString("hex"),
+  secret: process.env.SESSION_SECRET || 'bhajan-planner-session-secret-gandhinagar-2026',
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 8 * 60 * 60 * 1000
+    maxAge: 90 * 24 * 60 * 60 * 1000 // 90-day persistent session
   }
 }));
 
 const { trackActivity } = require("./middleware/activityTracker");
 app.use(trackActivity);
 
+const { attachSinger } = require("./middleware/singerAuth");
+app.use(attachSinger);
+
+const BhajanReport = require("./models/BhajanReport");
+
 const ADMIN_PATH_PREFIXES = [
   "/admin",           // /admin, /admin/*, /admin/admin-users/*
   "/admin-login",
   "/forgot-password", // login-recovery flow shares the admin visual language
   "/master-bank",
+  "/admin/reports",
 ];
 
 const { getCachedMissingCount } = require("./services/helpers");
@@ -91,11 +112,14 @@ app.use(async (req, res, next) => {
   if (res.locals.isAdminPage && req.session && req.session.admin) {
     try {
       res.locals.missingCount = await getCachedMissingCount();
+      res.locals.pendingReportCount = await BhajanReport.count({ where: { status: "pending" } });
     } catch (_) {
       res.locals.missingCount = 0;
+      res.locals.pendingReportCount = 0;
     }
   } else {
     res.locals.missingCount = 0;
+    res.locals.pendingReportCount = 0;
   }
   next();
 });
@@ -111,6 +135,8 @@ const adminUserRoutes = require("./routes/adminUsers");
 const notificationRoutes = require("./routes/notifications");
 const bulletinRoutes = require("./routes/bulletin");
 const diwaliRoutes = require("./routes/diwali");
+const reportsRoutes = require("./routes/reports");
+const singerHubRoutes = require("./routes/singerHub");
 
 app.use("/", homeRoutes);
 app.use("/", plannerRoutes);
@@ -124,6 +150,8 @@ app.use("/", adminUserRoutes);
 app.use("/", notificationRoutes);
 app.use("/", bulletinRoutes);
 app.use("/", diwaliRoutes);
+app.use("/", reportsRoutes);
+app.use("/", singerHubRoutes);
 
 // Do not expose stack traces or database details to visitors.
 app.use((error, req, res, next) => {
@@ -131,6 +159,10 @@ app.use((error, req, res, next) => {
     return res.status(413).send("Request payload is too large.");
   }
   console.error("Unhandled request error:", error);
+  const isJson = req.xhr || (req.headers.accept && req.headers.accept.includes("json")) || req.path.startsWith("/api/");
+  if (isJson) {
+    return res.status(500).json({ error: "Something went wrong. Please try again later." });
+  }
   res.status(500).send("Something went wrong. Please try again later.");
 });
 

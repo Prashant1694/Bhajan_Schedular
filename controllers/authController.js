@@ -6,36 +6,52 @@ const AdminUser = require("../models/AdminUser");
 const googleClient = new OAuth2Client();
 
 async function createAdminSession(req, admin) {
-  req.session.adminUserId = admin.id;
+  return new Promise((resolve, reject) => {
+    const prevVisitorId = req.session?.visitorId;
+    req.session.regenerate(async (regenErr) => {
+      if (regenErr) {
+        console.error("Admin session regeneration error:", regenErr);
+        return reject(regenErr);
+      }
+      if (prevVisitorId) req.session.visitorId = prevVisitorId;
 
-  req.session.admin = {
-    id: admin.id,
-    username: admin.username,
-    display_name: admin.display_name,
-    title: admin.title || "",
-    displayName: admin.display_name,
-    role: admin.role
-  };
+      req.session.adminUserId = admin.id;
 
-  try {
-    const visitorId = req.session.visitorId;
-    if (visitorId) {
-      const UserPresence = require("../models/UserPresence");
-      const userType = admin.role === "super_admin" ? "super_admin" : "admin";
-      const titleStr = admin.title ? ` (${admin.title})` : "";
-      await UserPresence.update(
-        {
-          user_type: userType,
-          admin_id: admin.id,
-          username: `${admin.display_name || admin.username}${titleStr}`,
-          last_seen_at: new Date()
-        },
-        { where: { session_id: visitorId } }
-      );
-    }
-  } catch (err) {
-    console.error("Session presence upgrade error:", err.message);
-  }
+      req.session.admin = {
+        id: admin.id,
+        username: admin.username,
+        display_name: admin.display_name,
+        title: admin.title || "",
+        displayName: admin.display_name,
+        role: admin.role
+      };
+
+      try {
+        const visitorId = req.session.visitorId;
+        if (visitorId) {
+          const UserPresence = require("../models/UserPresence");
+          const userType = admin.role === "super_admin" ? "super_admin" : "admin";
+          const titleStr = admin.title ? ` (${admin.title})` : "";
+          await UserPresence.update(
+            {
+              user_type: userType,
+              admin_id: admin.id,
+              username: `${admin.display_name || admin.username}${titleStr}`,
+              last_seen_at: new Date()
+            },
+            { where: { session_id: visitorId } }
+          );
+        }
+      } catch (err) {
+        console.error("Session presence upgrade error:", err.message);
+      }
+
+      req.session.save((saveErr) => {
+        if (saveErr) return reject(saveErr);
+        resolve();
+      });
+    });
+  });
 }
 
 exports.showLogin = (req, res) => {

@@ -16,6 +16,8 @@ const Notification = require("../models/Notification");
 const NotificationRead = require("../models/NotificationRead");
 const PushSubscription = require("../models/PushSubscription");
 const Bulletin = require("../models/Bulletin");
+const BhajanReport = require("../models/BhajanReport");
+const SingerBookmark = require("../models/SingerBookmark");
 
 async function initializeSuperAdmin() {
   const superAdminCount = await AdminUser.count({
@@ -137,7 +139,19 @@ async function ensureSingerPinColumn() {
   try {
     const [columns] = await sequelize.query("PRAGMA table_info(singer_dictionary)");
     if (!columns.some((column) => column.name === "pin")) {
-      await sequelize.query("ALTER TABLE singer_dictionary ADD COLUMN pin VARCHAR(100)");
+      await sequelize.query("ALTER TABLE singer_dictionary ADD COLUMN pin VARCHAR(255)");
+    }
+    if (!columns.some((column) => column.name === "pin_set_at")) {
+      await sequelize.query("ALTER TABLE singer_dictionary ADD COLUMN pin_set_at DATETIME");
+    }
+    if (!columns.some((column) => column.name === "last_login_at")) {
+      await sequelize.query("ALTER TABLE singer_dictionary ADD COLUMN last_login_at DATETIME");
+    }
+    if (!columns.some((column) => column.name === "auth_token")) {
+      await sequelize.query("ALTER TABLE singer_dictionary ADD COLUMN auth_token VARCHAR(255)");
+    }
+    if (!columns.some((column) => column.name === "preferred_scale")) {
+      await sequelize.query("ALTER TABLE singer_dictionary ADD COLUMN preferred_scale VARCHAR(50)");
     }
   } catch (err) {
     // Ignore if table info query fails
@@ -247,7 +261,17 @@ async function ensureNotificationTables() {
     await NotificationRead.sync();
     await PushSubscription.sync();
     await Bulletin.sync();
-    console.log("✅ Notification & bulletin tables ready.");
+    await BhajanReport.sync();
+    await SingerBookmark.sync();
+
+    // Check singer_id column in bhajan_reports
+    const [repCols] = await sequelize.query("PRAGMA table_info(bhajan_reports)");
+    if (repCols && !repCols.some((col) => col.name === "singer_id")) {
+      await sequelize.query("ALTER TABLE bhajan_reports ADD COLUMN singer_id INTEGER");
+      await sequelize.query("CREATE INDEX IF NOT EXISTS idx_bhajan_reports_singer_id ON bhajan_reports(singer_id)");
+    }
+
+    console.log("✅ Notification, bulletin, report & singer bookmark tables ready.");
   } catch (err) {
     console.error("Notification tables check failed:", err.message);
   }

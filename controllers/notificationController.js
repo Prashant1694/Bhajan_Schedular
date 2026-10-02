@@ -14,9 +14,9 @@ exports.getNotifications = async (req, res) => {
     const deviceId = req.query.device_id;
     if (!deviceId) return res.json({ notifications: [] });
 
-    // Find singer associated with this device
+    // Find singer associated with this device or session
     const sub = await PushSubscription.findOne({ where: { device_id: deviceId } });
-    const singerId = sub ? sub.singer_id : null;
+    const singerId = req.session?.singer?.id || (sub ? sub.singer_id : null);
 
     const notifications = await notificationService.getNotificationsForDevice(
       deviceId, singerId, 30
@@ -34,7 +34,7 @@ exports.getUnreadCount = async (req, res) => {
     if (!deviceId) return res.json({ count: 0 });
 
     const sub = await PushSubscription.findOne({ where: { device_id: deviceId } });
-    const singerId = sub ? sub.singer_id : null;
+    const singerId = req.session?.singer?.id || (sub ? sub.singer_id : null);
 
     const count = await notificationService.getUnreadCount(deviceId, singerId);
     res.json({ count });

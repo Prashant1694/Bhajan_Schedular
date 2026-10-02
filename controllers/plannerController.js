@@ -52,7 +52,14 @@ const getAvailableDates = async () => {
 exports.showSubmitForm = async (req, res) => {
 
   try {
-    const isAdmin = req.query.admin === 'true' || !!(req.session && req.session.admin);
+    const isAdmin = Boolean(req.session && req.session.admin);
+
+    // Devotees must be logged in as a singer to submit bhajans
+    if (!isAdmin && (!req.session || !req.session.singer)) {
+      const returnTo = encodeURIComponent(req.originalUrl || "/submit-form");
+      return res.redirect(`/singer/login?redirect=${returnTo}`);
+    }
+
     const showSuccess = req.query.success === 'true';
     let sessionDate = req.query.session_date;
 
@@ -74,7 +81,7 @@ exports.showSubmitForm = async (req, res) => {
       });
       const homeUrl = isAdmin ? '/admin' : '/';
       const themeHeadScript = `<script>(function(){try{var t=localStorage.getItem('bp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>`;
-      const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">ðŸŒ™</span><span class="icon-sun">â˜€ï¸</span></button>`;
+      const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">&#127769;</span><span class="icon-sun">&#9728;&#65039;</span></button>`;
       return res.send(`<!DOCTYPE html><html><head><title>Select Session</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">ðŸ—“ï¸ Select Session</h2><p style="color:var(--ink-soft); margin-bottom:20px;">${msg}</p><div style="background:var(--surface); padding:20px; border-radius:12px; border:1px solid var(--border);"><div style="display:flex; flex-direction:column; gap:10px;">${optionsHtml}</div></div><div style="margin-top:25px;"><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`);
     };
 
@@ -88,9 +95,9 @@ exports.showSubmitForm = async (req, res) => {
           return renderSelectionScreen(`${msg}<br><br>You can submit for available Special/Festival sessions below:`);
         } else {
           const homeUrl = isAdmin ? '/admin' : '/';
-          const homeText = isAdmin ? 'ðŸ  Return to Dashboard' : 'ðŸ  Return Home';
+          const homeText = isAdmin ? '&#127968; Return to Dashboard' : '&#127968; Return Home';
           const themeHeadScript = `<script>(function(){try{var t=localStorage.getItem('bp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>`;
-          const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">ðŸŒ™</span><span class="icon-sun">â˜€ï¸</span></button>`;
+          const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">&#127769;</span><span class="icon-sun">&#9728;&#65039;</span></button>`;
           return res.send(`<!DOCTYPE html><html><head><title>Submissions Opening at 8:00 PM</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">ðŸ”’ Submissions Opening at 8:00 PM</h2><p style="color:var(--ink-soft); margin-bottom:25px; line-height:1.6;">${msg}</p><div><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`);
         }
       }
@@ -181,7 +188,7 @@ exports.showSubmitForm = async (req, res) => {
 
       if (isFull) {
         cardClass = `deity-card taken ${countClass}`;
-        statusBadge = `<span class="badge badge-taken">âœ“ ${status.count} Taken</span>`;
+        statusBadge = `<span class="badge badge-taken">&#10003; ${status.count} Taken</span>`;
         onclick = `onclick="showDetails('${deity}', '${status.by.replace(/'/g, "\\'")}', '${status.bhajan.replace(/'/g, "\\'")}', '${status.scale}', '${status.speed}')" style="cursor:pointer;"`;
       } else {
         cardClass = `deity-card available ${countClass}`;
@@ -189,7 +196,14 @@ exports.showSubmitForm = async (req, res) => {
         onclick = "";
       }
 
-      let mandatoryLabel = status.mandatory ? `<div class="rule-warning" style="color:#ff9933; font-size:11px; margin-top:6px; font-weight:700;">â­ Required (${status.minReq})</div>` : '';
+      let mandatoryLabel = "";
+      if (status.mandatory) {
+        if (status.count >= status.minReq) {
+          mandatoryLabel = `<div class="rule-warning rule-fulfilled"><span class="req-star" aria-hidden="true">&#11088;</span> Required (${status.minReq}) &#10003;</div>`;
+        } else {
+          mandatoryLabel = `<div class="rule-warning"><span class="req-star" aria-hidden="true">&#11088;</span> Required (${status.minReq})</div>`;
+        }
+      }
 
       return `
         <div class="${cardClass}" data-deity="${deity}" ${onclick}>
@@ -221,7 +235,7 @@ exports.showSubmitForm = async (req, res) => {
       `)
       .join("");
 
-    res.send(generateSubmitFormHtml(sessionDate, mandatoryFilled, totalMandatory, optionalFilled, totalOptional, ganeshaCardHtml, otherDeitiesHtml, hanumanCard, isAdmin, showSuccess, submissionRowsHtml, results.length));
+    res.send(generateSubmitFormHtml(sessionDate, mandatoryFilled, totalMandatory, optionalFilled, totalOptional, ganeshaCardHtml, otherDeitiesHtml, hanumanCard, isAdmin, showSuccess, submissionRowsHtml, results.length, req.session?.singer));
 
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
@@ -231,41 +245,75 @@ exports.showSubmitForm = async (req, res) => {
 exports.submitForm = async (req, res) => {
   try {
     const { session_date, singer_name, gender, locked_gender, partner_name, deity, title, speed, scale, raga, level, language, admin, master_bhajan_id } = req.body;
-    const isAdmin = admin === 'true' || !!(req.session && req.session.admin);
+    const isAdmin = Boolean(req.session && req.session.admin);
 
-    if (!session_date || !singer_name || !deity || !title) {
+    if (!isAdmin && (!req.session || !req.session.singer)) {
+      const returnTo = encodeURIComponent("/submit-form");
+      return res.redirect(`/singer/login?redirect=${returnTo}`);
+    }
+
+    // For devotees, use their verified singer name
+    const effectiveSingerName = (!isAdmin && req.session?.singer) ? req.session.singer.name : singer_name;
+    const effectiveGender = (!isAdmin && req.session?.singer && req.session.singer.gender) ? req.session.singer.gender : (locked_gender || gender);
+
+    if (!session_date || !effectiveSingerName || !deity || !title) {
       return res.status(400).send('<h1>Error</h1><p>Missing required fields.</p><a class="button" href="javascript:history.back()">Go Back</a>');
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(session_date)) {
+      return res.status(400).send('<h1>Error</h1><p>Invalid session date format.</p><a class="button" href="javascript:history.back()">Go Back</a>');
+    }
+
+    const VALID_DEITIES = ["Ganesha", "Guru", "Mata", "SarvaDharma", "Sai", "Shiva", "Krishna", "Rama", "Narayana", "Vitthala", "Hanuman"];
+    if (!VALID_DEITIES.includes(deity)) {
+      return res.status(400).send('<h1>Error</h1><p>Invalid deity category.</p><a class="button" href="javascript:history.back()">Go Back</a>');
     }
 
     // Dropdown selection enforcement: Must be selected from the master bhajan database
     if (!master_bhajan_id) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Cannot submit bhajan without selecting from dropdown</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>âš ï¸ Selection Required</h2><p>Cannot submit bhajan without selecting from dropdown. Manual entry without selecting a suggested bhajan is not allowed.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Cannot submit bhajan without selecting from dropdown</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Selection Required</h2><p>Cannot submit bhajan without selecting from dropdown. Manual entry without selecting a suggested bhajan is not allowed.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
     }
 
     const masterBhajan = await MasterBhajan.findByPk(master_bhajan_id);
     if (!masterBhajan || !masterBhajan.is_active) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>âš ï¸ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan was not found in the active master list.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan was not found in the active master list.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
     }
 
     // Verify title matches canonical master bhajan title
     if (normalizeBhajanTitle(masterBhajan.title) !== normalizeBhajanTitle(title)) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>âš ï¸ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. Title does not match the selected suggestion.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. Title does not match the selected suggestion.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
     }
 
     const DEITY_ALIASES = {
       Vitthala: ["Vitthala", "Vittala"],
+      Vittala: ["Vitthala", "Vittala"],
       Mata: ["Mata", "Devi"],
-      Hanuman: ["Hanuman", "Anjaneya"]
+      Devi: ["Devi", "Mata"],
+      Hanuman: ["Hanuman", "Anjaneya"],
+      Anjaneya: ["Hanuman", "Anjaneya"],
+      SarvaDharma: ["SarvaDharma", "Sarva Dharma"],
+      "Sarva Dharma": ["SarvaDharma", "Sarva Dharma"]
     };
     const DEITY_TITLE_MATCHERS = {
       Vitthala: /vitt?hala|vithoba|pandurang/i,
-      Hanuman: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i
+      Vittala: /vitt?hala|vithoba|pandurang/i,
+      Hanuman: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i,
+      Anjaneya: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i
     };
-    const aliases = DEITY_ALIASES[deity] || [deity];
+    const aliases = (DEITY_ALIASES[deity] || [deity]).map(a => a.toLowerCase().trim());
     const titleMatcher = DEITY_TITLE_MATCHERS[deity];
-    const deityMatches = aliases.includes(masterBhajan.deity) || (titleMatcher && titleMatcher.test(masterBhajan.title));
+
+    const bhajanDeities = (masterBhajan.deity || "")
+      .split(",")
+      .map(d => d.toLowerCase().trim())
+      .filter(Boolean);
+
+    const deityMatches = aliases.some(alias =>
+      bhajanDeities.some(bd => bd === alias || bd.includes(alias) || alias.includes(bd))
+    ) || (titleMatcher && titleMatcher.test(masterBhajan.title));
+
     if (!deityMatches) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>âš ï¸ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan does not belong to ${escapeHtml(deity)}.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan does not belong to ${escapeHtml(deity)}.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
     }
 
     const todayStr = getLocalDateStr();
@@ -392,8 +440,8 @@ exports.submitForm = async (req, res) => {
 
           await notificationService.createPersonalized({
             type: "partner_bhajan",
-            title: "ðŸ”” Bhajan Added With You",
-            body: `${singer_name} added "${title}" with you as partner for ${dateText}. Tap to view.`,
+            title: "🔔 Bhajan Added With You",
+            body: `${effectiveSingerName} added "${title}" with you as partner for ${dateText}. Tap to view.`,
             link: `/session-link?session_date=${session_date}`,
             eventKey: `partner_bhajan:${newSubmission.id}`,
             singerId: partnerSinger.id
@@ -474,7 +522,7 @@ exports.planView = async (req, res) => {
         const matchedMaster = masterMap.get(normalizeBhajanTitle(item.title));
         const sheetFilename = matchedMaster ? matchedMaster.sheet_filename : null;
         const sheetBtnHtml = sheetFilename
-          ? `<br><a href="/sheets/${encodeURIComponent(sheetFilename)}" target="_blank" rel="noopener noreferrer" class="sheet-link-pill no-print" title="Open official reference sheet music (PDF)">ðŸ“„ Music Sheet</a>`
+          ? `<br><a href="/sheets/${encodeURIComponent(sheetFilename)}" target="_blank" rel="noopener noreferrer" class="sheet-link-pill no-print" title="Open official reference sheet music (PDF)">📄 Music Sheet</a>`
           : '';
         const lyricsLinkHtml = matchedMaster
           ? `<a href="/bhajan/${matchedMaster.id}" style="color:inherit; text-decoration:none;" title="View lyrics & details">${escapeHtml(item.title)}</a>`
@@ -497,12 +545,12 @@ exports.planView = async (req, res) => {
 
         let line = `${index + 1}) ${item.singer_name}`;
         if (item.partner_name) line += ` (${item.partner_name})`;
-        line += ` â€“ [${item.deity}] ${item.title} â€“ Scale: ${item.scale || "N/A"}, Speed: ${item.speed ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1) : "N/A"}`;
+        line += ` – [${item.deity}] ${item.title} – Scale: ${item.scale || "N/A"}, Speed: ${item.speed ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1) : "N/A"}`;
         whatsappLines.push(line);
       });
     }
 
-    const headerLine = `Bhajan Plan â€“ ${sessionDate}`;
+    const headerLine = `Bhajan Plan – ${sessionDate}`;
     const whatsappText = headerLine + "\n" + whatsappLines.join("\n");
     const whatsappEncoded = encodeURIComponent(whatsappText);
 

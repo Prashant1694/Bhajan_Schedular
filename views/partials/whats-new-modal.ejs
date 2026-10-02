@@ -1,0 +1,202 @@
+<!-- What's New Update Modal (Appears Only Once After Today's Update) -->
+<div id="whatsNewOverlay" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.68); backdrop-filter: blur(6px); z-index: 99999; align-items: center; justify-content: center; padding: 16px; opacity: 0; transition: opacity 0.3s ease;">
+  <div id="whatsNewCard" style="background: var(--surface, #ffffff); border: 1px solid var(--border, #e2e8f0); border-radius: 22px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); position: relative; transform: scale(0.92) translateY(15px); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); animation: modalFloat 0.3s ease forwards;">
+    
+    <!-- Top Gradient Accent Stripe -->
+    <div style="height: 5px; background: linear-gradient(90deg, #d98a2b 0%, #7d2f45 60%, #e8c876 100%); border-radius: 22px 22px 0 0;"></div>
+
+    <!-- Close Button -->
+    <button type="button" id="whatsNewCloseBtn" aria-label="Close modal" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.06); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; color: var(--ink-soft, #64748b); transition: all 0.2s;">
+      ✕
+    </button>
+
+    <div style="padding: 26px 24px 24px 24px;">
+      
+      <!-- Modal Header -->
+      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px;">
+        <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3); flex-shrink: 0;">
+          ✨
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <h2 style="font-size: 20px; font-weight: 800; color: var(--ink, #1e293b); margin: 0; line-height: 1.2;">What's New in Bhajan Planner</h2>
+            <span style="background: rgba(234, 88, 12, 0.12); color: #ea580c; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px;">v2.8</span>
+          </div>
+          <p style="font-size: 12.5px; color: var(--muted, #64748b); margin: 3px 0 0 0;">
+            Exciting new updates for devotees &amp; singers
+          </p>
+        </div>
+      </div>
+
+      <!-- Feature List -->
+      <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;">
+        
+        <!-- Feature 1: Singer Hub -->
+        <div style="display: flex; gap: 13px; align-items: flex-start; padding: 12px; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.18); border-radius: 14px;">
+          <div style="font-size: 22px; flex-shrink: 0; margin-top: 1px;">🌟</div>
+          <div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--ink, #1e293b); margin-bottom: 2px;">
+              Personal Singer Hub
+            </div>
+            <div style="font-size: 12.5px; color: var(--ink-soft, #475569); line-height: 1.45;">
+              Verify your devotee profile with a simple 4-digit PIN (90-day active session). Access upcoming singing dates, song history, statistics, and set your default singing scale.
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 2: Personal Songbook -->
+        <div style="display: flex; gap: 13px; align-items: flex-start; padding: 12px; background: rgba(147, 51, 234, 0.06); border: 1px solid rgba(147, 51, 234, 0.18); border-radius: 14px;">
+          <div style="font-size: 22px; flex-shrink: 0; margin-top: 1px;">📖</div>
+          <div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--ink, #1e293b); margin-bottom: 2px;">
+              Personal Songbook &amp; Quick Picker
+            </div>
+            <div style="font-size: 12.5px; color: var(--ink-soft, #475569); line-height: 1.45;">
+              Bookmark your prepared bhajans directly from Master Bank. When submitting a bhajan, tap <strong>"Pick from My Songbook"</strong> to auto-fill title, pitch, and speed!
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 3: Bhajan Correction Tracking -->
+        <div style="display: flex; gap: 13px; align-items: flex-start; padding: 12px; background: rgba(2, 132, 199, 0.06); border: 1px solid rgba(2, 132, 199, 0.18); border-radius: 14px;">
+          <div style="font-size: 22px; flex-shrink: 0; margin-top: 1px;">🚩</div>
+          <div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--ink, #1e293b); margin-bottom: 2px;">
+              Bhajan Correction &amp; Report Tracker
+            </div>
+            <div style="font-size: 12.5px; color: var(--ink-soft, #475569); line-height: 1.45;">
+              Spotted a typo or wrong scale? Devotees can report corrections directly from any bhajan card. Track review status and replies from coordinators directly inside My Hub.
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature 4: Security & Polish -->
+        <div style="display: flex; gap: 13px; align-items: flex-start; padding: 12px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.18); border-radius: 14px;">
+          <div style="font-size: 22px; flex-shrink: 0; margin-top: 1px;">🛡️</div>
+          <div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--ink, #1e293b); margin-bottom: 2px;">
+              End-to-End Security &amp; Mobile Polish
+            </div>
+            <div style="font-size: 12.5px; color: var(--ink-soft, #475569); line-height: 1.45;">
+              Enhanced with brute-force PIN protection, rate limiting, clean mandatory deity chips, and seamless mobile responsive experience.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+        <button type="button" id="whatsNewDismissBtn" class="button secondary" style="padding: 9px 18px; font-size: 13.5px; font-weight: 600;">
+          Got It
+        </button>
+        <a href="/my-hub" id="whatsNewHubBtn" class="button primary" style="padding: 9px 20px; font-size: 13.5px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+          🌟 Explore My Hub
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+[data-theme="dark"] #whatsNewCard {
+  background: #151824 !important;
+  border-color: #262d3e !important;
+}
+[data-theme="dark"] #whatsNewCloseBtn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #cbd5e1 !important;
+}
+@media (max-width: 480px) {
+  #whatsNewCard {
+    border-radius: 18px !important;
+  }
+}
+</style>
+
+<script>
+(function() {
+  const POPUP_STORAGE_KEY = "bp_update_popup_2026_10_03";
+
+  // Check if user already saw today's update popup
+  try {
+    if (localStorage.getItem(POPUP_STORAGE_KEY) === "true") {
+      return;
+    }
+  } catch(e) {
+    return;
+  }
+
+  function dismissPopup(callback) {
+    try {
+      localStorage.setItem(POPUP_STORAGE_KEY, "true");
+    } catch(e) {}
+
+    const overlay = document.getElementById("whatsNewOverlay");
+    const card = document.getElementById("whatsNewCard");
+    if (!overlay || !card) {
+      if (callback) callback();
+      return;
+    }
+
+    overlay.style.opacity = "0";
+    card.style.transform = "scale(0.92) translateY(15px)";
+    setTimeout(function() {
+      overlay.style.display = "none";
+      if (callback) callback();
+    }, 280);
+  }
+
+  function openPopup() {
+    const overlay = document.getElementById("whatsNewOverlay");
+    const card = document.getElementById("whatsNewCard");
+    if (!overlay || !card) return;
+
+    overlay.style.display = "flex";
+    // Trigger transition
+    setTimeout(function() {
+      overlay.style.opacity = "1";
+      card.style.transform = "scale(1) translateY(0)";
+    }, 20);
+  }
+
+  // Bind close events once DOM is loaded
+  document.addEventListener("DOMContentLoaded", function() {
+    // Delay slightly (500ms) so user gets a smooth page entrance
+    setTimeout(openPopup, 500);
+
+    const closeBtn = document.getElementById("whatsNewCloseBtn");
+    const dismissBtn = document.getElementById("whatsNewDismissBtn");
+    const hubBtn = document.getElementById("whatsNewHubBtn");
+    const overlay = document.getElementById("whatsNewOverlay");
+
+    if (closeBtn) closeBtn.addEventListener("click", function() { dismissPopup(); });
+    if (dismissBtn) dismissBtn.addEventListener("click", function() { dismissPopup(); });
+
+    if (hubBtn) {
+      hubBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        const targetUrl = hubBtn.getAttribute("href");
+        dismissPopup(function() {
+          window.location.href = targetUrl;
+        });
+      });
+    }
+
+    if (overlay) {
+      overlay.addEventListener("click", function(e) {
+        if (e.target === overlay) {
+          dismissPopup();
+        }
+      });
+    }
+
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape" && overlay && overlay.style.display === "flex") {
+        dismissPopup();
+      }
+    });
+  });
+})();
+</script>

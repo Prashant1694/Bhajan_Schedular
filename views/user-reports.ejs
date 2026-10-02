@@ -1,0 +1,271 @@
+<div class="container" style="max-width: 840px; margin: 30px auto; padding: 24px 20px 32px 20px;">
+  
+  <!-- Navigation Back -->
+  <div style="margin-bottom: 22px; padding: 4px 0 2px 0;">
+    <a href="/master-bank" style="display: inline-flex; align-items: center; gap: 6px; color: #475569; text-decoration: none; font-size: 14px; font-weight: 600; padding: 4px 0;">
+      <span>←</span> Back to Master Bank
+    </a>
+  </div>
+
+  <!-- Header Banner -->
+  <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 28px 24px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <h1 style="font-size: 24px; font-weight: 800; margin: 0; color: #f8fafc;">📋 My Bhajan Correction Tickets</h1>
+          <span id="ticketCountBadge" style="display: none; background: #ea580c; color: #fff; font-size: 12px; font-weight: 800; padding: 3px 10px; border-radius: 999px;">0</span>
+        </div>
+        <p style="font-size: 14px; margin: 0; color: #94a3b8;">
+          Showing reports submitted from your device. Track review status, admin updates, and verified corrections.
+        </p>
+      </div>
+      <a href="/master-bank" style="background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600;">
+        🔍 Browse Bhajans
+      </a>
+    </div>
+  </div>
+
+  <!-- Ticket Search Box -->
+  <div style="background: #ffffff; padding: 18px 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <form id="searchTicketForm" onsubmit="lookupTicket(event)" style="display: flex; gap: 10px; align-items: center;">
+      <div style="flex: 1; position: relative;">
+        <input
+          type="text"
+          id="ticketCodeInput"
+          placeholder="Lookup a ticket code (e.g. REP-7890)..."
+          style="width: 100%; padding: 10px 14px; padding-left: 36px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; text-transform: uppercase; font-family: monospace; font-weight: 600;"
+        >
+        <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: 0.5;">🔍</span>
+      </div>
+      <button type="submit" class="button primary" style="padding: 10px 18px; font-size: 13px; font-weight: 700;">Lookup</button>
+    </form>
+  </div>
+
+  <!-- Tickets Container -->
+  <div id="ticketsLoading" style="text-align: center; padding: 40px 0; color: #64748b;">
+    <div style="font-size: 24px; animation: spin 1s infinite linear;">⏳</div>
+    <div style="margin-top: 8px; font-size: 14px;">Loading your reported tickets...</div>
+  </div>
+
+  <div id="ticketsList" style="display: none; flex-direction: column; gap: 16px;"></div>
+
+  <!-- Empty State -->
+  <div id="emptyTicketsState" style="display: none; background: #fff; padding: 48px 24px; border-radius: 16px; border: 1px dashed #cbd5e1; text-align: center; color: #64748b;">
+    <div style="font-size: 40px; margin-bottom: 12px;">📝</div>
+    <h3 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">No Tickets Found</h3>
+    <p style="font-size: 14px; max-width: 440px; margin: 0 auto 16px auto; line-height: 1.5;">
+      You haven't reported any bhajan issues from this browser yet, or your previous tickets were on a different device.
+    </p>
+    <a href="/master-bank" class="button primary" style="display: inline-block; padding: 10px 20px; font-size: 14px; text-decoration: none;">
+      Explore Master Bhajan Bank
+    </a>
+  </div>
+
+</div>
+
+<script>
+const CAT_LABELS = {
+  lyrics: '📝 Lyrics',
+  scale: '🎵 Scale / Pitch',
+  raga: '🎼 Raga',
+  deity: '🕉️ Deity',
+  tempo: '⏱️ Tempo',
+  sheet: '📄 Music Sheet',
+  spelling: '✏️ Typo',
+  other: '❓ Other'
+};
+
+async function loadMyReports() {
+  const loading = document.getElementById('ticketsLoading');
+  const container = document.getElementById('ticketsList');
+  const empty = document.getElementById('emptyTicketsState');
+  const countBadge = document.getElementById('ticketCountBadge');
+
+  // Retrieve ticket codes stored in localStorage
+  let storedTickets = [];
+  try {
+    storedTickets = JSON.parse(localStorage.getItem('bp_my_report_tickets') || '[]');
+  } catch (_) {}
+
+  const devId = localStorage.getItem('bp_device_id') || '';
+
+  try {
+    const params = new URLSearchParams();
+    if (storedTickets.length > 0) {
+      params.set('tickets', storedTickets.join(','));
+    }
+    if (devId) {
+      params.set('visitor_id', devId);
+    }
+
+    const res = await fetch('/api/reports/my-reports?' + params.toString());
+    const data = await res.json();
+
+    loading.style.display = 'none';
+
+    if (!data.reports || data.reports.length === 0) {
+      empty.style.display = 'block';
+      container.style.display = 'none';
+      if (countBadge) countBadge.style.display = 'none';
+      return;
+    }
+
+    if (countBadge) {
+      countBadge.textContent = data.reports.length + (data.reports.length === 1 ? ' ticket' : ' tickets');
+      countBadge.style.display = 'inline-block';
+    }
+
+    // Keep localStorage synchronized with any returned tickets
+    try {
+      const currentList = JSON.parse(localStorage.getItem('bp_my_report_tickets') || '[]');
+      let updated = false;
+      data.reports.forEach(r => {
+        if (r.ticket_code && !currentList.includes(r.ticket_code)) {
+          currentList.push(r.ticket_code);
+          updated = true;
+        }
+      });
+      if (updated) {
+        localStorage.setItem('bp_my_report_tickets', JSON.stringify(currentList));
+      }
+    } catch (_) {}
+
+    container.innerHTML = '';
+    container.style.display = 'flex';
+
+    data.reports.forEach(ticket => {
+      renderTicketCard(ticket, container);
+      // If admin responded and not seen, mark seen in background
+      if (ticket.admin_response && !ticket.user_viewed_reply) {
+        fetch('/api/reports/ticket/' + ticket.ticket_code + '/seen', { method: 'POST' }).catch(() => {});
+      }
+    });
+
+  } catch (err) {
+    loading.style.display = 'none';
+    container.innerHTML = `<div style="background:#fee2e2; color:#b91c1c; padding:16px; border-radius:8px;">Error loading tickets: ${err.message}</div>`;
+    container.style.display = 'block';
+  }
+}
+
+function renderTicketCard(t, container) {
+  let badgeHtml = '<span style="background: #fef3c7; color: #b45309; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;">🟡 Pending Review</span>';
+  if (t.status === 'under_review') {
+    badgeHtml = '<span style="background: #dbeafe; color: #1d4ed8; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;">🔵 In Progress (Under Review)</span>';
+  } else if (t.status === 'resolved') {
+    badgeHtml = '<span style="background: #dcfce7; color: #15803d; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;">🟢 Resolved & Updated</span>';
+  } else if (t.status === 'closed') {
+    badgeHtml = '<span style="background: #f1f5f9; color: #64748b; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;">⚪ Closed</span>';
+  }
+
+  const card = document.createElement('div');
+  card.style = 'background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);';
+
+  const catPills = (t.categories || []).map(cat => 
+    `<span style="background: #f1f5f9; color: #475569; font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 600;">${CAT_LABELS[cat] || cat}</span>`
+  ).join(' ');
+
+  let adminReplyHtml = '';
+  if (t.admin_response) {
+    adminReplyHtml = `
+      <div style="margin-top: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+          <div style="font-size: 12px; font-weight: 700; color: #166534; display: flex; align-items: center; gap: 6px;">
+            <span>💬</span> Response from ${escapeHtml(t.reviewed_by || 'Admin')}:
+          </div>
+          <div style="font-size: 11px; color: #15803d;">${new Date(t.reviewed_at || t.updated_at).toLocaleDateString()}</div>
+        </div>
+        <div style="font-size: 13.5px; color: #14532d; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(t.admin_response)}</div>
+      </div>
+    `;
+  }
+
+  card.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-family: monospace; font-size: 13px; font-weight: 800; background: #e0e7ff; color: #4338ca; padding: 3px 9px; border-radius: 6px;">${t.ticket_code}</span>
+        <span style="font-size: 12px; color: #64748b;">${new Date(t.created_at).toLocaleDateString()}</span>
+      </div>
+      <div>${badgeHtml}</div>
+    </div>
+
+    <h3 style="font-size: 17px; font-weight: 700; color: #0f172a; margin: 0 0 10px 0;">
+      ${t.master_id ? `<a href="/bhajan/${t.master_id}" style="color: #2563eb; text-decoration: none;">${escapeHtml(t.bhajan_title)} ↗</a>` : escapeHtml(t.bhajan_title)}
+    </h3>
+
+    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+      ${catPills}
+    </div>
+
+    <div style="font-size: 13.5px; color: #334155; line-height: 1.5; background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #cbd5e1;">
+      ${escapeHtml(t.description)}
+    </div>
+
+    ${t.suggested_correction ? `
+      <div style="font-size: 12.5px; color: #166534; background: #f0fdf4; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px;">
+        <strong>Suggested fix:</strong> ${escapeHtml(t.suggested_correction)}
+      </div>
+    ` : ''}
+
+    ${adminReplyHtml}
+  `;
+
+  container.appendChild(card);
+}
+
+async function lookupTicket(e) {
+  e.preventDefault();
+  const input = document.getElementById('ticketCodeInput');
+  const code = input.value.trim().toUpperCase();
+  if (!code) return;
+
+  const container = document.getElementById('ticketsList');
+  const empty = document.getElementById('emptyTicketsState');
+  const loading = document.getElementById('ticketsLoading');
+
+  loading.style.display = 'block';
+  container.style.display = 'none';
+  empty.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/reports/ticket/' + encodeURIComponent(code));
+    const data = await res.json();
+    loading.style.display = 'none';
+
+    if (!res.ok || !data || !data.ticket_code) {
+      alert('Ticket "' + code + '" not found. Please verify the code.');
+      loadMyReports();
+      return;
+    }
+
+    container.innerHTML = '';
+    container.style.display = 'flex';
+    renderTicketCard(data, container);
+
+    // Save looked-up ticket to localStorage so it stays in their list
+    try {
+      const stored = JSON.parse(localStorage.getItem('bp_my_report_tickets') || '[]');
+      if (!stored.includes(data.ticket_code)) {
+        stored.unshift(data.ticket_code);
+        localStorage.setItem('bp_my_report_tickets', JSON.stringify(stored));
+      }
+    } catch (_) {}
+
+  } catch (err) {
+    loading.style.display = 'none';
+    alert('Lookup failed: ' + err.message);
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+document.addEventListener('DOMContentLoaded', loadMyReports);
+</script>

@@ -92,6 +92,21 @@
                 <% } %>
         </a>
 
+        <a href="/admin/reports" class="<%= page === 'reports' ? 'active' : '' %>">
+            <span class="nav-icon-wrap">
+                🚩
+                <% if (typeof pendingReportCount !== 'undefined' && pendingReportCount > 0) { %>
+                    <b class="sidebar-badge-dot" style="background:#e53e3e;"></b>
+                <% } %>
+            </span>
+            Bhajan Reports
+            <% if (typeof pendingReportCount !== 'undefined' && pendingReportCount > 0) { %>
+                <b class="sidebar-badge-count" style="background:#e53e3e; color:#fff;">
+                    <%= pendingReportCount %>
+                </b>
+            <% } %>
+        </a>
+
         <a href="/admin/import-sessions" class="<%= page === 'import-sessions' ? 'active' : '' %>"><span>📥</span>Import
             Past Sessions</a>
         <a href="/admin?copy=true"><span>📋</span>Copy Session</a>

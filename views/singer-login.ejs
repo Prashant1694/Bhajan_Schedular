@@ -1,0 +1,269 @@
+<div class="container" style="max-width: 520px; margin: 40px auto; padding: 24px 20px 32px 20px;">
+  
+  <!-- Back Button -->
+  <div style="margin-bottom: 22px; padding: 4px 0 2px 0;">
+    <a href="/" style="display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); text-decoration: none; font-size: 14px; font-weight: 600; padding: 4px 0;">
+      <span>←</span> Back to Home
+    </a>
+  </div>
+
+  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 32px 28px; box-shadow: var(--shadow); position: relative; overflow: hidden;">
+    
+    <!-- Top Accent Bar -->
+    <div style="position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #ea580c 0%, #f59e0b 100%);"></div>
+
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 26px;">
+      <div style="font-size: 42px; margin-bottom: 10px;">🎤</div>
+      <h1 style="font-size: 24px; font-weight: 800; color: var(--ink); margin: 0 0 6px 0;">Singer Verification</h1>
+      <p style="font-size: 13.5px; color: var(--ink-soft); margin: 0; line-height: 1.5;">
+        Sri Sathya Sai Seva Organisation, Gandhinagar
+      </p>
+    </div>
+
+    <% if (isExpired) { %>
+      <div style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 12px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 18px;">⏳</span>
+        <span>For your security, 90 days have elapsed since your last PIN verification. Please re-enter your 4-digit PIN to continue.</span>
+      </div>
+    <% } %>
+
+    <div id="loginAlertBox" style="display: none; padding: 12px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 20px;"></div>
+
+    <form id="singerLoginForm" onsubmit="handleSingerLogin(event)">
+      <input type="hidden" id="loginRedirect" value="<%= redirectUrl %>">
+
+      <!-- Singer Select -->
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label for="singerSelect" style="display: block; font-weight: 700; font-size: 13.5px; color: var(--ink); margin-bottom: 8px;">
+          Select Your Name <span style="color: #ef4444;">*</span>
+        </label>
+        <select
+          id="singerSelect"
+          required
+          onchange="onSingerSelected(this.value)"
+          style="width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border); font-size: 14.5px; background: var(--surface); color: var(--ink);"
+        >
+          <option value="">— Search or Select Singer —</option>
+          <% singers.forEach(function(s) { %>
+            <option value="<%= s.id %>" data-has-pin="<%= s.hasPin ? '1' : '0' %>" data-gender="<%= s.gender || '' %>">
+              <%= s.name %> <%= s.gender ? `(${s.gender})` : '' %>
+            </option>
+          <% }); %>
+        </select>
+        <small style="color: var(--ink-soft); font-size: 12px; margin-top: 4px; display: block;">
+          Select your name as listed in the Samiti Singer Dictionary.
+        </small>
+      </div>
+
+      <!-- PIN Input Section (Shown after singer selected) -->
+      <div id="pinSection" style="display: none; margin-bottom: 22px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+          <div id="pinTitle" style="font-weight: 700; font-size: 14px; color: #0f172a; margin-bottom: 4px;">
+            🔒 Enter Your 4-Digit PIN
+          </div>
+          <div id="pinSubtitle" style="font-size: 12.5px; color: #64748b; line-height: 1.4;">
+            Please enter your private 4-digit security PIN.
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="singerPin" style="display: block; font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 6px;">
+            4-Digit PIN <span style="color: #ef4444;">*</span>
+          </label>
+          <div style="position: relative;">
+            <input
+              type="password"
+              id="singerPin"
+              inputmode="numeric"
+              pattern="[0-9]{4}"
+              maxlength="4"
+              placeholder="••••"
+              required
+              autocomplete="current-password"
+              style="width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); font-size: 20px; letter-spacing: 8px; text-align: center; font-family: monospace; font-weight: 800;"
+            >
+          </div>
+        </div>
+
+        <!-- Confirm PIN (Only for first-time creation) -->
+        <div id="confirmPinGroup" style="display: none; margin-bottom: 14px;">
+          <label for="confirmPin" style="display: block; font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 6px;">
+            Confirm 4-Digit PIN <span style="color: #ef4444;">*</span>
+          </label>
+          <input
+            type="password"
+            id="confirmPin"
+            inputmode="numeric"
+            pattern="[0-9]{4}"
+            maxlength="4"
+            placeholder="••••"
+            style="width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); font-size: 20px; letter-spacing: 8px; text-align: center; font-family: monospace; font-weight: 800;"
+          >
+          <small style="color: #16a34a; font-size: 11.5px; margin-top: 4px; display: block;">
+            ✨ Remember this PIN! You will use it whenever submitting bhajans or opening your Singer Hub.
+          </small>
+        </div>
+
+        <!-- 90-day badge reminder -->
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; background: #f1f5f9; padding: 8px 12px; border-radius: 8px;">
+          <span>🛡️</span>
+          <span>Your login stays secure and remembered on this device for <strong>90 days</strong>.</span>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <button
+        type="submit"
+        id="loginSubmitBtn"
+        class="button primary"
+        disabled
+        style="width: 100%; padding: 12px; font-size: 15px; font-weight: 700; border-radius: 10px; justify-content: center;"
+      >
+        Select your name to continue
+      </button>
+
+    </form>
+
+    <!-- Footer Help -->
+    <div style="margin-top: 24px; text-align: center; font-size: 12.5px; color: var(--ink-soft); border-top: 1px solid var(--border); padding-top: 16px;">
+      Forgot your PIN or don't see your name?
+      <div style="margin-top: 4px; font-weight: 600; color: #ea580c;">
+        Please speak to the Bhajan Coordinator or Admin to reset or register your name.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let currentSingerHasPin = false;
+
+function onSingerSelected(singerId) {
+  const pinSection = document.getElementById('pinSection');
+  const btn = document.getElementById('loginSubmitBtn');
+  const alertBox = document.getElementById('loginAlertBox');
+  alertBox.style.display = 'none';
+
+  if (!singerId) {
+    pinSection.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Select your name to continue';
+    return;
+  }
+
+  const select = document.getElementById('singerSelect');
+  const selectedOption = select.options[select.selectedIndex];
+  currentSingerHasPin = selectedOption.getAttribute('data-has-pin') === '1';
+
+  const pinTitle = document.getElementById('pinTitle');
+  const pinSubtitle = document.getElementById('pinSubtitle');
+  const confirmGroup = document.getElementById('confirmPinGroup');
+  const confirmInput = document.getElementById('confirmPin');
+  const pinInput = document.getElementById('singerPin');
+
+  pinSection.style.display = 'block';
+  btn.disabled = false;
+  pinInput.value = '';
+  if (confirmInput) confirmInput.value = '';
+
+  if (currentSingerHasPin) {
+    pinTitle.textContent = '🔒 Enter Your 4-Digit PIN';
+    pinSubtitle.textContent = 'Please enter your registered 4-digit PIN for ' + selectedOption.text.split('(')[0].trim() + '.';
+    confirmGroup.style.display = 'none';
+    confirmInput.removeAttribute('required');
+    btn.textContent = 'Verify PIN & Enter';
+  } else {
+    pinTitle.textContent = '✨ Create Your 4-Digit PIN';
+    pinSubtitle.textContent = 'Welcome! This name does not have a PIN yet. Choose any 4-digit PIN you can easily remember to secure your Singer Hub.';
+    confirmGroup.style.display = 'block';
+    confirmInput.setAttribute('required', 'required');
+    btn.textContent = 'Create PIN & Enter';
+  }
+
+  setTimeout(() => pinInput.focus(), 100);
+}
+
+async function handleSingerLogin(e) {
+  e.preventDefault();
+  const alertBox = document.getElementById('loginAlertBox');
+  const btn = document.getElementById('loginSubmitBtn');
+  const singerId = document.getElementById('singerSelect').value;
+  const pin = document.getElementById('singerPin').value.trim();
+  const confirmPin = document.getElementById('confirmPin')?.value.trim();
+  const redirect = document.getElementById('loginRedirect').value;
+
+  alertBox.style.display = 'none';
+
+  if (!singerId) {
+    showAlert('Please select your name.', 'error');
+    return;
+  }
+
+  if (!/^\d{4}$/.test(pin)) {
+    showAlert('PIN must be exactly 4 digits (e.g. 1234).', 'error');
+    return;
+  }
+
+  if (!currentSingerHasPin && pin !== confirmPin) {
+    showAlert('PINs do not match. Please verify both entries.', 'error');
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Verifying...';
+
+    const res = await fetch('/api/singer/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        singer_id: singerId,
+        pin: pin,
+        redirect: redirect
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Verification failed');
+    }
+
+    // Save singer name in localStorage for offline detection / notifications
+    try {
+      localStorage.setItem('bp_singer_id', data.singer.id);
+      localStorage.setItem('bp_singer_name', data.singer.name);
+      localStorage.setItem('bp_singer_gender', data.singer.gender || '');
+      localStorage.setItem('bp_singer_login_time', Date.now());
+    } catch (_) {}
+
+    // If first login or new PIN, forward to hub or redirect with welcome state
+    if (data.showIntro) {
+      window.location.href = '/my-hub?welcome=true&redirect=' + encodeURIComponent(data.redirect || '/submit-form');
+    } else {
+      window.location.href = data.redirect || '/submit-form';
+    }
+
+  } catch (err) {
+    showAlert(err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = currentSingerHasPin ? 'Verify PIN & Enter' : 'Create PIN & Enter';
+  }
+}
+
+function showAlert(msg, type) {
+  const box = document.getElementById('loginAlertBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+  if (type === 'error') {
+    box.style.background = '#fee2e2';
+    box.style.border = '1px solid #fca5a5';
+    box.style.color = '#991b1b';
+  } else {
+    box.style.background = '#ecfdf5';
+    box.style.border = '1px solid #a7f3d0';
+    box.style.color = '#065f46';
+  }
+}
+</script>

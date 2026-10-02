@@ -377,6 +377,13 @@ document.addEventListener('DOMContentLoaded', function () {
       titleInput.placeholder = `Loading ${selectedDeity} bhajans...`;
       document.getElementById('masterDataBadge').style.display = 'none';
 
+      // Pre-fill singer's preferred default pitch if configured
+      const prefScaleEl = document.getElementById('singerPreferredScale');
+      const scaleInputEl = document.getElementById('scaleInput');
+      if (prefScaleEl && prefScaleEl.value && scaleInputEl && !scaleInputEl.value) {
+        scaleInputEl.value = prefScaleEl.value;
+      }
+
       // Fetch Master Bhajans
       fetch(`/api/master-bhajans/${selectedDeity}`)
         .then(response => response.json())
@@ -1285,3 +1292,135 @@ document.addEventListener('click', function (e) {
     document.querySelectorAll('.dd-menu').forEach(m => m.style.display = 'none');
   }
 });
+
+// ========================================================
+// PHASE 3: SONGBOOK PICKER FOR SUBMISSION FORM
+// ========================================================
+(function initSongbookPicker() {
+  const openBtn = document.getElementById('openSongbookPickerBtn');
+  const modal = document.getElementById('songbookPickerModal');
+  const closeBtn = document.getElementById('closeSongbookPickerBtn');
+  const listContainer = document.getElementById('songbookPickerList');
+
+  if (!openBtn || !modal) return;
+
+  function closeModal() {
+    modal.classList.remove('show');
+  }
+
+  closeBtn?.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) closeModal();
+  });
+
+  openBtn.addEventListener('click', async function() {
+    modal.classList.add('show');
+    if (!listContainer) return;
+    listContainer.innerHTML = '<div style="text-align:center; padding:24px; color:var(--ink-soft);"><span style="display:inline-block; animation:spin 1s infinite linear;">⏳</span> Loading your repertoire...</div>';
+
+    try {
+      const res = await fetch('/api/singer/songbook');
+      if (!res.ok) throw new Error('Failed to load songbook');
+      const data = await res.json();
+      const bookmarks = data.bookmarks || [];
+
+      if (bookmarks.length === 0) {
+        listContainer.innerHTML = `
+          <div style="background:var(--bg); border:1px dashed var(--border); border-radius:12px; padding:28px 16px; text-align:center;">
+            <div style="font-size:32px; margin-bottom:8px;">📖</div>
+            <h4 style="margin:0 0 6px 0; color:var(--ink);">Your Songbook is Empty</h4>
+            <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 12px 0;">Visit the Master Bhajan Bank and tap "⭐ Songbook" on any bhajan to save it here with your custom singing pitch.</p>
+            <a href="/master-bank" class="button secondary" style="font-size:12px; padding:6px 12px; text-decoration:none;">Browse Bhajan Bank</a>
+          </div>
+        `;
+        return;
+      }
+
+      listContainer.innerHTML = '';
+      bookmarks.forEach(item => {
+        const b = item.masterBhajan;
+        if (!b) return;
+
+        const row = document.createElement('div');
+        row.style.cssText = 'background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px; box-shadow:0 1px 3px rgba(0,0,0,0.04);';
+
+        const effectiveScale = item.custom_scale || b.shruti || '';
+
+        row.innerHTML = `
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px; flex-wrap:wrap;">
+              <span style="background:#f1f5f9; color:#475569; font-size:11px; font-weight:700; padding:2px 7px; border-radius:5px;">
+                🕉️ ${b.deity}
+              </span>
+              ${effectiveScale ? `
+                <span style="background:#fdf4ff; color:#a21caf; border:1px solid #fae8ff; font-size:11px; font-weight:700; padding:2px 7px; border-radius:5px;">
+                  🎵 ${effectiveScale}
+                </span>
+              ` : ''}
+            </div>
+            <div style="font-size:14.5px; font-weight:700; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${b.title}
+            </div>
+            ${item.notes ? `
+              <div style="font-size:11.5px; color:var(--ink-soft); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                📝 <em>${item.notes}</em>
+              </div>
+            ` : ''}
+          </div>
+          <div>
+            <button type="button" class="button primary sb-pick-btn" style="padding:6px 14px; font-size:12.5px; font-weight:700; background:#7c3aed; border-color:#7c3aed; white-space:nowrap;">
+              Select
+            </button>
+          </div>
+        `;
+
+        row.querySelector('.sb-pick-btn').addEventListener('click', function() {
+          // 1. Match and select deity card
+          const bDeities = (b.deity || '').split(',').map(s => s.trim());
+          let matchedCard = null;
+          for (const d of bDeities) {
+            matchedCard = document.querySelector(`.deity-card.available[data-deity="${d}"]`);
+            if (matchedCard) break;
+          }
+          if (!matchedCard) {
+            matchedCard = document.querySelector(`.deity-card.available[data-deity="${bDeities[0]}"]`);
+          }
+
+          if (matchedCard) {
+            matchedCard.click();
+          }
+
+          // 2. Populate title & master ID
+          const titleInput = document.getElementById('bhajanTitleInput');
+          const masterIdInput = document.getElementById('selectedMasterBhajanId');
+          const scaleInput = document.getElementById('scaleInput');
+
+          if (titleInput) titleInput.value = b.title;
+          if (masterIdInput) masterIdInput.value = b.id;
+          if (scaleInput && effectiveScale) scaleInput.value = effectiveScale;
+
+          closeModal();
+
+          // 3. Trigger input event to populate auto-filled raga, tempo, and badges
+          if (titleInput) {
+            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+
+          setTimeout(() => {
+            const bhajanDetails = document.getElementById('bhajanDetails');
+            if (bhajanDetails) {
+              bhajanDetails.classList.add('show');
+              bhajanDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }, 150);
+        });
+
+        listContainer.appendChild(row);
+      });
+
+    } catch (err) {
+      listContainer.innerHTML = `<div style="color:#ef4444; padding:16px; text-align:center;">Failed to load songbook: ${err.message}</div>`;
+    }
+  });
+})();
+

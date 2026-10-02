@@ -124,6 +124,25 @@
               <span class="btn-text">Music Sheet</span>
             </a>
           <% } %>
+
+          <!-- Add to My Songbook / Repertoire Button (Phase 2) -->
+          <button type="button" id="songbookBtn" onclick="openSongbookModal()" class="tool-btn songbook-btn no-print" title="Save this bhajan to your personal Songbook repertoire" style="color: #7c3aed; border-color: rgba(124, 58, 237, 0.35);">
+            <span class="btn-icon" id="songbookIcon">⭐</span>
+            <span id="songbookBtnText">Songbook</span>
+          </button>
+
+          <!-- Report Issue / Suggest Correction Button -->
+          <button type="button" onclick="openReportModal()" class="tool-btn report-btn no-print" title="Report incorrect lyrics, scale, or details" style="color: #b45309; border-color: rgba(217, 119, 6, 0.35);">
+            <span class="btn-icon">🚩</span>
+            <span class="btn-text">Report Issue</span>
+          </button>
+
+          <!-- Track Reports Button -->
+          <a href="/my-reports" class="tool-btn track-btn no-print" id="trackReportsLink" title="Track your reported issues & admin replies" style="text-decoration:none; position:relative;">
+            <span class="btn-icon">📋</span>
+            <span class="btn-text">My Reports</span>
+            <span id="unreadReplyDot" style="display:none; position:absolute; top:-4px; right:-4px; width:10px; height:10px; background:#ef4444; border-radius:50%; border:2px solid #fff; box-shadow:0 0 6px #ef4444;"></span>
+          </a>
         </div>
       </div>
 
@@ -323,6 +342,245 @@
 </div>
 
 <!-- ======================================================== -->
+<!-- SONGBOOK / REPERTOIRE MODAL (PHASE 2)                    -->
+<!-- ======================================================== -->
+<div id="songbookModal" class="report-modal-overlay" style="display:none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+  <div class="report-modal-card" style="background: #ffffff; width: 100%; max-width: 480px; border-radius: 18px; box-shadow: 0 25px 35px -5px rgba(0,0,0,0.2); overflow: hidden; max-height: 92vh; display: flex; flex-direction: column;">
+    
+    <!-- Modal Header -->
+    <div style="padding: 20px 24px; background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border-bottom: 1px solid #ddd6fe; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 24px;">⭐</span>
+        <div>
+          <h2 style="font-size: 17px; font-weight: 800; color: #5b21b6; margin: 0;">My Singer Songbook</h2>
+          <div style="font-size: 12px; color: #6d28d9; margin-top: 2px;">Bhajan: <strong><%= bhajan.title %></strong></div>
+        </div>
+      </div>
+      <button type="button" onclick="closeSongbookModal()" style="background: transparent; border: none; font-size: 26px; cursor: pointer; color: #5b21b6; line-height: 1;">&times;</button>
+    </div>
+
+    <!-- Modal Body -->
+    <div id="songbookModalBody" style="padding: 22px 24px; overflow-y: auto;">
+      <div id="songbookAuthNotice" style="display: none; text-align: center; padding: 20px 10px;">
+        <div style="font-size: 38px; margin-bottom: 12px;">🔒</div>
+        <h3 style="font-size: 17px; font-weight: 800; color: #1e293b; margin: 0 0 8px 0;">Singer Verification Required</h3>
+        <p style="font-size: 13.5px; color: #64748b; line-height: 1.5; margin: 0 0 20px 0;">
+          Please sign in with your 4-digit PIN to save this bhajan to your personal Songbook repertoire and record your vocal pitch.
+        </p>
+        <a href="/singer/login?redirect=<%= encodeURIComponent('/bhajan/' + bhajan.id) %>" class="button primary" style="display: inline-block; padding: 10px 22px; font-weight: 700; background: #ea580c; border-color: #ea580c; text-decoration: none;">
+          🎤 Singer Login with 4-Digit PIN
+        </a>
+      </div>
+
+      <form id="songbookForm" onsubmit="handleSongbookFormSubmit(event)" style="display: none;">
+        <input type="hidden" id="sbMasterId" value="<%= bhajan.id %>">
+        
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; font-size: 13px; color: #475569; margin-bottom: 4px;">
+            <span>Default Catalog Pitch:</span>
+            <strong><%= bhajan.shruti || 'Not specified' %></strong>
+          </div>
+          <% if (bhajan.shruti_female) { %>
+            <div style="display: flex; justify-content: space-between; font-size: 13px; color: #475569;">
+              <span>Female Reference Pitch:</span>
+              <strong><%= bhajan.shruti_female %></strong>
+            </div>
+          <% } %>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label for="sbCustomScale" style="display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+            My Singing Pitch / Scale
+          </label>
+          <input
+            type="text"
+            id="sbCustomScale"
+            placeholder="e.g. 4.5 Safed, G#, 5 Kaali"
+            value="<%= bhajan.shruti || '' %>"
+            style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px;"
+          >
+          <small style="color: #64748b; font-size: 11.5px; margin-top: 4px; display: block;">
+            The harmonium scale you prefer when leading this bhajan.
+          </small>
+        </div>
+
+        <div style="margin-bottom: 22px;">
+          <label for="sbNotes" style="display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+            Personal Practice Notes (Optional)
+          </label>
+          <textarea
+            id="sbNotes"
+            rows="3"
+            placeholder="e.g. Lead with slow alaap; repeat charan twice..."
+            style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; line-height: 1.4; resize: vertical;"
+          ></textarea>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <button type="button" id="sbRemoveBtn" onclick="handleSongbookRemove()" class="button secondary" style="color: #dc2626; border-color: #fca5a5; display: none;">
+            Remove from Songbook
+          </button>
+          <div style="display: flex; gap: 8px; margin-left: auto;">
+            <button type="button" onclick="closeSongbookModal()" class="button secondary">Cancel</button>
+            <button type="submit" id="sbSaveBtn" class="button primary" style="background: #8b5cf6; border-color: #8b5cf6; font-weight: 700;">
+              ⭐ Save to Songbook
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL: REPORT BHAJAN ISSUE / SUGGEST CORRECTION           -->
+<!-- ======================================================== -->
+<div id="reportModal" class="report-modal-overlay" style="display:none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 99999; align-items: center; justify-content: center; padding: 16px; overflow-y: auto;">
+  <div class="report-modal-card" style="background: #ffffff; width: 100%; max-width: 580px; border-radius: 18px; box-shadow: 0 25px 35px -5px rgba(0,0,0,0.2); overflow: hidden; max-height: 92vh; display: flex; flex-direction: column;">
+    
+    <!-- Modal Header -->
+    <div style="padding: 20px 24px; background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-bottom: 1px solid #fed7aa; display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 24px;">🚩</span>
+        <div>
+          <h2 style="font-size: 17px; font-weight: 800; color: #9a3412; margin: 0;">Report an Issue / Suggest Correction</h2>
+          <div style="font-size: 12px; color: #c2410c; margin-top: 2px;">Bhajan: <strong><%= bhajan.title %></strong></div>
+        </div>
+      </div>
+      <button type="button" onclick="closeReportModal()" style="background: transparent; border: none; font-size: 26px; cursor: pointer; color: #9a3412; line-height: 1;">&times;</button>
+    </div>
+
+    <!-- Modal Form Body -->
+    <div id="reportFormBody" style="padding: 22px 24px; overflow-y: auto; flex: 1;">
+      <form id="bhajanReportForm" onsubmit="handleBhajanReportSubmit(event)">
+        <input type="hidden" id="reportMasterId" value="<%= bhajan.id %>">
+        <input type="hidden" id="reportBhajanTitle" value="<%= bhajan.title %>">
+
+        <!-- Category Checkboxes -->
+        <div style="margin-bottom: 18px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">
+            What needs to be corrected? <span style="font-weight: 400; color: #64748b;">(Select all that apply)</span>
+          </label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 7px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+              <input type="checkbox" name="reportCat" value="lyrics" checked style="accent-color: #ea580c;">
+              <span>📝 Lyrics incorrect / missing</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 7px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+              <input type="checkbox" name="reportCat" value="scale" style="accent-color: #ea580c;">
+              <span>🎵 Scale / Pitch incorrect</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 7px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+              <input type="checkbox" name="reportCat" value="raga" style="accent-color: #ea580c;">
+              <span>🎼 Raga name inaccurate</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 7px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+              <input type="checkbox" name="reportCat" value="deity" style="accent-color: #ea580c;">
+              <span>🕉️ Deity categorization</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 7px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+              <input type="checkbox" name="reportCat" value="tempo" style="accent-color: #ea580c;">
+              <span>⏱️ Tempo (Speed) wrong</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 7px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+              <input type="checkbox" name="reportCat" value="sheet" style="accent-color: #ea580c;">
+              <span>📄 Music Sheet error</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 7px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+              <input type="checkbox" name="reportCat" value="spelling" style="accent-color: #ea580c;">
+              <span>✏️ Title / word typo</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 7px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+              <input type="checkbox" name="reportCat" value="other" style="accent-color: #ea580c;">
+              <span>❓ Other detail</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div style="margin-bottom: 14px;">
+          <label for="reportDescription" style="display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+            Issue Details <span style="font-weight: 500; color: #16a34a; font-size: 12px;">(Optional — not required if option is checked above)</span>
+          </label>
+          <textarea
+            id="reportDescription"
+            rows="3"
+            placeholder="Optional: No need to write anything if your issue is covered by the checkboxes above. You can add specific details here only if you wish..."
+            style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13.5px; line-height: 1.4; resize: vertical;"
+          ></textarea>
+        </div>
+
+        <!-- Suggested Correction / Lyrics (Optional) -->
+        <div style="margin-bottom: 14px;">
+          <label for="reportSuggestion" style="display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">
+            Suggested Correction / Full Lyrics <span style="font-weight: 400; color: #64748b;">(Optional)</span>
+          </label>
+          <textarea
+            id="reportSuggestion"
+            rows="3"
+            placeholder="Paste verified lyrics or recommended changes here..."
+            style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13.5px; line-height: 1.4; resize: vertical;"
+          ></textarea>
+        </div>
+
+        <!-- Reporter Info (Optional) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+          <div>
+            <label for="reporterName" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Your Name (Optional)</label>
+            <input
+              type="text"
+              id="reporterName"
+              placeholder="e.g. Prashant"
+              style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;"
+            >
+          </div>
+          <div>
+            <label for="reporterContact" style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px;">Contact (Email/Phone - Optional)</label>
+            <input
+              type="text"
+              id="reporterContact"
+              placeholder="For update notifications"
+              style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px;"
+            >
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+          <button type="button" onclick="closeReportModal()" class="button secondary" style="padding: 9px 16px;">Cancel</button>
+          <button type="submit" id="submitReportBtn" class="button primary" style="padding: 9px 22px; font-weight: 700; background: #ea580c; border-color: #ea580c;">🚩 Submit Report</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Success Confirmation State (shown after submit) -->
+    <div id="reportSuccessBody" style="display: none; padding: 32px 24px; text-align: center;">
+      <div style="font-size: 44px; margin-bottom: 12px;">✅</div>
+      <h3 style="font-size: 20px; font-weight: 800; color: #1e293b; margin: 0 0 8px 0;">Report Submitted!</h3>
+      <p style="font-size: 14px; color: #64748b; max-width: 420px; margin: 0 auto 16px auto; line-height: 1.5;">
+        Thank you for helping keep our Bhajan Bank accurate. Our music and coordination team will review this.
+      </p>
+      
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; max-width: 320px; margin: 0 auto 20px auto;">
+        <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700;">Your Reference Ticket</div>
+        <div id="createdTicketCode" style="font-family: monospace; font-size: 20px; font-weight: 800; color: #4338ca; margin-top: 4px;">REP-XXXX</div>
+      </div>
+
+      <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+        <a href="/my-reports" class="button primary" style="text-decoration: none; padding: 10px 18px; font-size: 13px; font-weight: 700;">
+          📋 Track Ticket Status
+        </a>
+        <button type="button" onclick="closeReportModal()" class="button secondary" style="padding: 10px 18px; font-size: 13px;">
+          Done
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======================================================== -->
 <!-- BULLETPROOF CLIENT SCRIPTS (FONT RESIZE, ALIGN, COPY)     -->
 <!-- ======================================================== -->
 <script>
@@ -479,15 +737,240 @@
     applyFrameState(!isFrameActive);
   };
 
+  // -------------------------------------------------------------
+  // REPORT ISSUE / SUGGEST CORRECTION MODAL CONTROLLER
+  // -------------------------------------------------------------
+  window.openReportModal = function() {
+    const modal = document.getElementById('reportModal');
+    if (!modal) return;
+    document.getElementById('reportFormBody').style.display = 'block';
+    document.getElementById('reportSuccessBody').style.display = 'none';
+    modal.style.display = 'flex';
+  };
+
+  window.closeReportModal = function() {
+    const modal = document.getElementById('reportModal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.handleBhajanReportSubmit = async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitReportBtn');
+    const masterId = document.getElementById('reportMasterId').value;
+    const bhajanTitle = document.getElementById('reportBhajanTitle').value;
+    const desc = document.getElementById('reportDescription').value;
+    const suggestion = document.getElementById('reportSuggestion').value;
+    const reporterName = document.getElementById('reporterName').value;
+    const reporterContact = document.getElementById('reporterContact').value;
+
+    const checkedCats = [];
+    const catCheckboxes = document.querySelectorAll('input[name="reportCat"]:checked');
+    catCheckboxes.forEach(cb => checkedCats.push(cb.value));
+
+    if (checkedCats.length === 0 && (!desc || !desc.trim())) {
+      alert('Please select at least one issue category above, or provide details in the description.');
+      return;
+    }
+
+    try {
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      const devId = localStorage.getItem('bp_device_id') || '';
+      const res = await fetch('/api/reports/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          master_id: masterId,
+          bhajan_title: bhajanTitle,
+          categories: checkedCats,
+          description: desc,
+          suggested_correction: suggestion,
+          reporter_name: reporterName,
+          reporter_contact: reporterContact,
+          visitor_id: devId
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit report');
+
+      // Save ticket code into localStorage for easy tracking
+      try {
+        const stored = JSON.parse(localStorage.getItem('bp_my_report_tickets') || '[]');
+        if (data.ticket && data.ticket.ticket_code && !stored.includes(data.ticket.ticket_code)) {
+          stored.unshift(data.ticket.ticket_code);
+          localStorage.setItem('bp_my_report_tickets', JSON.stringify(stored));
+        }
+      } catch (_) {}
+
+      // Show success screen
+      document.getElementById('createdTicketCode').textContent = data.ticket.ticket_code;
+      document.getElementById('reportFormBody').style.display = 'none';
+      document.getElementById('reportSuccessBody').style.display = 'block';
+
+      // Reset form
+      document.getElementById('bhajanReportForm').reset();
+    } catch (err) {
+      alert('Error submitting report: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🚩 Submit Report';
+    }
+  };
+
+  // Check if admin has responded to any past reports from this device
+  async function checkReportNotifications() {
+    try {
+      let storedTickets = [];
+      try {
+        storedTickets = JSON.parse(localStorage.getItem('bp_my_report_tickets') || '[]');
+      } catch (_) {}
+
+      const devId = localStorage.getItem('bp_device_id') || '';
+      if (storedTickets.length === 0 && !devId) return;
+
+      const p = [];
+      if (storedTickets.length > 0) p.push('tickets=' + encodeURIComponent(storedTickets.join(',')));
+      if (devId) p.push('visitor_id=' + encodeURIComponent(devId));
+
+      const res = await fetch('/api/reports/my-reports?' + p.join('&'));
+      const data = await res.json();
+
+      if (data && data.has_unread_reply) {
+        const dot = document.getElementById('unreadReplyDot');
+        if (dot) dot.style.display = 'block';
+      }
+    } catch (_) {}
+  }
+
+  // -------------------------------------------------------------
+  // SONGBOOK / REPERTOIRE CONTROLLER (PHASE 2)
+  // -------------------------------------------------------------
+  let isSongbookBookmarked = false;
+  let isSingerLoggedIn = false;
+
+  async function checkSongbookStatus() {
+    try {
+      const res = await fetch('/api/singer/songbook/check/<%= bhajan.id %>');
+      const data = await res.json();
+      isSingerLoggedIn = Boolean(data.loggedIn);
+      isSongbookBookmarked = Boolean(data.bookmarked);
+
+      const btn = document.getElementById('songbookBtn');
+      const icon = document.getElementById('songbookIcon');
+      const text = document.getElementById('songbookBtnText');
+      const removeBtn = document.getElementById('sbRemoveBtn');
+      const scaleInput = document.getElementById('sbCustomScale');
+      const notesInput = document.getElementById('sbNotes');
+
+      if (isSongbookBookmarked && data.bookmark) {
+        if (icon) icon.textContent = '★';
+        if (text) text.textContent = 'In Songbook';
+        if (btn) {
+          btn.style.color = '#7c3aed';
+          btn.style.borderColor = '#8b5cf6';
+          btn.style.background = '#f5f3ff';
+        }
+        if (removeBtn) removeBtn.style.display = 'inline-block';
+        if (scaleInput && data.bookmark.custom_scale) scaleInput.value = data.bookmark.custom_scale;
+        if (notesInput && data.bookmark.notes) notesInput.value = data.bookmark.notes;
+      } else {
+        if (icon) icon.textContent = '⭐';
+        if (text) text.textContent = 'Songbook';
+        if (btn) {
+          btn.style.background = 'transparent';
+          btn.style.borderColor = 'rgba(124, 58, 237, 0.35)';
+        }
+        if (removeBtn) removeBtn.style.display = 'none';
+      }
+    } catch (_) {}
+  }
+
+  window.openSongbookModal = function() {
+    const modal = document.getElementById('songbookModal');
+    const authNotice = document.getElementById('songbookAuthNotice');
+    const form = document.getElementById('songbookForm');
+
+    if (!isSingerLoggedIn) {
+      if (authNotice) authNotice.style.display = 'block';
+      if (form) form.style.display = 'none';
+    } else {
+      if (authNotice) authNotice.style.display = 'none';
+      if (form) form.style.display = 'block';
+    }
+
+    if (modal) modal.style.display = 'flex';
+  };
+
+  window.closeSongbookModal = function() {
+    const modal = document.getElementById('songbookModal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.handleSongbookFormSubmit = async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('sbSaveBtn');
+    const masterId = document.getElementById('sbMasterId').value;
+    const customScale = document.getElementById('sbCustomScale').value;
+    const notes = document.getElementById('sbNotes').value;
+
+    try {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      let endpoint = isSongbookBookmarked ? '/api/singer/songbook/update' : '/api/singer/songbook/toggle';
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ master_id: masterId, custom_scale: customScale, notes: notes })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save');
+
+      await checkSongbookStatus();
+      closeSongbookModal();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '⭐ Save to Songbook';
+    }
+  };
+
+  window.handleSongbookRemove = async function() {
+    if (!confirm('Remove this bhajan from your Songbook?')) return;
+    try {
+      const res = await fetch('/api/singer/songbook/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ master_id: '<%= bhajan.id %>' })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to remove');
+
+      await checkSongbookStatus();
+      closeSongbookModal();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  };
+
   // Run on page load
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() { 
       applySize(currentSize);
       applyFrameState(isFrameActive);
+      checkReportNotifications();
+      checkSongbookStatus();
     });
   } else {
     applySize(currentSize);
     applyFrameState(isFrameActive);
+    checkReportNotifications();
+    checkSongbookStatus();
   }
 })();
 </script>

@@ -44,6 +44,7 @@ function generateSubmitFormHtml(
   showSuccess = false,
   submissionRowsHtml = "",
   submissionCount = 0,
+  currentSinger = null
 ) {
   const isAdminBool = isAdmin === true || isAdmin === 'true';
   const dateAttr = isAdminBool
@@ -101,10 +102,11 @@ function generateSubmitFormHtml(
             <div class="form-group">
               <label>Singer Name <span class="required">*</span></label>
               <div class="singer-autocomplete">
-                <input type="text" name="singer_name" id="singerName" required placeholder="Enter your full name" autocomplete="off" aria-autocomplete="list" aria-controls="singerSuggestions" aria-expanded="false" />
+                <input type="text" name="singer_name" id="singerName" required placeholder="Enter your full name" autocomplete="off" aria-autocomplete="list" aria-controls="singerSuggestions" aria-expanded="false" value="${currentSinger ? escapeHtml(currentSinger.name) : ''}" ${currentSinger && !isAdminBool ? 'readonly style="background:#f1f5f9; cursor:not-allowed;"' : ''} />
                 <div id="singerSuggestions" class="bhajan-suggestions" role="listbox" aria-label="Singer suggestions"></div>
               </div>
               <datalist id="singerList"></datalist>
+              ${currentSinger && !isAdminBool ? `<small style="color:#16a34a; font-size:11.5px; margin-top:4px; display:flex; align-items:center; gap:4px;"><span>🔒</span> Verified Devotee: <strong>${escapeHtml(currentSinger.name)}</strong></small>` : ''}
             </div>
             
             <div class="form-group">
@@ -114,13 +116,13 @@ function generateSubmitFormHtml(
 
             <div class="form-group">
               <label>Gender <span class="required">*</span></label>
-              <select name="gender" id="gender" required>
+              <select name="gender" id="gender" required ${currentSinger && currentSinger.gender && !isAdminBool ? 'style="pointer-events:none; background:#f1f5f9;"' : ''}>
                 <option value="">Select</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
+                <option value="Male" ${currentSinger && currentSinger.gender === 'Male' ? 'selected' : ''}>Male</option>
+                <option value="Female" ${currentSinger && currentSinger.gender === 'Female' ? 'selected' : ''}>Female</option>
+                <option value="Other" ${currentSinger && currentSinger.gender === 'Other' ? 'selected' : ''}>Other</option>
               </select>
-              <input type="hidden" name="locked_gender" id="lockedGender" />
+              <input type="hidden" name="locked_gender" id="lockedGender" value="${currentSinger && currentSinger.gender ? escapeHtml(currentSinger.gender) : ''}" />
             </div>
           </div>
         </div>
@@ -153,9 +155,17 @@ function generateSubmitFormHtml(
           
           <div class="form-row">
             <div class="form-group" style="flex: 2;">
-              <label>Bhajan Title <span class="required">*</span></label>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="margin-bottom:0;">Bhajan Title <span class="required">*</span></label>
+                ${currentSinger ? `
+                  <button type="button" id="openSongbookPickerBtn" style="background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe; border-radius:6px; padding:3px 9px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+                    <span>📖</span> Pick from My Songbook
+                  </button>
+                ` : ''}
+              </div>
               <div class="bhajan-autocomplete">
                 <input type="hidden" name="master_bhajan_id" id="selectedMasterBhajanId" />
+                <input type="hidden" id="singerPreferredScale" value="${escapeHtml(currentSinger?.preferred_scale || '')}" />
                 <input name="title" id="bhajanTitleInput" required placeholder="Select Deity to search..." autocomplete="off" aria-autocomplete="list" aria-controls="bhajanSuggestions" aria-expanded="false" />
                 <div id="bhajanSuggestions" class="bhajan-suggestions" role="listbox" aria-label="Bhajan suggestions"></div>
               </div>
@@ -291,6 +301,23 @@ function generateSubmitFormHtml(
         <button type="button" id="closeSelectBhajanModalBtn" class="button button-select-dropdown">
           Select from Dropdown
         </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="songbookPickerModal" class="modal">
+    <div class="modal-content" style="max-width:540px; width:92%; max-height:85vh; display:flex; flex-direction:column; padding:24px;">
+      <div class="modal-header" style="padding-bottom:12px; border-bottom:1px solid var(--border);">
+        <h3 style="color:#7c3aed; margin:0; display:flex; align-items:center; gap:8px;">
+          <span>📖</span> Pick from My Songbook
+        </h3>
+        <button class="close-btn" type="button" id="closeSongbookPickerBtn">&times;</button>
+      </div>
+      <p style="font-size:13px; color:var(--ink-soft); margin:10px 0 14px 0;">
+        Select one of your prepared bhajans. It will automatically choose the deity and pre-fill your saved singing pitch!
+      </p>
+      <div id="songbookPickerList" style="overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:10px; padding-right:4px;">
+        <div style="text-align:center; padding:20px; color:var(--ink-soft);">Loading your songbook...</div>
       </div>
     </div>
   </div>

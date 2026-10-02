@@ -13,7 +13,9 @@ const DEITY_ALIASES = {
   Mata: ["Mata", "Devi"],
   Devi: ["Devi", "Mata"],
   Hanuman: ["Hanuman", "Anjaneya"],
-  Anjaneya: ["Hanuman", "Anjaneya"]
+  Anjaneya: ["Hanuman", "Anjaneya"],
+  SarvaDharma: ["SarvaDharma", "Sarva Dharma"],
+  "Sarva Dharma": ["SarvaDharma", "Sarva Dharma"]
 };
 
 const DEITY_TITLE_MATCHERS = {
@@ -280,7 +282,8 @@ exports.recordHeartbeat = async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Record heartbeat error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -295,6 +298,7 @@ exports.recordOffline = async (req, res) => {
     }
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Record offline error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };

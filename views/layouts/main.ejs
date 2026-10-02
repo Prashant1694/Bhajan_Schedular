@@ -148,6 +148,11 @@
     <!-- Notification Center (user-facing) -->
     <%- include("../partials/notification-bell") %>
 
+    <!-- What's New Update Popup (Appears once per device) -->
+    <% if (typeof isAdminPage === 'undefined' || !isAdminPage || !currentAdmin) { %>
+    <%- include("../partials/whats-new-modal") %>
+    <% } %>
+
     <% if (typeof isAdminPage !== "undefined" && isAdminPage && currentAdmin) { %>
       <div class="admin-layout">
         <%- include('../partials/sidebar') %>
@@ -165,6 +170,31 @@
     <script src="/js/script.js"></script>
     <script src="/js/pwa.js"></script>
     <script src="/js/notifications.js"></script>
+    <script>
+    (function() {
+      try {
+        var storedTickets = JSON.parse(localStorage.getItem('bp_my_report_tickets') || '[]');
+        var devId = localStorage.getItem('bp_device_id') || '';
+        if (storedTickets.length === 0 && !devId) return;
+
+        var p = [];
+        if (storedTickets.length > 0) p.push('tickets=' + encodeURIComponent(storedTickets.join(',')));
+        if (devId) p.push('visitor_id=' + encodeURIComponent(devId));
+
+        fetch('/api/reports/my-reports?' + p.join('&'))
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data && data.has_unread_reply) {
+              ['homeReportDot', 'bankReportDot', 'unreadReplyDot'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.style.display = 'block';
+              });
+            }
+          })
+          .catch(function() {});
+      } catch(e) {}
+    })();
+    </script>
 
     <% if (typeof showLoader !== "undefined" && showLoader) { %>
     <script src="/js/loading.js"></script>

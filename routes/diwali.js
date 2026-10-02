@@ -4,9 +4,18 @@ const multer = require("multer");
 const diwaliController = require("../controllers/diwaliController");
 const { requireLogin, requireSuperAdmin, requireApiLogin, requireApiSuperAdmin } = require("../middleware/auth");
 
+const path = require("path");
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    if (ext === ".xlsx" || ext === ".xls") {
+      cb(null, true);
+    } else {
+      cb(new Error("Only Excel spreadsheets (.xlsx, .xls) are allowed."));
+    }
+  }
 });
 
 // Diwali module is strictly restricted to Super Admins only

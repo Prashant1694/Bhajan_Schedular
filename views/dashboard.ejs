@@ -39,6 +39,18 @@
         </div>
       </a>
 
+
+      <% if (typeof currentSinger !== 'undefined' && currentSinger) { %>
+      <a href="/my-hub" class="menu-card card-purple" id="homeSingerHubCard" style="position: relative; border-color: #c084fc;">
+        <span style="position: absolute; top: 10px; right: 10px; background: #9333ea; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px;">Logged In</span>
+        <div class="card-icon">🌟</div>
+        <div class="card-content">
+          <div class="card-title">My Hub</div>
+          <div class="card-desc"><%= currentSinger.name %></div>
+        </div>
+      </a>
+      <% } %>
+
       <a href="/admin-login" class="menu-card card-yellow">
         <div class="card-icon">🔐</div>
         <div class="card-content">
