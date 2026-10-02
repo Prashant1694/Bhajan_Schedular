@@ -69,24 +69,56 @@ async function ensureMasterBhajanSchema() {
   }
 }
 
-async function loadMasterBhajans() {
+async function syncMasterBhajans() {
   try {
-    const count = await MasterBhajan.count({ where: { is_active: true } });
-    if (count !== 0) return;
-
-    // Database is authoritative. Only populate if database is completely empty.
     const filePath = path.join(__dirname, "..", "master_bhajans.json");
     if (!fs.existsSync(filePath)) {
-      console.log("ℹ️ Database is the authoritative Master Bhajan Bank.");
+      console.log("ℹ️ master_bhajans.json not found, skipping Master Bhajan sync.");
       return;
     }
 
+    const { Op } = require("sequelize");
     const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-    const cleanData = data.map(item => ({ ...item, is_active: true }));
-    await MasterBhajan.bulkCreate(cleanData);
-    console.log(`✅ Loaded ${cleanData.length} clean master bhajans into empty database.`);
+    const validIds = new Set(data.map(item => item.id));
+
+    // 1. Instantly deactivate all non-Prashanti Mandir bhajans
+    // This safely filters the active catalog to the 1,024 PMB bhajans while preserving historical references
+    const [deactivated] = await MasterBhajan.update(
+      { is_active: false },
+      {
+        where: {
+          id: { [Op.notIn]: Array.from(validIds) },
+          is_active: true
+        }
+      }
+    );
+    if (deactivated > 0) {
+      console.log(`📦 Archived ${deactivated} non-Prashanti Mandir bhajans.`);
+    }
+
+    // 2. Synchronize / upsert authoritative 1,024 Prashanti Mandir bhajans
+    for (const item of data) {
+      await MasterBhajan.upsert({
+        id: item.id,
+        title: item.title,
+        deity: item.deity,
+        level: item.level || null,
+        tempo: item.tempo || null,
+        raga: item.raga || null,
+        raga_notes: item.raga_notes || null,
+        shruti: item.shruti || null,
+        shruti_female: item.shruti_female || null,
+        language: item.language || null,
+        lyrics: item.lyrics || null,
+        sheet_filename: item.sheet_filename || null,
+        is_active: true
+      });
+    }
+
+    const activeCount = await MasterBhajan.count({ where: { is_active: true } });
+    console.log(`✅ Master Bhajan Bank synchronized: ${activeCount} active Prashanti Mandir bhajans.`);
   } catch (error) {
-    console.error("Error loading master bhajans:", error);
+    console.error("Error synchronizing master bhajans:", error);
   }
 }
 
@@ -235,7 +267,7 @@ async function initializeDatabase() {
     await initializeSuperAdmin();
     await migrateLegacySubmissions();
     await ensureMasterBhajanSchema();
-    await loadMasterBhajans();
+    await syncMasterBhajans();
     await initDeityRules();
     await normalizeDeityNames();
 
