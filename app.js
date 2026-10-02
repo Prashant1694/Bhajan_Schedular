@@ -41,6 +41,9 @@ app.use((req, res, next) => {
 // Static Files
 app.use(express.static("public"));
 
+// Official Music Sheets PDF Storage
+app.use("/sheets", express.static(path.join(__dirname, "public", "sheets")));
+
 // Submission and admin pages contain time-sensitive data. Do not allow Chrome
 // to restore an old form from its back/forward cache when navigating back.
 app.use((req, res, next) => {
@@ -156,4 +159,8 @@ async function startServer() {
   }
 }
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = { app, startServer };

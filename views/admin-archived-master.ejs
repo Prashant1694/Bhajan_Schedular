@@ -1,0 +1,86 @@
+<div class="container container-xl">
+  <div class="header">
+    <h1>📦 Archived Master Bhajans</h1>
+    <p>Historical legacy records preserved for referential integrity</p>
+  </div>
+
+  <div class="bank-body">
+    <div class="page-toolbar">
+      <div class="toolbar-heading">
+        <h1><%= bhajans.length %> Archived Bhajans</h1>
+        <p>These records are hidden from normal search, Thursday submissions, and Diwali module.</p>
+      </div>
+      <div class="toolbar-actions">
+        <a href="/master-bank" class="button secondary">📖 Active Master Bank</a>
+        <a href="/admin" class="button secondary">⬅️ Admin Dashboard</a>
+      </div>
+    </div>
+
+    <div class="search-field">
+      <span class="search-icon">🔍</span>
+      <input
+        type="search"
+        id="filterArchivedTitle"
+        onkeyup="filterArchivedTable()"
+        placeholder="Filter archived by title or ID…"
+        autocomplete="off"
+      >
+    </div>
+
+    <div class="table-container bank-table" style="margin-top: 16px;">
+      <table id="archivedTable">
+        <thead>
+          <tr>
+            <th>ID ↕</th>
+            <th>Title ↕</th>
+            <th>Deity ↕</th>
+            <th>Status</th>
+            <th>Historical References</th>
+            <th>Tempo</th>
+            <th>Scale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (bhajans.length > 0) { %>
+            <% bhajans.forEach(b => { %>
+              <tr class="archived-row">
+                <td data-label="ID" style="font-weight: 700; color: var(--muted);"><%= b.id %></td>
+                <td data-label="Title" style="font-weight: 600;"><%= b.title %></td>
+                <td data-label="Deity"><span class="deity-pill"><%= b.deity || '-' %></span></td>
+                <td data-label="Status">
+                  <span class="badge-pill" style="background: rgba(220, 53, 69, 0.15); color: #dc3545; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">
+                    Archived (Inactive)
+                  </span>
+                </td>
+                <td data-label="Historical References">
+                  <% if (b.refCount > 0) { %>
+                    <span class="badge-pill" style="background: rgba(40, 167, 69, 0.15); color: #28a745; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 700;">
+                      🔒 <%= b.refCount %> Active Reference(s)
+                    </span>
+                  <% } else { %>
+                    <span style="color: var(--muted); font-size: 12px;">0 (Unreferenced)</span>
+                  <% } %>
+                </td>
+                <td data-label="Tempo"><%= b.tempo || '-' %></td>
+                <td data-label="Scale"><%= b.shruti || '-' %></td>
+              </tr>
+            <% }) %>
+          <% } else { %>
+            <tr><td colspan="7" style="text-align:center; padding: 24px;">No archived bhajans found.</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterArchivedTable() {
+  const query = (document.getElementById('filterArchivedTitle')?.value || '').trim().toLowerCase();
+  const rows = document.querySelectorAll('#archivedTable tbody tr.archived-row');
+  rows.forEach(r => {
+    const text = r.textContent.toLowerCase();
+    r.style.display = (!query || text.includes(query)) ? '' : 'none';
+  });
+}
+</script>

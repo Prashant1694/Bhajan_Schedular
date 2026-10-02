@@ -9,51 +9,70 @@ const DeityRule = require("../models/DeityRule");
 // otherwise relevant bhajan merely because its imported category differs.
 const DEITY_ALIASES = {
   Vitthala: ["Vitthala", "Vittala"],
+  Vittala: ["Vitthala", "Vittala"],
   Mata: ["Mata", "Devi"],
-  Hanuman: ["Hanuman", "Anjaneya"]
+  Devi: ["Devi", "Mata"],
+  Hanuman: ["Hanuman", "Anjaneya"],
+  Anjaneya: ["Hanuman", "Anjaneya"]
 };
 
 const DEITY_TITLE_MATCHERS = {
   Vitthala: /vitt?hala|vithoba|pandurang/i,
-  Hanuman: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i
+  Vittala: /vitt?hala|vithoba|pandurang/i,
+  Hanuman: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i,
+  Anjaneya: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i
 };
 
 const DEITY_TITLE_SEARCH_TERMS = {
   Vitthala: ["Pandurang", "Vitt", "Vith"],
-  Hanuman: ["Hanuman", "Anjaneya", "Maruthi", "Maruti", "Pavana Suta", "Bajrang"]
+  Vittala: ["Pandurang", "Vitt", "Vith"],
+  Hanuman: ["Hanuman", "Anjaneya", "Maruthi", "Maruti", "Pavana Suta", "Bajrang"],
+  Anjaneya: ["Hanuman", "Anjaneya", "Maruthi", "Maruti", "Pavana Suta", "Bajrang"]
 };
 
 exports.getMasterBhajans = async (req, res) => {
-    try {
+  try {
     const deity = req.params.deity;
     const aliases = DEITY_ALIASES[deity] || [deity];
     const titleMatcher = DEITY_TITLE_MATCHERS[deity];
     const titleSearchTerms = DEITY_TITLE_SEARCH_TERMS[deity] || [];
 
-    // Include obvious title matches as well: a few imported Vitthala titles,
-    // for example, are filed under Rama, Krishna, or Narayana.
+    // Match exact deity or multi-deity substring (e.g. "Devi, Guru")
+    const deityLikeConditions = aliases.map(a => ({
+      deity: { [Sequelize.Op.like]: `%${a}%` }
+    }));
+
+    const orConditions = [
+      { deity: { [Sequelize.Op.in]: aliases } },
+      ...deityLikeConditions
+    ];
+
+    if (titleMatcher && titleSearchTerms.length > 0) {
+      orConditions.push(...titleSearchTerms.map(term => ({
+        title: { [Sequelize.Op.like]: `%${term}%` }
+      })));
+    }
+
     const bhajans = await MasterBhajan.findAll({
-      where: titleMatcher
-        ? {
-            [Sequelize.Op.or]: [
-              { deity: { [Sequelize.Op.in]: aliases } },
-              ...titleSearchTerms.map((term) => ({
-                title: { [Sequelize.Op.like]: `%${term}%` }
-              }))
-            ]
-          }
-        : { deity: { [Sequelize.Op.in]: aliases } }
+      where: {
+        is_active: true,
+        [Sequelize.Op.or]: orConditions
+      }
     });
 
-    // The broad SQL conditions above are narrowed back to the chosen deity,
-    // then deduplicated by title before they reach the autocomplete UI.
-    const seenTitles = new Set();
+    // Deduplicate by ID and verify deity match or title match before returning to UI
+    const lowerAliases = aliases.map(a => a.toLowerCase());
+    const seenIds = new Set();
     const relevantBhajans = bhajans
-      .filter((bhajan) => !titleMatcher || aliases.includes(bhajan.deity) || titleMatcher.test(bhajan.title))
       .filter((bhajan) => {
-        const key = bhajan.title.trim().toLocaleLowerCase();
-        if (seenTitles.has(key)) return false;
-        seenTitles.add(key);
+        if (!bhajan.deity) return false;
+        const bDeityTokens = bhajan.deity.split(',').map(s => s.trim().toLowerCase());
+        const hasDeity = bDeityTokens.some(d => lowerAliases.includes(d));
+        return hasDeity || (titleMatcher && titleMatcher.test(bhajan.title));
+      })
+      .filter((bhajan) => {
+        if (seenIds.has(bhajan.id)) return false;
+        seenIds.add(bhajan.id);
         return true;
       })
       .sort((a, b) => a.title.localeCompare(b.title));
@@ -61,7 +80,7 @@ exports.getMasterBhajans = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}
+};
 
 exports.checkCooldown = async (req, res) => {
   try {

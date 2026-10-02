@@ -1,0 +1,1388 @@
+/* ==========================================================================
+   BHAJAN DETAILS & LYRICS — Complete Polished Devotional UI
+   Sri Sathya Sai Seva Organisation, Gandhinagar
+   ========================================================================== */
+
+:root {
+  --lyrics-font-size: 20px;
+  --lyrics-line-height: 2.0;
+  --lyrics-alignment: center;
+}
+
+/* Page Wrapper with Generous Breathing Room */
+.bhajan-detail-page {
+  background-color: var(--paper, #fdfbf7);
+  background-image: 
+    radial-gradient(circle at 12% 18%, rgba(217, 138, 43, 0.05) 0%, transparent 45%),
+    radial-gradient(circle at 88% 82%, rgba(125, 47, 69, 0.04) 0%, transparent 45%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  padding: 56px 0 140px;
+  padding-top: max(56px, calc(env(safe-area-inset-top, 0px) + 24px));
+  color: var(--ink, #1f2937);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 600px) {
+  .bhajan-detail-page {
+    padding: 52px 0 160px;
+    padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 32px));
+  }
+}
+
+.detail-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* --------------------------------------------------------------------------
+   Top Navigation Bar & Breadcrumbs
+   -------------------------------------------------------------------------- */
+.detail-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 600px) {
+  .detail-nav-bar {
+    margin-top: 18px;
+    margin-bottom: 26px;
+    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.detail-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 22px;
+  background: var(--surface, #ffffff);
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 28px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft, #4b5563);
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 600px) {
+  .detail-back-btn {
+    padding: 11px 22px;
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+}
+
+.detail-back-btn:hover {
+  background: var(--surface, #ffffff);
+  border-color: var(--saffron, #d98a2b);
+  color: var(--saffron-dk, #b26a1b);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 138, 43, 0.12);
+}
+
+.back-arrow {
+  font-size: 15px;
+  transition: transform 0.18s ease;
+}
+
+.detail-back-btn:hover .back-arrow {
+  transform: translateX(-3px);
+}
+
+.detail-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.detail-breadcrumbs a {
+  color: var(--muted, #6b7280);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.detail-breadcrumbs a:hover {
+  color: var(--saffron-dk, #b26a1b);
+  text-decoration: underline;
+}
+
+.crumb-sep {
+  opacity: 0.4;
+}
+
+.crumb-deity {
+  color: var(--ink-soft, #4b5563);
+  font-weight: 600;
+}
+
+.crumb-current {
+  color: var(--ink, #1f2937);
+  font-weight: 700;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --------------------------------------------------------------------------
+   Sacred Hero Header Card (No OM emoji)
+   -------------------------------------------------------------------------- */
+.detail-hero-card {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 16px;
+  padding: 34px 28px 28px;
+  margin-bottom: 30px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+.detail-hero-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #d98a2b, #e67e22, #7d2f45);
+}
+
+.detail-bhajan-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(24px, 4.5vw, 34px);
+  font-weight: 700;
+  color: var(--ink, #1f2937);
+  margin: 0 0 16px;
+  line-height: 1.35;
+  letter-spacing: -0.3px;
+}
+
+.detail-badge-strip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--paper, #fdfbf7);
+  color: var(--ink-soft, #4b5563);
+}
+
+.hero-pill.deity-pill {
+  background: rgba(217, 138, 43, 0.08);
+  border-color: rgba(217, 138, 43, 0.3);
+  color: var(--saffron-dk, #b26a1b);
+}
+
+.hero-pill.tempo-pill {
+  background: #fef3c7;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.hero-pill.raga-pill {
+  background: #eff6ff;
+  border-color: #dbeafe;
+  color: #1e40af;
+}
+
+.hero-pill.lang-pill {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #374151;
+}
+
+.hero-pill.sheet-pill {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  border: 1px solid rgba(217, 138, 43, 0.4);
+  color: #c2410c;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 700;
+}
+
+.hero-pill.sheet-pill:hover {
+  background: #ea580c;
+  border-color: #ea580c;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
+}
+
+/* --------------------------------------------------------------------------
+   1. TOP SECTION: SACRED DEVOTIONAL LYRICS CARD
+   -------------------------------------------------------------------------- */
+.lyrics-section-card {
+  background: var(--surface, #ffffff);
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 16px;
+  padding: 32px 36px 44px;
+  margin-bottom: 32px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.035);
+  position: relative;
+}
+
+@media (max-width: 600px) {
+  .lyrics-section-card {
+    padding: 22px 18px 32px;
+    border-radius: 14px;
+  }
+}
+
+/* Lyrics Action Toolbar */
+.lyrics-toolbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 1.5px solid var(--border-soft, #f0eee9);
+  margin-bottom: 28px;
+}
+
+.lyrics-controls-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .lyrics-toolbar {
+    padding-bottom: 14px;
+    margin-bottom: 20px;
+  }
+  .lyrics-controls-group {
+    width: 100%;
+    gap: 8px;
+    justify-content: center;
+  }
+}
+
+/* Consistent, Aligned Toolbar Controls (Exact Matching Heights & Styles) */
+.font-size-adjuster {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  background: var(--paper, #fdfbf7);
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 2px 4px;
+  gap: 2px;
+  box-sizing: border-box;
+}
+
+.font-btn {
+  background: transparent;
+  border: none;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink, #1f2937);
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  user-select: none;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.font-btn:hover:not(:disabled) {
+  background: var(--surface, #ffffff);
+  color: var(--saffron-dk, #b26a1b);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.font-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.font-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.font-size-indicator {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft, #4b5563);
+  min-width: 44px;
+  text-align: center;
+  padding: 0 3px;
+  user-select: none;
+}
+
+.font-reset-btn {
+  font-size: 13px;
+  padding: 0 7px;
+  color: var(--muted, #6b7280);
+}
+
+/* Uniform Tool Buttons (Align, Copy, Print - exact same height & style) */
+.tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 13px;
+  background: var(--paper, #fdfbf7);
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink, #1f2937);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+  line-height: 1;
+  user-select: none;
+}
+
+.tool-btn .btn-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tool-btn:hover {
+  background: var(--surface, #ffffff);
+  border-color: var(--saffron, #d98a2b);
+  color: var(--saffron-dk, #b26a1b);
+  transform: translateY(-1px);
+}
+
+.tool-btn:active {
+  transform: scale(0.96);
+}
+
+.tool-btn.copied {
+  background: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #065f46 !important;
+}
+
+.tool-btn.sheet-btn {
+  text-decoration: none;
+  background: linear-gradient(135deg, rgba(217, 138, 43, 0.08) 0%, rgba(245, 158, 11, 0.14) 100%);
+  border-color: rgba(217, 138, 43, 0.45);
+  color: var(--saffron-dk, #b26a1b);
+}
+
+.tool-btn.sheet-btn:hover {
+  background: linear-gradient(135deg, #d98a2b 0%, #b26a1b 100%);
+  border-color: #b26a1b;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(217, 138, 43, 0.25);
+}
+
+/* Continuous, Beautiful Lyrics Sheet */
+.lyrics-parchment {
+  position: relative;
+  max-width: 780px;
+  margin: 0 auto;
+  transition: all 0.25s ease-out;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   SACRED FLORAL & GOLDEN EMBELLISHED FRAME (Matching User Reference Artwork)
+   ========================================================================== */
+.lyrics-parchment.floral-frame-active {
+  /* Royal Gold Double-Hairline Border */
+  border: 2px solid #d4af37;
+  border-radius: 16px;
+  box-shadow: 
+    inset 0 0 0 5px #fffdfa,
+    inset 0 0 0 6.5px rgba(212, 175, 55, 0.45),
+    0 10px 36px rgba(212, 175, 55, 0.09);
+  
+  /* Warm Rosy-Ivory Parchment with Ambient Floral Texture */
+  background-color: #fffdfa;
+  background-image: 
+    radial-gradient(circle at center, rgba(255, 253, 249, 0.96) 28%, rgba(254, 247, 242, 0.90) 100%),
+    url('/images/lyrics-floral-frame.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  /* Generous breathing room so lyrics never collide with golden corner blossoms */
+  padding: 48px 40px 44px;
+}
+
+@media (max-width: 600px) {
+  .lyrics-parchment.floral-frame-active {
+    padding: 34px 18px 28px;
+    box-shadow: 
+      inset 0 0 0 3px #fffdfa,
+      inset 0 0 0 4.5px rgba(212, 175, 55, 0.4),
+      0 6px 20px rgba(212, 175, 55, 0.08);
+  }
+}
+
+/* Botanical Corner Illustrations: Top-Left & Bottom-Right */
+.parchment-corner {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  transition: opacity 0.25s ease;
+}
+
+.parchment-corner.corner-tl {
+  top: -4px;
+  left: -4px;
+}
+
+.parchment-corner.corner-br {
+  bottom: -4px;
+  right: -4px;
+}
+
+@media (max-width: 600px) {
+  .parchment-corner {
+    width: 90px;
+    height: 90px;
+  }
+  .parchment-corner.corner-tl {
+    top: -2px;
+    left: -2px;
+  }
+  .parchment-corner.corner-br {
+    bottom: -2px;
+    right: -2px;
+  }
+}
+
+/* Hide Corners & Watermark when user selects Clean Mode */
+.lyrics-parchment:not(.floral-frame-active) .parchment-corner,
+.lyrics-parchment:not(.floral-frame-active) .parchment-watermark {
+  display: none;
+}
+
+/* Sacred Central Lotus Watermark */
+.parchment-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  height: 280px;
+  max-width: 80%;
+  max-height: 80%;
+  background: url('/images/devotional-watermark.svg') center/contain no-repeat;
+  opacity: 0.65;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+.lyrics-container {
+  position: relative;
+  z-index: 2;
+  font-size: var(--lyrics-font-size, 20px);
+  line-height: var(--lyrics-line-height, 2.0);
+  color: var(--ink, #1f2937);
+  text-align: center;
+  transition: font-size 0.15s ease-out;
+}
+
+.lyrics-container.align-left {
+  text-align: left;
+  padding-left: 16px;
+}
+
+/* Stanzas Harmonized with Floral Golden Frame */
+.lyrics-stanza {
+  position: relative;
+  padding: 18px 24px;
+  margin-bottom: 22px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.lyrics-stanza:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(212, 175, 55, 0.45);
+}
+
+/* Distinguished First Verse Accent */
+.lyrics-stanza.first-stanza {
+  border-left: 4px solid var(--saffron, #d98a2b);
+  background: rgba(217, 138, 43, 0.04);
+}
+
+.lyrics-line {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  padding: 3px 0;
+  color: var(--ink, #1f2937);
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Subtle devotional ornament between stanzas */
+.stanza-ornament {
+  text-align: center;
+  color: #c59929;
+  font-size: 14px;
+  opacity: 0.55;
+  margin: 18px 0;
+  user-select: none;
+}
+
+.lyrics-empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--muted, #6b7280);
+  position: relative;
+  z-index: 2;
+}
+
+.lyrics-empty-state .empty-icon {
+  font-size: 42px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.lyrics-empty-state h3 {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 20px;
+  color: var(--ink, #1f2937);
+  margin: 0 0 6px;
+}
+
+.lyrics-empty-state p {
+  font-size: 14px;
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+   2. BOTTOM SECTION: ACCOMPANIMENT & VOCAL DETAILS
+   -------------------------------------------------------------------------- */
+.metadata-section-card {
+  background: var(--surface, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 16px;
+  padding: 32px 36px 36px;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+}
+
+@media (max-width: 600px) {
+  .metadata-section-card {
+    padding: 22px 18px;
+    border-radius: 14px;
+  }
+}
+
+.meta-section-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-soft, #f0eee9);
+}
+
+.meta-header-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.meta-section-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink, #1f2937);
+  margin: 0;
+}
+
+.meta-section-sub {
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+  margin: 2px 0 0;
+}
+
+/* Aligned, Structured Specifications Grid */
+.meta-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 540px) {
+  .meta-specs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.spec-tile {
+  background: var(--paper, #fdfbf7);
+  border: 1.5px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.spec-tile:hover {
+  border-color: var(--saffron, #d98a2b);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(217, 138, 43, 0.08);
+}
+
+.spec-tile-icon {
+  font-size: 28px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.spec-tile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.spec-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted, #6b7280);
+}
+
+.spec-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink, #1f2937);
+  word-break: break-word;
+}
+
+.spec-value.highlight-val {
+  font-family: 'Fraunces', Georgia, serif;
+  color: var(--saffron-dk, #b26a1b);
+  font-size: 17px;
+}
+
+.spec-tile-full-width {
+  grid-column: 1 / -1;
+  align-items: flex-start !important;
+}
+
+.spec-raga-notes-text {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink, #1f2937);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border-soft, #f0eee9);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 5px;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+[data-theme="dark"] .spec-raga-notes-text {
+  background: rgba(18, 21, 30, 0.75);
+  border-color: rgba(229, 192, 88, 0.2);
+  color: #f1f5f9;
+}
+
+.tempo-tag-badge {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pitch-indian {
+  font-weight: 700;
+  color: var(--ink, #1f2937);
+  font-size: 16px;
+}
+
+.pitch-western {
+  display: inline-block;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 1px 7px;
+  border-radius: 6px;
+  color: #4b5563;
+  font-weight: 600;
+  font-size: 12.5px;
+  margin-left: 6px;
+}
+
+.muted-note {
+  color: var(--muted, #6b7280);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.spec-tile-sheet {
+  border-color: rgba(217, 138, 43, 0.35);
+  background: linear-gradient(135deg, var(--surface, #ffffff) 0%, rgba(254, 243, 199, 0.25) 100%);
+}
+
+.spec-sheet-link {
+  color: var(--saffron-dk, #b26a1b);
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.18s ease;
+}
+
+.spec-sheet-link:hover {
+  text-decoration: underline;
+  color: #ea580c;
+}
+
+/* --------------------------------------------------------------------------
+   Footer Navigation Strip
+   -------------------------------------------------------------------------- */
+.detail-footer-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+  padding-bottom: 24px;
+}
+
+.footer-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.footer-nav-btn.primary-btn {
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(230, 126, 34, 0.25);
+}
+
+.footer-nav-btn.primary-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(230, 126, 34, 0.35);
+}
+
+.footer-nav-btn.secondary-btn {
+  background: var(--surface, #ffffff);
+  border: 1.5px solid var(--border, #e5e7eb);
+  color: var(--ink-soft, #4b5563);
+}
+
+.footer-nav-btn.secondary-btn:hover {
+  border-color: var(--saffron, #d98a2b);
+  color: var(--saffron-dk, #b26a1b);
+  transform: translateY(-2px);
+}
+
+.footer-nav-btn.text-btn {
+  background: transparent;
+  border: 1.5px solid var(--border, #e5e7eb);
+  color: var(--muted, #6b7280);
+}
+
+.footer-nav-btn.text-btn:hover {
+  color: var(--ink, #1f2937);
+  border-color: var(--ink-soft, #4b5563);
+}
+
+/* --------------------------------------------------------------------------
+   Dark Mode Overrides
+   -------------------------------------------------------------------------- */
+[data-theme="dark"] .bhajan-detail-page {
+  background-color: #0f121a;
+  background-image: 
+    radial-gradient(circle at 12% 18%, rgba(245, 158, 11, 0.05) 0%, transparent 45%),
+    radial-gradient(circle at 88% 82%, rgba(125, 47, 69, 0.04) 0%, transparent 45%);
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .detail-back-btn,
+[data-theme="dark"] .detail-hero-card,
+[data-theme="dark"] .lyrics-section-card,
+[data-theme="dark"] .metadata-section-card,
+[data-theme="dark"] .footer-nav-btn.secondary-btn {
+  background: #181d29;
+  border-color: #2b3346;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .detail-bhajan-title,
+[data-theme="dark"] .lyrics-section-title,
+[data-theme="dark"] .meta-section-title,
+[data-theme="dark"] .lyrics-line,
+[data-theme="dark"] .crumb-current,
+[data-theme="dark"] .spec-value {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .lyrics-stanza {
+  background: rgba(18, 21, 30, 0.85);
+  border-color: #2b3346;
+}
+
+[data-theme="dark"] .lyrics-stanza:hover {
+  background: #12151e;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .lyrics-stanza.first-stanza {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.06);
+}
+
+[data-theme="dark"] .spec-tile,
+[data-theme="dark"] .font-size-adjuster,
+[data-theme="dark"] .tool-btn {
+  background: #12151e;
+  border-color: #2b3346;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .font-btn {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .font-btn:hover:not(:disabled) {
+  background: #1e2536;
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .tool-btn:hover {
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .spec-value.highlight-val {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .pitch-indian {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .pitch-western {
+  background: #1e2536;
+  border-color: #2b3346;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .lyrics-parchment.floral-frame-active {
+  border-color: #e5c058;
+  box-shadow: 
+    inset 0 0 0 5px #151824, 
+    inset 0 0 0 6.5px rgba(229, 192, 88, 0.35), 
+    0 10px 36px rgba(0, 0, 0, 0.55);
+  background-color: #151824;
+  background-image: 
+    radial-gradient(circle at center, rgba(21, 24, 36, 0.96) 25%, rgba(28, 22, 30, 0.90) 100%), 
+    url('/images/lyrics-floral-frame.png');
+}
+
+[data-theme="dark"] .floral-frame-active .lyrics-stanza {
+  background: rgba(18, 21, 30, 0.65);
+  border-color: rgba(229, 192, 88, 0.22);
+}
+
+[data-theme="dark"] .floral-frame-active .lyrics-stanza:hover {
+  background: rgba(18, 21, 30, 0.9);
+  border-color: rgba(229, 192, 88, 0.45);
+}
+
+[data-theme="dark"] .tool-btn.active {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .parchment-watermark {
+  opacity: 0.4;
+  filter: brightness(0.9) contrast(1.2);
+}
+
+[data-theme="dark"] .tool-btn.sheet-btn {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .tool-btn.sheet-btn:hover {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #1a1512;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .hero-pill.sheet-pill {
+  background: rgba(234, 88, 12, 0.2);
+  border-color: rgba(249, 115, 22, 0.45);
+  color: #fdba74;
+}
+
+[data-theme="dark"] .hero-pill.sheet-pill:hover {
+  background: #ea580c;
+  color: #ffffff;
+  border-color: #ea580c;
+}
+
+[data-theme="dark"] .spec-tile-sheet {
+  border-color: rgba(245, 158, 11, 0.25);
+  background: linear-gradient(135deg, rgba(30, 37, 54, 0.8) 0%, rgba(245, 158, 11, 0.08) 100%);
+}
+
+[data-theme="dark"] .spec-sheet-link {
+  color: #fbbf24;
+}
+
+[data-theme="dark"] .spec-sheet-link:hover {
+  color: #f97316;
+}
+
+/* --------------------------------------------------------------------------
+   Print Stylesheet — FULL FRAME SACRED DEVOTIONAL SONGBOOK SHEET
+   -------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 16mm 12mm 16mm;
+  }
+
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    width: 100% !important;
+    height: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Fraunces', Georgia, serif !important;
+  }
+
+  /* Completely Suppress Non-Print Elements & Floating Buttons */
+  .no-print,
+  .theme-toggle,
+  #themeToggle,
+  .notif-bell-btn,
+  #notifBellBtn,
+  .notif-badge,
+  .notif-panel,
+  .notif-overlay,
+  .notif-prompt-overlay,
+  .pwa-install-overlay,
+  #pwaInstallOverlay,
+  .notification-bell-container,
+  .detail-nav-bar,
+  .lyrics-toolbar,
+  .detail-footer-nav,
+  button,
+  .stanza-ornament {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* FULL FRAME Page Wrapper & Container (Spanning Full A4 Printable Frame) */
+  .bhajan-detail-page {
+    width: 100% !important;
+    min-height: calc(297mm - 24mm) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+  }
+
+  .detail-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: calc(297mm - 24mm) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Strip all card boxes, card borders, and shadows for pure songbook presentation */
+  .detail-hero-card,
+  .lyrics-section-card,
+  .lyrics-parchment,
+  .lyrics-stanza {
+    border: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .detail-hero-card::before {
+    display: none !important;
+  }
+
+  /* Top Section: Prominent Title & Devotional Sub-header */
+  .detail-hero-card {
+    text-align: center !important;
+    padding-bottom: 8pt !important;
+    margin-bottom: 12pt !important;
+    border-bottom: 1.5pt solid #222222 !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .detail-bhajan-title {
+    font-family: 'Fraunces', Georgia, serif !important;
+    font-size: 24pt !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+    text-align: center !important;
+    margin: 0 0 8pt 0 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.2pt !important;
+  }
+
+  .detail-badge-strip {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8pt !important;
+    flex-wrap: wrap !important;
+    margin: 0 !important;
+  }
+
+  .hero-pill {
+    background: #fbf8f2 !important;
+    border: 1pt solid #444444 !important;
+    color: #111111 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 9.5pt !important;
+    font-weight: 700 !important;
+    padding: 3pt 10pt !important;
+    border-radius: 12pt !important;
+  }
+
+  /* Middle Section: Sacred Lyrics (Vertically and Horizontally Full-Frame) */
+  .lyrics-section-card {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 4pt 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .lyrics-parchment.floral-frame-active {
+    border: 2pt solid #c59929 !important;
+    outline: 0.8pt solid rgba(197, 153, 41, 0.5) !important;
+    outline-offset: -5pt !important;
+    border-radius: 6pt !important;
+    padding: 24pt 20pt !important;
+    position: relative !important;
+    background-color: #fffdfa !important;
+    background-image: 
+      radial-gradient(circle at center, rgba(255, 253, 249, 0.96) 28%, rgba(254, 247, 242, 0.88) 100%), 
+      url('/images/lyrics-floral-frame.png') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .parchment-corner {
+    display: block !important;
+    position: absolute !important;
+    width: 90pt !important;
+    height: 90pt !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+  }
+  .parchment-corner.corner-tl {
+    top: -2pt !important;
+    left: -2pt !important;
+  }
+  .parchment-corner.corner-br {
+    bottom: -2pt !important;
+    right: -2pt !important;
+  }
+
+  .parchment-watermark {
+    display: block !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 170pt !important;
+    height: 170pt !important;
+    opacity: 0.45 !important;
+    z-index: 1 !important;
+  }
+
+  .lyrics-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  .lyrics-line {
+    font-family: 'Fraunces', Georgia, serif !important;
+    font-weight: 500 !important;
+    color: #000000 !important;
+    text-align: center !important;
+    margin: 0 !important;
+  }
+
+  .lyrics-stanza.first-stanza {
+    border-left: none !important;
+    padding-left: 0 !important;
+  }
+
+  /* DYNAMIC PRINT SIZING TO FILL THE FULL FRAME BEAUTIFULLY */
+  /* 1. Spacious Mode (<= 13 lines like Bhajan #37): Large, grand, filling the full sheet */
+  .print-spacious .lyrics-line {
+    font-size: 19pt !important;
+    line-height: 2.35 !important;
+    letter-spacing: 0.3pt !important;
+    padding: 3.5pt 0 !important;
+  }
+  .print-spacious .lyrics-stanza {
+    margin-bottom: 22pt !important;
+  }
+
+  /* 2. Medium Mode (14-22 lines) */
+  .print-medium .lyrics-line {
+    font-size: 15.5pt !important;
+    line-height: 2.05 !important;
+    letter-spacing: 0.2pt !important;
+    padding: 2.5pt 0 !important;
+  }
+  .print-medium .lyrics-stanza {
+    margin-bottom: 14pt !important;
+  }
+
+  /* 3. Compact Mode (> 22 lines): Fits on single portrait page */
+  .print-compact .lyrics-line {
+    font-size: 12.5pt !important;
+    line-height: 1.7 !important;
+    padding: 1.5pt 0 !important;
+  }
+  .print-compact .lyrics-stanza {
+    margin-bottom: 9pt !important;
+  }
+
+  /* If user toggled Left alignment on screen */
+  .lyrics-container.align-left .lyrics-line {
+    text-align: left !important;
+  }
+  .lyrics-container.align-left {
+    text-align: left !important;
+    padding-left: 20pt !important;
+  }
+
+  /* Bottom Section: Full-Width Accompaniment Specs Strip */
+  .metadata-section-card {
+    border: 1.5pt solid #222222 !important;
+    border-radius: 6pt !important;
+    background: #fbfbfb !important;
+    padding: 8pt 12pt 10pt !important;
+    margin: 14pt 0 0 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .meta-section-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6pt !important;
+    padding-bottom: 4pt !important;
+    margin-bottom: 6pt !important;
+    border-bottom: 1pt solid #cccccc !important;
+  }
+
+  .meta-header-icon {
+    display: none !important;
+  }
+
+  .meta-section-title {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 9.5pt !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8pt !important;
+    color: #000000 !important;
+    margin: 0 !important;
+  }
+
+  .meta-section-sub {
+    display: none !important;
+  }
+
+  .meta-specs-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 5pt 8pt !important;
+    width: 100% !important;
+  }
+
+  .spec-tile {
+    border: 0.8pt solid #bbbbbb !important;
+    background: #ffffff !important;
+    padding: 5pt 7pt !important;
+    border-radius: 4pt !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1.5pt !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .spec-tile-icon {
+    display: none !important;
+  }
+
+  .spec-tile-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5pt !important;
+    width: 100% !important;
+  }
+
+  .spec-label {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 6.8pt !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.4pt !important;
+    color: #444444 !important;
+  }
+
+  .spec-value {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 9.5pt !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+  }
+
+  .spec-value.highlight-val {
+    font-family: 'Fraunces', Georgia, serif !important;
+    color: #000000 !important;
+    font-size: 10.5pt !important;
+  }
+
+  .pitch-indian {
+    font-size: 10.5pt !important;
+    font-weight: 800 !important;
+    color: #000000 !important;
+  }
+
+  .pitch-western {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    font-size: 9pt !important;
+    font-weight: 600 !important;
+    color: #222222 !important;
+    margin-left: 3pt !important;
+  }
+
+  .tempo-tag-badge {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    font-size: 9.5pt !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+  }
+
+  .muted-note {
+    font-size: 8pt !important;
+    color: #555555 !important;
+  }
+}

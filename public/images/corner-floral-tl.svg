@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" width="100%" height="100%">
+  <defs>
+    <!-- Metallic Gold Foil Gradient -->
+    <linearGradient id="goldFoilTL" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c59929"/>
+      <stop offset="35%" stop-color="#f8e79b"/>
+      <stop offset="70%" stop-color="#d4af37"/>
+      <stop offset="100%" stop-color="#9a7114"/>
+    </linearGradient>
+
+    <!-- Rich Rose Petal Gradients -->
+    <radialGradient id="roseCore" cx="45%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#ff7b95"/>
+      <stop offset="45%" stop-color="#e03e62"/>
+      <stop offset="85%" stop-color="#a81c3c"/>
+      <stop offset="100%" stop-color="#690920"/>
+    </radialGradient>
+    <radialGradient id="roseSoft" cx="40%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#ffdbe3"/>
+      <stop offset="50%" stop-color="#f890a8"/>
+      <stop offset="90%" stop-color="#cf3b60"/>
+    </radialGradient>
+    <radialGradient id="roseBlush" cx="45%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#fcc2ce"/>
+      <stop offset="85%" stop-color="#e26685"/>
+      <stop offset="100%" stop-color="#b02a49"/>
+    </radialGradient>
+
+    <!-- Emerald Leaf Gradients -->
+    <linearGradient id="leafGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#72a877"/>
+      <stop offset="50%" stop-color="#3d7244"/>
+      <stop offset="100%" stop-color="#1f4424"/>
+    </linearGradient>
+    <linearGradient id="leafGrad2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#558c5c"/>
+      <stop offset="70%" stop-color="#2a5730"/>
+      <stop offset="100%" stop-color="#143118"/>
+    </linearGradient>
+
+    <!-- Subtle Drop Shadow for Floral Depth -->
+    <filter id="floraShadow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="2" dy="3" stdDeviation="3" flood-color="#501824" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- 1. Background Golden Filigree Vines & Tendrils -->
+  <g class="golden-vines" stroke="url(#goldFoilTL)" stroke-linecap="round" fill="none">
+    <!-- Main Sweeping Border Tendrils -->
+    <path d="M 6 230 C 8 160, 22 90, 80 45 C 125 15, 175 14, 234 10" stroke-width="2.6"/>
+    <path d="M 12 210 C 16 150, 32 95, 85 58 C 130 28, 175 22, 226 20" stroke-width="1.4" stroke-dasharray="6,4" opacity="0.85"/>
+    
+    <!-- Delicate Vine Spirals & Flourishes -->
+    <path d="M 52 148 C 38 165, 18 175, 6 168 C -6 160, 2 138, 20 135 C 36 132, 48 138, 52 148" stroke-width="1.8"/>
+    <path d="M 148 52 C 165 38, 175 18, 168 6 C 160 -6, 138 2, 135 20 C 132 36, 138 48, 148 52" stroke-width="1.8"/>
+    
+    <path d="M 28 112 C 14 118, 4 108, 8 96 C 12 84, 26 86, 32 98" stroke-width="1.5"/>
+    <path d="M 112 28 C 118 14, 108 4, 96 8 C 84 12, 86 26, 98 32" stroke-width="1.5"/>
+
+    <path d="M 90 40 C 105 28, 130 22, 165 24" stroke-width="1.8"/>
+    <path d="M 40 90 C 28 105, 22 130, 24 165" stroke-width="1.8"/>
+
+    <!-- Gold Accent Dots / Pollen Stippling -->
+    <circle cx="228" cy="10" r="3" fill="url(#goldFoilTL)"/>
+    <circle cx="212" cy="18" r="2" fill="url(#goldFoilTL)"/>
+    <circle cx="10" cy="228" r="3" fill="url(#goldFoilTL)"/>
+    <circle cx="18" cy="212" r="2" fill="url(#goldFoilTL)"/>
+    <circle cx="182" cy="7" r="1.5" fill="url(#goldFoilTL)"/>
+    <circle cx="7" cy="182" r="1.5" fill="url(#goldFoilTL)"/>
+  </g>
+
+  <!-- 2. Botanical Emerald Foliage (Layered Under Blossoms) -->
+  <g class="leaves" filter="url(#floraShadow)">
+    <!-- Leaf Top Right -->
+    <path d="M 105 45 C 120 30, 150 32, 165 42 C 152 56, 126 58, 105 45 Z" fill="url(#leafGrad1)"/>
+    <path d="M 105 45 Q 135 44 165 42" stroke="url(#goldFoilTL)" stroke-width="0.8" fill="none"/>
+    
+    <!-- Leaf Far Top -->
+    <path d="M 135 28 C 152 14, 178 18, 192 28 C 178 40, 150 38, 135 28 Z" fill="url(#leafGrad2)"/>
+    <path d="M 135 28 Q 163 26 192 28" stroke="url(#goldFoilTL)" stroke-width="0.8" fill="none"/>
+
+    <!-- Leaf Bottom Left -->
+    <path d="M 45 105 C 30 120, 32 150, 42 165 C 56 152, 58 126, 45 105 Z" fill="url(#leafGrad1)"/>
+    <path d="M 45 105 Q 44 135 42 165" stroke="url(#goldFoilTL)" stroke-width="0.8" fill="none"/>
+
+    <!-- Leaf Far Bottom -->
+    <path d="M 28 135 C 14 152, 18 178, 28 192 C 40 178, 38 150, 28 135 Z" fill="url(#leafGrad2)"/>
+    <path d="M 28 135 Q 26 163 28 192" stroke="url(#goldFoilTL)" stroke-width="0.8" fill="none"/>
+
+    <!-- Small Accent Leaves -->
+    <path d="M 72 38 C 78 24, 94 22, 100 32 C 92 40, 80 42, 72 38 Z" fill="url(#leafGrad1)"/>
+    <path d="M 38 72 C 24 78, 22 94, 32 100 C 40 92, 42 80, 38 72 Z" fill="url(#leafGrad1)"/>
+  </g>
+
+  <!-- 3. Secondary Rose Blossom (Top Branch) -->
+  <g class="rose-secondary-top" transform="translate(112, 38) scale(0.68)" filter="url(#floraShadow)">
+    <circle cx="40" cy="40" r="36" fill="url(#roseSoft)"/>
+    <path d="M 20 40 C 15 20, 45 10, 60 25 C 70 35, 60 60, 40 60 C 20 60, 15 45, 20 40 Z" fill="url(#roseBlush)" opacity="0.9"/>
+    <path d="M 28 35 C 24 22, 45 18, 54 28 C 60 38, 50 52, 38 50 C 28 50, 26 40, 28 35 Z" fill="url(#roseCore)"/>
+    <path d="M 34 36 C 32 28, 44 26, 48 32 C 50 38, 44 44, 38 42 Z" fill="#ffd1dc"/>
+  </g>
+
+  <!-- 4. Secondary Rose Blossom (Left Branch) -->
+  <g class="rose-secondary-left" transform="translate(38, 112) scale(0.68)" filter="url(#floraShadow)">
+    <circle cx="40" cy="40" r="36" fill="url(#roseSoft)"/>
+    <path d="M 40 20 C 60 15, 70 45, 55 60 C 45 70, 20 60, 20 40 C 20 20, 35 15, 40 20 Z" fill="url(#roseBlush)" opacity="0.9"/>
+    <path d="M 35 28 C 48 24, 52 45, 42 54 C 32 60, 18 50, 20 38 C 20 28, 30 26, 35 28 Z" fill="url(#roseCore)"/>
+    <path d="M 36 34 C 44 32, 46 44, 40 48 C 34 50, 28 44, 30 38 Z" fill="#ffd1dc"/>
+  </g>
+
+  <!-- 5. Queen Rose Blossom (Corner Crown Jewel) -->
+  <g class="rose-main" transform="translate(36, 36)" filter="url(#floraShadow)">
+    <!-- Base Outer Petal Fan -->
+    <path d="M 50 10 C 75 8, 92 25, 96 48 C 100 70, 85 92, 60 96 C 35 100, 10 85, 6 60 C 2 35, 25 12, 50 10 Z" fill="url(#roseSoft)"/>
+    
+    <!-- Outer Layered Petals -->
+    <path d="M 35 12 C 60 4, 80 18, 82 38 C 84 55, 68 62, 50 60 C 30 58, 20 40, 24 28 C 26 20, 30 14, 35 12 Z" fill="url(#roseBlush)" opacity="0.95"/>
+    <path d="M 72 26 C 92 40, 96 66, 82 82 C 68 96, 44 94, 36 80 C 30 68, 40 52, 52 52 C 66 52, 70 40, 72 26 Z" fill="url(#roseBlush)" opacity="0.92"/>
+    <path d="M 18 42 C 6 64, 18 88, 38 92 C 56 94, 70 82, 68 66 C 66 52, 48 48, 40 54 C 30 60, 22 52, 18 42 Z" fill="url(#roseCore)" opacity="0.88"/>
+    
+    <!-- Mid Petal Swirls -->
+    <path d="M 32 30 C 48 18, 68 22, 72 38 C 76 52, 62 68, 46 66 C 32 64, 24 50, 28 38 C 30 32, 32 30, 32 30 Z" fill="url(#roseCore)"/>
+    <path d="M 40 32 C 55 24, 68 30, 68 44 C 68 56, 54 62, 44 58 C 34 54, 32 42, 36 36 C 38 34, 40 32, 40 32 Z" fill="url(#roseSoft)"/>
+    
+    <!-- Rose Eye / Bud Center -->
+    <path d="M 46 36 C 56 32, 62 38, 60 46 C 58 52, 50 56, 45 52 C 40 48, 40 40, 46 36 Z" fill="url(#roseCore)"/>
+    <path d="M 48 40 C 53 38, 56 42, 55 46 C 54 49, 50 51, 48 49 C 45 47, 45 42, 48 40 Z" fill="#ffd5df"/>
+    
+    <!-- Dewdrop Highlight -->
+    <circle cx="50" cy="42" r="1.5" fill="#ffffff" opacity="0.9"/>
+  </g>
+
+  <!-- 6. Small Accent Orchid Buds & Golden Stems -->
+  <g class="orchid-buds" filter="url(#floraShadow)">
+    <!-- Small Bud on Left -->
+    <circle cx="24" cy="180" r="7" fill="url(#roseCore)"/>
+    <path d="M 22 176 C 26 172, 32 175, 30 182 C 28 186, 22 186, 20 182 Z" fill="#ffd1dc"/>
+    
+    <!-- Small Bud on Top -->
+    <circle cx="180" cy="24" r="7" fill="url(#roseCore)"/>
+    <path d="M 176 22 C 172 26, 175 32, 182 30 C 186 28, 186 22, 182 20 Z" fill="#ffd1dc"/>
+  </g>
+</svg>

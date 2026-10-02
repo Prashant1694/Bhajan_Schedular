@@ -170,7 +170,10 @@ async function parseBatchSessions(fullText) {
 
         const cleanTitle = title.replace(/\s*\(\d+.*?\)/g, "").replace(/\(.*?\)/g, "").trim();
         let masterMatch = await MasterBhajan.findOne({
-          where: { title: { [Sequelize.Op.like]: `%${cleanTitle}%` } }
+          where: {
+            is_active: true,
+            title: { [Sequelize.Op.like]: `%${cleanTitle}%` }
+          }
         });
 
         deity = normalizeDeity(masterMatch ? masterMatch.deity : inferDeity(cleanTitle));

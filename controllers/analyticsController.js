@@ -22,11 +22,41 @@ exports.showDatabase = async (req, res) => {
       raw: true
     });
 
+    // Fetch active master bhajans to link details and music sheets in History
+    const masterBhajans = await MasterBhajan.findAll({
+      where: { is_active: true },
+      attributes: ['id', 'title', 'sheet_filename']
+    });
+
+    const { cleanAndStemBhajanTitle } = require('../services/fuzzyMatcher');
+    const exactMap = new Map();
+    const stemmedMap = new Map();
+
+    masterBhajans.forEach(mb => {
+      const lower = String(mb.title || '').trim().toLowerCase();
+      if (!exactMap.has(lower)) exactMap.set(lower, mb);
+      const stemmed = cleanAndStemBhajanTitle(mb.title);
+      if (!stemmedMap.has(stemmed)) stemmedMap.set(stemmed, mb);
+    });
+
+    const findMaster = (title) => {
+      if (!title) return null;
+      const lower = String(title).trim().toLowerCase();
+      if (exactMap.has(lower)) return exactMap.get(lower);
+      const stemmed = cleanAndStemBhajanTitle(title);
+      if (stemmedMap.has(stemmed)) return stemmedMap.get(stemmed);
+      return null;
+    };
+
     // Group submissions by session_date
     const { deityOrderKey, SPEED_ORDER } = require('../services/helpers');
     const sessionsMap = new Map();
 
     rawSubmissions.forEach(s => {
+      const match = findMaster(s.title);
+      s.master_id = match ? match.id : null;
+      s.sheet_filename = match ? (match.sheet_filename || null) : null;
+
       if (!sessionsMap.has(s.session_date)) {
         sessionsMap.set(s.session_date, []);
       }

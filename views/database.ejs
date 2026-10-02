@@ -54,7 +54,16 @@
                   <td><%= i + 1 %></td>
                   <td><strong><%= s.singer_name %></strong></td>
                   <td><span class="deity-pill"><%= s.deity %></span></td>
-                  <td><%= s.title %></td>
+                  <td>
+                    <% if (s.master_id) { %>
+                      <a href="/bhajan/<%= s.master_id %>" class="bank-title-link" title="Open lyrics and singing details"><%= s.title %></a>
+                    <% } else { %>
+                      <span class="unlinked-bhajan-title" title="Catalog details not available"><%= s.title %></span>
+                    <% } %>
+                    <% if (s.sheet_filename) { %>
+                      <a href="/sheets/<%= encodeURIComponent(s.sheet_filename) %>" target="_blank" rel="noopener noreferrer" class="sheet-link-pill" style="margin-left:6px; font-size:11px;" title="Open official music sheet (PDF)">📄 Sheet</a>
+                    <% } %>
+                  </td>
                   <td><%= s.speed || '-' %></td>
                   <td><%= s.scale || '-' %></td>
                 </tr>
@@ -107,11 +116,18 @@
 
   function renderSessionHtml(session) {
     var rows = session.bhajans.map(function(s, i) {
+      var titleHtml = s.master_id
+        ? '<a href="/bhajan/' + s.master_id + '" class="bank-title-link" title="Open lyrics and singing details">' + escapeHtml(s.title) + '</a>'
+        : '<span class="unlinked-bhajan-title" title="Catalog details not available">' + escapeHtml(s.title) + '</span>';
+      if (s.sheet_filename) {
+        titleHtml += ' <a href="/sheets/' + encodeURIComponent(s.sheet_filename) + '" target="_blank" rel="noopener noreferrer" class="sheet-link-pill" style="margin-left:6px; font-size:11px;" title="Open official music sheet (PDF)">📄 Sheet</a>';
+      }
+
       return '<tr>' +
         '<td>' + (i + 1) + '</td>' +
         '<td><strong>' + escapeHtml(s.singer_name) + '</strong></td>' +
         '<td><span class="deity-pill">' + escapeHtml(s.deity) + '</span></td>' +
-        '<td>' + escapeHtml(s.title) + '</td>' +
+        '<td>' + titleHtml + '</td>' +
         '<td>' + escapeHtml(s.speed || '-') + '</td>' +
         '<td>' + escapeHtml(s.scale || '-') + '</td>' +
         '</tr>';

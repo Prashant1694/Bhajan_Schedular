@@ -1,0 +1,880 @@
+<%
+  function getWesternScale(indianScale) {
+    if (!indianScale || indianScale === '-' || indianScale === 'Not specified') return '-';
+    const match = indianScale.toString().trim().match(/^([\d\.]+)\s*([PMpm])?.*$/);
+    if (!match) return '-';
+    const numMap = {'1':0, '1.5':1, '2':2, '2.5':3, '3':4, '4':5, '4.5':6, '5':7, '5.5':8, '6':9, '6.5':10, '7':11};
+    if (numMap[match[1]] === undefined) return '-';
+    let index = numMap[match[1]];
+    if ((match[2] || '').toUpperCase() === 'M') index = (index + 5) % 12;
+    return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"][index];
+  }
+
+  const hasLyrics = bhajan.lyrics && bhajan.lyrics.trim().length > 0;
+  const westM = getWesternScale(bhajan.shruti);
+  const westF = getWesternScale(bhajan.shruti_female);
+
+  // Split lyrics into paragraphs/stanzas
+  const stanzas = hasLyrics 
+    ? bhajan.lyrics.trim().split(/\r?\n\s*\r?\n/).filter(Boolean)
+    : [];
+
+  // Calculate total non-empty lyrics lines for dynamic full-frame print layout
+  const totalLyricsLines = stanzas.reduce((acc, st) => {
+    return acc + st.split(/\r?\n/).filter(l => l.trim().length > 0).length;
+  }, 0);
+
+  let printDensityClass = 'print-spacious';
+  if (totalLyricsLines > 22) {
+    printDensityClass = 'print-compact';
+  } else if (totalLyricsLines > 13) {
+    printDensityClass = 'print-medium';
+  }
+%>
+
+<div class="bhajan-detail-page <%= printDensityClass %>">
+  <div class="container detail-container">
+
+    <!-- Top Breadcrumb & Navigation -->
+    <nav class="detail-nav-bar" aria-label="Breadcrumb navigation">
+      <a href="/master-bank" class="detail-back-btn" id="backToBankBtn">
+        <span class="back-arrow">←</span> Master Bhajan Bank
+      </a>
+      <div class="detail-breadcrumbs">
+        <a href="/master-bank">Master Bank</a>
+        <span class="crumb-sep">/</span>
+        <% if (bhajan.deity) { %>
+          <span class="crumb-deity"><%= bhajan.deity %></span>
+          <span class="crumb-sep">/</span>
+        <% } %>
+        <span class="crumb-current" title="<%= bhajan.title %>"><%= bhajan.title %></span>
+      </div>
+    </nav>
+
+    <!-- Sacred Header Card -->
+    <header class="detail-hero-card">
+      <div class="detail-hero-content">
+        <h1 class="detail-bhajan-title" id="bhajanTitleDisplay"><%= bhajan.title %></h1>
+        <div class="detail-badge-strip">
+          <% if (bhajan.deity) { %>
+            <% bhajan.deity.split(',').map(d => d.trim()).filter(Boolean).forEach(d => { %>
+              <span class="hero-pill deity-pill">🕉️ <%= d %></span>
+            <% }); %>
+          <% } %>
+          <% if (bhajan.tempo) { %>
+            <span class="hero-pill tempo-pill">⏱️ <%= bhajan.tempo %></span>
+          <% } %>
+          <% if (bhajan.raga && bhajan.raga !== '-' && bhajan.raga !== 'Not specified') { %>
+            <span class="hero-pill raga-pill">🎼 Raag <%= bhajan.raga %></span>
+          <% } %>
+          <% if (bhajan.language) { %>
+            <span class="hero-pill lang-pill">🗣️ <%= bhajan.language %></span>
+          <% } %>
+          <% if (bhajan.sheet_filename) { %>
+            <a href="/sheets/<%= encodeURIComponent(bhajan.sheet_filename) %>" target="_blank" rel="noopener noreferrer" class="hero-pill sheet-pill" title="Open official PDF music notation & sheet">
+              📄 Music Sheet ↗
+            </a>
+          <% } %>
+        </div>
+      </div>
+    </header>
+
+    <!-- ======================================================== -->
+    <!-- 1. TOP SECTION: SACRED BHAJAN LYRICS (FIRST AT TOP)       -->
+    <!-- ======================================================== -->
+    <section class="lyrics-section-card" id="lyricsSection" aria-label="Bhajan Lyrics">
+      
+      <!-- Lyrics Action Toolbar: Font Resize + Copy + Print + Music Sheet -->
+      <div class="lyrics-toolbar">
+        <div class="lyrics-controls-group">
+          <!-- Tactile Font Size Adjustment (+ / - / Reset) -->
+          <div class="font-size-adjuster" role="group" aria-label="Adjust font size">
+            <button type="button" id="fontDec" class="font-btn" onclick="changeLyricsFontSize(-2)" title="Decrease lyrics font size" aria-label="Decrease font size">A−</button>
+            <span id="fontSizeDisplay" class="font-size-indicator" title="Current text size">20px</span>
+            <button type="button" id="fontInc" class="font-btn" onclick="changeLyricsFontSize(2)" title="Increase lyrics font size" aria-label="Increase font size">A+</button>
+            <button type="button" id="fontReset" class="font-btn font-reset-btn" onclick="changeLyricsFontSize(0)" title="Reset font size to default (20px)" aria-label="Reset font size">↺</button>
+          </div>
+
+          <!-- Floral Frame Toggle -->
+          <button type="button" id="toggleFrameBtn" class="tool-btn active" onclick="toggleFloralFrame()" title="Toggle sacred floral frame (Double gold border & botanical corners)">
+            <span id="frameIcon">🌸</span> <span id="frameText">Frame</span>
+          </button>
+
+          <!-- Alignment Toggle -->
+          <button type="button" id="toggleAlignBtn" class="tool-btn" onclick="toggleLyricsAlignment()" title="Toggle text alignment (Center / Left)">
+            <span id="alignIcon">≡</span> <span id="alignText">Left</span>
+          </button>
+
+          <!-- Copy Lyrics Button -->
+          <button type="button" id="copyLyricsBtn" class="tool-btn copy-btn" onclick="copyBhajanLyrics()" title="Copy full lyrics to clipboard">
+            <span class="btn-icon" id="copyIcon">📋</span>
+            <span id="copyBtnText">Copy</span>
+          </button>
+
+          <!-- Print Button -->
+          <button type="button" onclick="window.print()" class="tool-btn print-btn no-print" title="Print lyrics sheet">
+            <span class="btn-icon">🖨️</span>
+            <span class="btn-text">Print</span>
+          </button>
+
+          <% if (bhajan.sheet_filename) { %>
+            <!-- Official Music Sheet Button -->
+            <a href="/sheets/<%= encodeURIComponent(bhajan.sheet_filename) %>" target="_blank" rel="noopener noreferrer" class="tool-btn sheet-btn no-print" title="Open official reference music sheet (PDF)">
+              <span class="btn-icon">📄</span>
+              <span class="btn-text">Music Sheet</span>
+            </a>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Devotional Lyrics Reading Area (Sacred Golden Floral Frame) -->
+      <div class="lyrics-parchment floral-frame-active" id="lyricsViewport">
+        <!-- Botanical Corner Embellishments: Top-Left & Bottom-Right -->
+        <img src="/images/corner-floral-tl.svg" class="parchment-corner corner-tl" alt="" aria-hidden="true" />
+        <img src="/images/corner-floral-br.svg" class="parchment-corner corner-br" alt="" aria-hidden="true" />
+        
+        <!-- Sacred Central Watermark Glow -->
+        <div class="parchment-watermark" aria-hidden="true"></div>
+
+        <% if (hasLyrics) { %>
+          <div class="lyrics-container" id="lyricsContainer">
+            <% stanzas.forEach((stanza, sIdx) => { %>
+              <div class="lyrics-stanza <%= sIdx === 0 ? 'first-stanza' : '' %>" data-stanza-idx="<%= sIdx + 1 %>">
+                <% stanza.split(/\r?\n/).forEach(line => { %>
+                  <% if (line.trim().length > 0) { %>
+                    <div class="lyrics-line"><%= line.trim() %></div>
+                  <% } %>
+                <% }) %>
+              </div>
+              <% if (sIdx < stanzas.length - 1) { %>
+                <div class="stanza-ornament" aria-hidden="true">✦ ✦ ✦</div>
+              <% } %>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="lyrics-empty-state">
+            <span class="empty-icon">🪔</span>
+            <h3>Lyrics Currently Being Transcribed</h3>
+            <p>The lyrics for this bhajan are being formatted. Pitch and harmonium references are provided below.</p>
+          </div>
+        <% } %>
+      </div>
+
+      <!-- Hidden Raw Data Elements for Clipboard & Scripts (Safe against quotes/escapes) -->
+      <div id="rawBhajanData" 
+           data-title="<%= bhajan.title %>" 
+           data-deity="<%= bhajan.deity || '' %>" 
+           style="display:none;" 
+           aria-hidden="true">
+        <textarea id="rawLyricsText"><%= bhajan.lyrics || '' %></textarea>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- 2. BOTTOM SECTION: ACCOMPANIMENT & MUSICAL DETAILS       -->
+    <!-- ======================================================== -->
+    <section class="metadata-section-card" id="accompanimentSection" aria-label="Musical Accompaniment & Specifications">
+      <div class="meta-section-header">
+        <span class="meta-header-icon">🎼</span>
+        <div>
+          <h2 class="meta-section-title">Musical Accompaniment & Singing Guide</h2>
+          <p class="meta-section-sub">Standard references for harmonium, keyboard, tabla, and vocalists</p>
+        </div>
+      </div>
+
+      <div class="meta-specs-grid">
+        
+        <!-- Male Scale / Shruti -->
+        <div class="spec-tile">
+          <div class="spec-tile-icon">🎹</div>
+          <div class="spec-tile-info">
+            <span class="spec-label">Male Scale / Shruti</span>
+            <span class="spec-value">
+              <% if (bhajan.shruti && bhajan.shruti !== '-' && bhajan.shruti !== 'Not specified') { %>
+                <strong class="pitch-indian"><%= bhajan.shruti %></strong>
+                <% if (westM !== '-') { %>
+                  <span class="pitch-western">Key of <%= westM %></span>
+                <% } %>
+              <% } else { %>
+                Not specified
+              <% } %>
+            </span>
+          </div>
+        </div>
+
+        <!-- Female Scale / Shruti -->
+        <div class="spec-tile">
+          <div class="spec-tile-icon">🎹</div>
+          <div class="spec-tile-info">
+            <span class="spec-label">Female Scale / Shruti</span>
+            <span class="spec-value">
+              <% if (bhajan.shruti_female && bhajan.shruti_female !== '-' && bhajan.shruti_female !== 'Not specified') { %>
+                <strong class="pitch-indian"><%= bhajan.shruti_female %></strong>
+                <% if (westF !== '-') { %>
+                  <span class="pitch-western">Key of <%= westF %></span>
+                <% } %>
+              <% } else { %>
+                <span class="muted-note">Same as male or −5 semitones</span>
+              <% } %>
+            </span>
+          </div>
+        </div>
+
+        <!-- Deity Spec -->
+        <div class="spec-tile">
+          <div class="spec-tile-icon">🕉️</div>
+          <div class="spec-tile-info">
+            <span class="spec-label">Deity / Aspect</span>
+            <span class="spec-value highlight-val"><%= bhajan.deity || 'Not specified' %></span>
+          </div>
+        </div>
+
+        <!-- Speed / Tempo Spec -->
+        <div class="spec-tile">
+          <div class="spec-tile-icon">⏱️</div>
+          <div class="spec-tile-info">
+            <span class="spec-label">Speed / Tempo</span>
+            <span class="spec-value">
+              <% if (bhajan.tempo) { %>
+                <span class="tempo-tag-badge"><%= bhajan.tempo %></span>
+              <% } else { %>
+                Not specified
+              <% } %>
+            </span>
+          </div>
+        </div>
+
+        <!-- Classical Raag Spec -->
+        <div class="spec-tile">
+          <div class="spec-tile-icon">🎵</div>
+          <div class="spec-tile-info">
+            <span class="spec-label">Classical Raag</span>
+            <span class="spec-value"><%= (bhajan.raga && bhajan.raga !== '-' && bhajan.raga !== 'Not specified') ? bhajan.raga : 'Not specified' %></span>
+          </div>
+        </div>
+
+        <% if (bhajan.raga_notes) { %>
+          <!-- Dedicated Raag Singing & Swara Notes -->
+          <div class="spec-tile spec-tile-full-width raga-notes-tile">
+            <div class="spec-tile-icon">🎼</div>
+            <div class="spec-tile-info">
+              <span class="spec-label">Raag Swara Notes & Scale Details</span>
+              <div class="spec-raga-notes-text"><%= bhajan.raga_notes %></div>
+            </div>
+          </div>
+        <% } %>
+
+        <!-- Language Spec -->
+        <div class="spec-tile">
+          <div class="spec-tile-icon">🗣️</div>
+          <div class="spec-tile-info">
+            <span class="spec-label">Devotional Language</span>
+            <span class="spec-value"><%= bhajan.language || 'Not specified' %></span>
+          </div>
+        </div>
+
+        <!-- Difficulty Level Spec -->
+        <div class="spec-tile">
+          <div class="spec-tile-icon">📊</div>
+          <div class="spec-tile-info">
+            <span class="spec-label">Difficulty / Level</span>
+            <span class="spec-value"><%= bhajan.level ? `Level ${bhajan.level}` : 'Standard' %></span>
+          </div>
+        </div>
+
+        <!-- Master Bank ID Spec -->
+        <div class="spec-tile">
+          <div class="spec-tile-icon">🆔</div>
+          <div class="spec-tile-info">
+            <span class="spec-label">Master Catalog ID</span>
+            <span class="spec-value">#<%= bhajan.id %></span>
+          </div>
+        </div>
+
+        <% if (bhajan.sheet_filename) { %>
+          <!-- Official Music Sheet Reference Spec Tile -->
+          <div class="spec-tile spec-tile-sheet">
+            <div class="spec-tile-icon">📄</div>
+            <div class="spec-tile-info">
+              <span class="spec-label">Official Music Sheet</span>
+              <span class="spec-value">
+                <a href="/sheets/<%= encodeURIComponent(bhajan.sheet_filename) %>" target="_blank" rel="noopener noreferrer" class="spec-sheet-link" title="Open <%= bhajan.sheet_filename %> in new tab">
+                  <%= bhajan.sheet_filename %> ↗
+                </a>
+              </span>
+            </div>
+          </div>
+        <% } %>
+
+      </div>
+    </section>
+
+    <!-- Bottom Navigation & Action Strip -->
+    <div class="detail-footer-nav no-print">
+      <a href="/master-bank" class="footer-nav-btn secondary-btn">
+        <span>←</span> Master Bhajan Bank
+      </a>
+      <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" class="footer-nav-btn text-btn">
+        <span>↑</span> Top
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- BULLETPROOF CLIENT SCRIPTS (FONT RESIZE, ALIGN, COPY)     -->
+<!-- ======================================================== -->
+<script>
+(function() {
+  const DEFAULT_SIZE = 20;
+  const MIN_SIZE = 14;
+  const MAX_SIZE = 36;
+  let currentSize = DEFAULT_SIZE;
+
+  // Restore saved preference
+  try {
+    const saved = localStorage.getItem('bp_bhajan_lyrics_font_size');
+    if (saved) {
+      const parsed = parseInt(saved, 10);
+      if (!isNaN(parsed) && parsed >= MIN_SIZE && parsed <= MAX_SIZE) {
+        currentSize = parsed;
+      }
+    }
+  } catch (e) {}
+
+  function applySize(size) {
+    currentSize = Math.max(MIN_SIZE, Math.min(MAX_SIZE, size));
+
+    // Update CSS variables on document & container
+    document.documentElement.style.setProperty('--lyrics-font-size', currentSize + 'px');
+    
+    const container = document.getElementById('lyricsContainer');
+    if (container) {
+      container.style.setProperty('--lyrics-font-size', currentSize + 'px');
+      container.style.fontSize = currentSize + 'px';
+      
+      // Enforce on all lyrics lines directly for instant, flawless rendering
+      const lines = container.querySelectorAll('.lyrics-line');
+      for (let i = 0; i < lines.length; i++) {
+        lines[i].style.fontSize = currentSize + 'px';
+      }
+    }
+
+    const display = document.getElementById('fontSizeDisplay');
+    if (display) {
+      display.textContent = currentSize + 'px';
+      display.title = 'Current font size: ' + currentSize + 'px';
+    }
+
+    const btnDec = document.getElementById('fontDec');
+    const btnInc = document.getElementById('fontInc');
+    if (btnDec) btnDec.disabled = (currentSize <= MIN_SIZE);
+    if (btnInc) btnInc.disabled = (currentSize >= MAX_SIZE);
+
+    try {
+      localStorage.setItem('bp_bhajan_lyrics_font_size', String(currentSize));
+    } catch (e) {}
+  }
+
+  // Expose global controller
+  window.changeLyricsFontSize = function(delta) {
+    if (delta === 0) {
+      applySize(DEFAULT_SIZE);
+    } else {
+      applySize(currentSize + delta);
+    }
+  };
+
+  // Alignment Toggle
+  let isLeftAligned = false;
+  window.toggleLyricsAlignment = function() {
+    isLeftAligned = !isLeftAligned;
+    const container = document.getElementById('lyricsContainer');
+    const alignIcon = document.getElementById('alignIcon');
+    const alignText = document.getElementById('alignText');
+
+    if (container) {
+      if (isLeftAligned) {
+        container.classList.add('align-left');
+        if (alignIcon) alignIcon.textContent = '☱';
+        if (alignText) alignText.textContent = 'Center';
+      } else {
+        container.classList.remove('align-left');
+        if (alignIcon) alignIcon.textContent = '≡';
+        if (alignText) alignText.textContent = 'Left';
+      }
+    }
+  };
+
+  // Copy Lyrics to Clipboard
+  window.copyBhajanLyrics = async function() {
+    const rawDataElem = document.getElementById('rawBhajanData');
+    const lyricsElem = document.getElementById('rawLyricsText');
+    const copyBtn = document.getElementById('copyLyricsBtn');
+    const copyBtnText = document.getElementById('copyBtnText');
+    const copyIcon = document.getElementById('copyIcon');
+
+    if (!lyricsElem || !lyricsElem.value.trim()) return;
+
+    const title = rawDataElem ? rawDataElem.getAttribute('data-title') : '';
+    const deity = rawDataElem ? rawDataElem.getAttribute('data-deity') : '';
+    const lyrics = lyricsElem.value.trim();
+
+    const formatted = (title ? title : 'Bhajan') + (deity ? ' (' + deity + ')' : '') + '\n\n' + lyrics + '\n\n— Sri Sathya Sai Seva Organisation, Gandhinagar';
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(formatted);
+      } else {
+        lyricsElem.style.display = 'block';
+        lyricsElem.select();
+        document.execCommand('copy');
+        lyricsElem.style.display = 'none';
+      }
+
+      if (copyBtn) copyBtn.classList.add('copied');
+      if (copyBtnText) copyBtnText.textContent = 'Copied! ✓';
+      if (copyIcon) copyIcon.textContent = '✓';
+
+      setTimeout(function() {
+        if (copyBtn) copyBtn.classList.remove('copied');
+        if (copyBtnText) copyBtnText.textContent = 'Copy Lyrics';
+        if (copyIcon) copyIcon.textContent = '📋';
+      }, 2200);
+    } catch (err) {
+      alert('Could not copy lyrics to clipboard.');
+    }
+  };
+
+  // Floral Frame Toggle (Double gold border & botanical corners)
+  let isFrameActive = true;
+  try {
+    const savedFrame = localStorage.getItem('bp_bhajan_lyrics_floral_frame');
+    if (savedFrame !== null) {
+      isFrameActive = (savedFrame === 'true');
+    }
+  } catch (e) {}
+
+  function applyFrameState(active) {
+    isFrameActive = active;
+    const viewport = document.getElementById('lyricsViewport');
+    const btn = document.getElementById('toggleFrameBtn');
+    const icon = document.getElementById('frameIcon');
+    const text = document.getElementById('frameText');
+    if (viewport) {
+      viewport.classList.toggle('floral-frame-active', isFrameActive);
+    }
+    if (btn) {
+      btn.classList.toggle('active', isFrameActive);
+    }
+    if (icon) icon.textContent = isFrameActive ? '🌸' : '📄';
+    if (text) text.textContent = isFrameActive ? 'Frame' : 'Clean';
+    try {
+      localStorage.setItem('bp_bhajan_lyrics_floral_frame', String(isFrameActive));
+    } catch (e) {}
+  }
+
+  window.toggleFloralFrame = function() {
+    applyFrameState(!isFrameActive);
+  };
+
+  // Run on page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { 
+      applySize(currentSize);
+      applyFrameState(isFrameActive);
+    });
+  } else {
+    applySize(currentSize);
+    applyFrameState(isFrameActive);
+  }
+})();
+</script>
+
+<!-- ======================================================== -->
+<!-- EMBEDDED PRINT STYLESHEET — GUARANTEED 1-PAGE FULL FRAME -->
+<!-- ======================================================== -->
+<style>
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 16mm 12mm 16mm;
+  }
+
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    width: 100% !important;
+    height: 100% !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Fraunces', Georgia, serif !important;
+  }
+
+  /* Completely Suppress Non-Print Elements & Floating Buttons */
+  .no-print,
+  .theme-toggle,
+  #themeToggle,
+  .notif-bell-btn,
+  #notifBellBtn,
+  .notif-badge,
+  .notif-panel,
+  .notif-overlay,
+  .notif-prompt-overlay,
+  .pwa-install-overlay,
+  #pwaInstallOverlay,
+  .notification-bell-container,
+  .detail-nav-bar,
+  .lyrics-toolbar,
+  .detail-footer-nav,
+  button,
+  .stanza-ornament {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* FULL FRAME Page Wrapper & Container (Spanning Full A4 Printable Frame) */
+  .bhajan-detail-page {
+    width: 100% !important;
+    min-height: calc(297mm - 24mm) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+  }
+
+  .detail-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: calc(297mm - 24mm) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Strip all card boxes, card borders, and shadows for pure songbook presentation */
+  .detail-hero-card,
+  .lyrics-section-card,
+  .lyrics-parchment,
+  .lyrics-stanza {
+    border: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .detail-hero-card::before {
+    display: none !important;
+  }
+
+  /* Top Section: Prominent Title & Devotional Sub-header */
+  .detail-hero-card {
+    text-align: center !important;
+    padding-bottom: 8pt !important;
+    margin-bottom: 12pt !important;
+    border-bottom: 1.5pt solid #222222 !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .detail-bhajan-title {
+    font-family: 'Fraunces', Georgia, serif !important;
+    font-size: 24pt !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+    text-align: center !important;
+    margin: 0 0 8pt 0 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.2pt !important;
+  }
+
+  .detail-badge-strip {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8pt !important;
+    flex-wrap: wrap !important;
+    margin: 0 !important;
+  }
+
+  .hero-pill {
+    background: #fbf8f2 !important;
+    border: 1pt solid #444444 !important;
+    color: #111111 !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 9.5pt !important;
+    font-weight: 700 !important;
+    padding: 3pt 10pt !important;
+    border-radius: 12pt !important;
+  }
+
+  /* Middle Section: Sacred Lyrics (Vertically and Horizontally Full-Frame) */
+  .lyrics-section-card {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 4pt 0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .lyrics-parchment.floral-frame-active {
+    border: 2pt solid #c59929 !important;
+    outline: 0.8pt solid rgba(197, 153, 41, 0.5) !important;
+    outline-offset: -5pt !important;
+    border-radius: 6pt !important;
+    padding: 24pt 20pt !important;
+    position: relative !important;
+    background-color: #fffdfa !important;
+    background-image: 
+      radial-gradient(circle at center, rgba(255, 253, 249, 0.96) 28%, rgba(254, 247, 242, 0.88) 100%), 
+      url('/images/lyrics-floral-frame.png') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .parchment-corner {
+    display: block !important;
+    position: absolute !important;
+    width: 90pt !important;
+    height: 90pt !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+  }
+  .parchment-corner.corner-tl {
+    top: -2pt !important;
+    left: -2pt !important;
+  }
+  .parchment-corner.corner-br {
+    bottom: -2pt !important;
+    right: -2pt !important;
+  }
+
+  .parchment-watermark {
+    display: block !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 170pt !important;
+    height: 170pt !important;
+    opacity: 0.45 !important;
+    z-index: 1 !important;
+  }
+
+  .lyrics-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  .lyrics-line {
+    font-family: 'Fraunces', Georgia, serif !important;
+    font-weight: 500 !important;
+    color: #000000 !important;
+    text-align: center !important;
+    margin: 0 !important;
+  }
+
+  .lyrics-stanza.first-stanza {
+    border-left: none !important;
+    padding-left: 0 !important;
+  }
+
+  /* DYNAMIC PRINT SIZING TO FILL THE FULL FRAME BEAUTIFULLY */
+  /* 1. Spacious Mode (<= 13 lines like Bhajan #37): Large, grand, filling the full sheet */
+  .print-spacious .lyrics-line {
+    font-size: 19pt !important;
+    line-height: 2.35 !important;
+    letter-spacing: 0.3pt !important;
+    padding: 3.5pt 0 !important;
+  }
+  .print-spacious .lyrics-stanza {
+    margin-bottom: 22pt !important;
+  }
+
+  /* 2. Medium Mode (14-22 lines) */
+  .print-medium .lyrics-line {
+    font-size: 15.5pt !important;
+    line-height: 2.05 !important;
+    letter-spacing: 0.2pt !important;
+    padding: 2.5pt 0 !important;
+  }
+  .print-medium .lyrics-stanza {
+    margin-bottom: 14pt !important;
+  }
+
+  /* 3. Compact Mode (> 22 lines): Fits on single portrait page */
+  .print-compact .lyrics-line {
+    font-size: 12.5pt !important;
+    line-height: 1.7 !important;
+    padding: 1.5pt 0 !important;
+  }
+  .print-compact .lyrics-stanza {
+    margin-bottom: 9pt !important;
+  }
+
+  /* If user toggled Left alignment on screen */
+  .lyrics-container.align-left .lyrics-line {
+    text-align: left !important;
+  }
+  .lyrics-container.align-left {
+    text-align: left !important;
+    padding-left: 20pt !important;
+  }
+
+  /* Bottom Section: Full-Width Accompaniment Specs Strip */
+  .metadata-section-card {
+    border: 1.5pt solid #222222 !important;
+    border-radius: 6pt !important;
+    background: #fbfbfb !important;
+    padding: 8pt 12pt 10pt !important;
+    margin: 14pt 0 0 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .meta-section-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6pt !important;
+    padding-bottom: 4pt !important;
+    margin-bottom: 6pt !important;
+    border-bottom: 1pt solid #cccccc !important;
+  }
+
+  .meta-header-icon {
+    display: none !important;
+  }
+
+  .meta-section-title {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 9.5pt !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8pt !important;
+    color: #000000 !important;
+    margin: 0 !important;
+  }
+
+  .meta-section-sub {
+    display: none !important;
+  }
+
+  .meta-specs-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 5pt 8pt !important;
+    width: 100% !important;
+  }
+
+  .spec-tile {
+    border: 0.8pt solid #bbbbbb !important;
+    background: #ffffff !important;
+    padding: 5pt 7pt !important;
+    border-radius: 4pt !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1.5pt !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .spec-tile-icon {
+    display: none !important;
+  }
+
+  .spec-tile-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5pt !important;
+    width: 100% !important;
+  }
+
+  .spec-label {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 6.8pt !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.4pt !important;
+    color: #444444 !important;
+  }
+
+  .spec-value {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 9.5pt !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+  }
+
+  .spec-value.highlight-val {
+    font-family: 'Fraunces', Georgia, serif !important;
+    color: #000000 !important;
+    font-size: 10.5pt !important;
+  }
+
+  .pitch-indian {
+    font-size: 10.5pt !important;
+    font-weight: 800 !important;
+    color: #000000 !important;
+  }
+
+  .pitch-western {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    font-size: 9pt !important;
+    font-weight: 600 !important;
+    color: #222222 !important;
+    margin-left: 3pt !important;
+  }
+
+  .tempo-tag-badge {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    font-size: 9.5pt !important;
+    font-weight: 700 !important;
+    color: #000000 !important;
+  }
+
+  .muted-note {
+    font-size: 8pt !important;
+    color: #555555 !important;
+  }
+}
+</style>
+

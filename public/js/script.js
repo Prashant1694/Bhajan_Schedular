@@ -3,7 +3,7 @@
   function syncAllThemeToggles() {
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     var btns = document.querySelectorAll('.theme-toggle');
-    btns.forEach(function(btn) {
+    btns.forEach(function (btn) {
       btn.setAttribute('data-tooltip', isDark ? 'Switch to Light' : 'Switch to Dark');
       btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
     });
@@ -14,10 +14,10 @@
     var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     if (isDark) {
       document.documentElement.removeAttribute('data-theme');
-      try { localStorage.setItem('bp-theme', 'light'); } catch(err){}
+      try { localStorage.setItem('bp-theme', 'light'); } catch (err) { }
     } else {
       document.documentElement.setAttribute('data-theme', 'dark');
-      try { localStorage.setItem('bp-theme', 'dark'); } catch(err){}
+      try { localStorage.setItem('bp-theme', 'dark'); } catch (err) { }
     }
     syncAllThemeToggles();
   }
@@ -27,7 +27,7 @@
   function bindThemeButtons() {
     syncAllThemeToggles();
     var btns = document.querySelectorAll('.theme-toggle');
-    btns.forEach(function(btn) {
+    btns.forEach(function (btn) {
       if (!btn._themeAttached) {
         btn._themeAttached = true;
         btn.addEventListener('click', handleToggleClick);
@@ -46,7 +46,7 @@ function switchTab(tabName, element) {
   document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
   document.getElementById(tabName).classList.add('active');
-  
+
   // Highlight clicked tab
   if (element) {
     element.classList.add('active');
@@ -86,12 +86,12 @@ function closeModal(modalId) {
 
 function closeConfirmModal() {
   const modal = document.getElementById('confirmSubmitModal');
-  if(modal) modal.classList.remove('show');
+  if (modal) modal.classList.remove('show');
 }
 
 function closeSelectBhajanModal() {
   const modal = document.getElementById('selectBhajanModal');
-  if(modal) modal.classList.remove('show');
+  if (modal) modal.classList.remove('show');
   const titleInput = document.getElementById('bhajanTitleInput');
   if (titleInput) {
     titleInput.focus();
@@ -100,10 +100,10 @@ function closeSelectBhajanModal() {
 
 function openSelectBhajanModal() {
   const modal = document.getElementById('selectBhajanModal');
-  if(modal) modal.classList.add('show');
+  if (modal) modal.classList.add('show');
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const sidebarToggle = document.getElementById('sidebarToggle');
   const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
   const sidebarOverlay = document.getElementById('sidebarOverlay');
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Modal close on outside click
-  window.onclick = function(event) {
+  window.onclick = function (event) {
     const modal = document.getElementById('detailsModal');
     const confirmModal = document.getElementById('confirmSubmitModal');
     const selectModal = document.getElementById('selectBhajanModal');
@@ -283,11 +283,24 @@ document.addEventListener('DOMContentLoaded', function() {
   const suggestions = document.getElementById('bhajanSuggestions');
   let activeSuggestionIndex = -1;
 
+  const normalizeForSearch = (str) => {
+    return (str || '').toLowerCase().replace(/[''`".,;:!?()\[\]{}\/\\-]/g, ' ').replace(/\s+/g, ' ').trim();
+  };
+
   const renderBhajanSuggestions = () => {
     if (!suggestions || !titleInput || !selectedDeity) return;
-    const search = titleInput.value.trim().toLocaleLowerCase();
+    const rawSearch = titleInput.value.trim();
+    const search = normalizeForSearch(rawSearch);
+    const searchTokens = search.split(' ').filter(Boolean);
+
     const matches = currentMasterBhajans
-      .filter(bhajan => bhajan.title.toLocaleLowerCase().includes(search))
+      .filter(bhajan => {
+        if (!search) return true;
+        const normTitle = normalizeForSearch(bhajan.title);
+        if (normTitle.includes(search)) return true;
+        if (searchTokens.length > 1 && searchTokens.every(tok => normTitle.includes(tok))) return true;
+        return false;
+      })
       .slice(0, 12);
 
     suggestions.innerHTML = '';
@@ -347,16 +360,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Deity card selection
   document.querySelectorAll('.deity-card.available').forEach(card => {
-    card.addEventListener('click', function() {
+    card.addEventListener('click', function () {
       document.querySelectorAll('.deity-card').forEach(c => c.classList.remove('selected'));
       this.classList.add('selected');
       selectedDeity = this.dataset.deity;
-      
+
       document.getElementById('selectedDeity').value = selectedDeity;
       document.getElementById('deityDisplay').textContent = selectedDeity;
       document.getElementById('bhajanDetails').classList.add('show');
-      
-      
+
+
       // Reset fields
       titleInput.value = '';
       const masterIdInput = document.getElementById('selectedMasterBhajanId');
@@ -373,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
           renderBhajanSuggestions();
         })
         .catch(err => titleInput.placeholder = "Type bhajan name here...");
-        
+
       setTimeout(() => {
         document.getElementById('bhajanDetails').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 100);
@@ -382,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // MAGIC AUTO-FILL LOGIC: Listen for when they select a title
   let searchTimeout;
-  titleInput.addEventListener('input', function(e) {
+  titleInput.addEventListener('input', function (e) {
     if (e.isTrusted) {
       // User typed or edited manually: require explicit dropdown selection
       const masterIdInput = document.getElementById('selectedMasterBhajanId');
@@ -397,110 +410,137 @@ document.addEventListener('DOMContentLoaded', function() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
       const selectedTitle = e.target.value;
-    
-    // Find the bhajan in our downloaded master list
-    const matchedBhajan = currentMasterBhajans.find(b => b.title === selectedTitle);
-    
-    // Helper to catch empty strings or #N/A from the excel file
-    const cleanValue = (val) => (val && val !== '#N/A' && String(val).trim() !== '') ? val : 'Not specified';
 
-    const warningDiv = document.getElementById('cooldownWarning');
-    const fetchScaleSuggestions = () => {
-      const title = titleInput ? titleInput.value.trim() : '';
-      const singer = singerInput ? singerInput.value.trim() : '';
-      const gender = genderSelect ? genderSelect.value.trim() : '';
+      // Find the bhajan in our downloaded master list
+      const matchedBhajan = currentMasterBhajans.find(b => b.title === selectedTitle);
 
-      const prevBadge = document.getElementById('singerPrevScaleBadge');
-      const prevVal = document.getElementById('singerPrevScaleVal');
-      const genderBadge = document.getElementById('genderCommonScaleBadge');
-      const genderLabel = document.getElementById('genderCommonScaleLabel');
-      const genderVal = document.getElementById('genderCommonScaleVal');
+      // Helper to catch empty strings or #N/A from the excel file
+      const cleanValue = (val) => (val && val !== '#N/A' && String(val).trim() !== '') ? val : 'Not specified';
 
-      if (!title) {
-        if (prevBadge) prevBadge.style.display = 'none';
-        if (genderBadge) genderBadge.style.display = 'none';
-        return;
-      }
+      const warningDiv = document.getElementById('cooldownWarning');
+      const fetchScaleSuggestions = () => {
+        const title = titleInput ? titleInput.value.trim() : '';
+        const singer = singerInput ? singerInput.value.trim() : '';
+        const gender = genderSelect ? genderSelect.value.trim() : '';
 
-      const params = new URLSearchParams({
-        title: title,
-        singer_name: singer,
-        gender: gender
-      });
+        const prevBadge = document.getElementById('singerPrevScaleBadge');
+        const prevVal = document.getElementById('singerPrevScaleVal');
+        const genderBadge = document.getElementById('genderCommonScaleBadge');
+        const genderLabel = document.getElementById('genderCommonScaleLabel');
+        const genderVal = document.getElementById('genderCommonScaleVal');
 
-      fetch('/api/scale-suggestions?' + params.toString())
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.singerPreviousScale && prevBadge && prevVal) {
-            prevVal.textContent = data.singerPreviousScale;
-            prevBadge.style.display = 'block';
-          } else if (prevBadge) {
-            prevBadge.style.display = 'none';
-          }
-
-          if (data && data.mostCommonGenderScale && genderBadge && genderLabel && genderVal) {
-            genderLabel.textContent = data.mostCommonGenderScale.gender;
-            genderVal.textContent = data.mostCommonGenderScale.scale;
-            genderBadge.style.display = 'block';
-          } else if (genderBadge) {
-            genderBadge.style.display = 'none';
-          }
-        })
-        .catch(err => {
+        if (!title) {
           if (prevBadge) prevBadge.style.display = 'none';
           if (genderBadge) genderBadge.style.display = 'none';
-        });
-    };
+          return;
+        }
 
-    if (selectedTitle.trim().length > 0) {
-      fetch('/api/check-cooldown?title=' + encodeURIComponent(selectedTitle))
-        .then(res => res.json())
-        .then(data => {
-          if (data && warningDiv) {
-            warningDiv.innerHTML = `⚠️ <strong>Cool-down warning:</strong> This bhajan was last sung by <strong>${data.singer_name}</strong> on <strong>${data.session_date}</strong>.`;
-            warningDiv.style.display = 'block';
-          } else if (warningDiv) {
-            warningDiv.style.display = 'none';
-          }
+        const params = new URLSearchParams({
+          title: title,
+          singer_name: singer,
+          gender: gender
         });
-      fetchScaleSuggestions();
-    } else {
-      if (warningDiv) warningDiv.style.display = 'none';
-      fetchScaleSuggestions();
-    }
 
-    if (matchedBhajan) {
-      // 1. Auto-fill visible inputs
-      const genderSelect = document.getElementById('gender');
-      const gender = genderSelect ? genderSelect.value : '';
-      const scaleSelection = scaleForGender(matchedBhajan, gender);
-      document.getElementById('scaleInput').value = scaleSelection.scale;
-      document.getElementById('speedInput').value = cleanValue(matchedBhajan.tempo);
-      
-      // 2. Auto-fill other inputs to send to database
-      document.getElementById('ragaInput').value = cleanValue(matchedBhajan.raga);
-      document.getElementById('hiddenLevel').value = matchedBhajan.level || '';
-      document.getElementById('hiddenLanguage').value = matchedBhajan.language || '';
-      
-      // 3. Show a nice green success message to the singer
-      const badge = document.getElementById('masterDataBadge');
-      let badgeText = "";
-      const cleanRaag = cleanValue(matchedBhajan.raga);
-      if (cleanRaag !== 'Not specified') badgeText += `(Raag: ${cleanRaag})`;
-      if (scaleSelection.usedFallback) {
-        badgeText += `${badgeText ? ' ' : ''}(Female shruti: −5 from ${matchedBhajan.shruti})`;
+        fetch('/api/scale-suggestions?' + params.toString())
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.singerPreviousScale && prevBadge && prevVal) {
+              prevVal.textContent = data.singerPreviousScale;
+              prevBadge.style.display = 'block';
+            } else if (prevBadge) {
+              prevBadge.style.display = 'none';
+            }
+
+            if (data && data.mostCommonGenderScale && genderBadge && genderLabel && genderVal) {
+              genderLabel.textContent = data.mostCommonGenderScale.gender;
+              genderVal.textContent = data.mostCommonGenderScale.scale;
+              genderBadge.style.display = 'block';
+            } else if (genderBadge) {
+              genderBadge.style.display = 'none';
+            }
+          })
+          .catch(err => {
+            if (prevBadge) prevBadge.style.display = 'none';
+            if (genderBadge) genderBadge.style.display = 'none';
+          });
+      };
+
+      if (selectedTitle.trim().length > 0) {
+        fetch('/api/check-cooldown?title=' + encodeURIComponent(selectedTitle))
+          .then(res => res.json())
+          .then(data => {
+            if (data && warningDiv) {
+              warningDiv.innerHTML = `⚠️ <strong>Cool-down warning:</strong> This bhajan was last sung by <strong>${data.singer_name}</strong> on <strong>${data.session_date}</strong>.`;
+              warningDiv.style.display = 'block';
+            } else if (warningDiv) {
+              warningDiv.style.display = 'none';
+            }
+          });
+        fetchScaleSuggestions();
+      } else {
+        if (warningDiv) warningDiv.style.display = 'none';
+        fetchScaleSuggestions();
       }
-      
-      document.getElementById('badgeDetails').textContent = badgeText;
-      badge.style.display = 'block';
-    } else {
-      // If they type a custom bhajan not in the list, hide the badge
-      document.getElementById('masterDataBadge').style.display = 'none';
-      document.getElementById('speedInput').value = 'Not specified';
-      document.getElementById('ragaInput').value = 'Not specified';
-      document.getElementById('hiddenLevel').value = '';
-      document.getElementById('hiddenLanguage').value = '';
-    }
+
+      if (matchedBhajan) {
+        // 1. Auto-fill visible inputs
+        const genderSelect = document.getElementById('gender');
+        const gender = genderSelect ? genderSelect.value : '';
+        const scaleSelection = scaleForGender(matchedBhajan, gender);
+        document.getElementById('scaleInput').value = scaleSelection.scale;
+        document.getElementById('speedInput').value = cleanValue(matchedBhajan.tempo);
+
+        // 2. Auto-fill other inputs to send to database
+        document.getElementById('ragaInput').value = cleanValue(matchedBhajan.raga);
+        document.getElementById('hiddenLevel').value = matchedBhajan.level || '';
+        document.getElementById('hiddenLanguage').value = matchedBhajan.language || '';
+
+        // 3. Show a nice green success message to the singer
+        const badge = document.getElementById('masterDataBadge');
+        let badgeText = "";
+        const cleanRaag = cleanValue(matchedBhajan.raga);
+        if (cleanRaag !== 'Not specified') badgeText += `(Raag: ${cleanRaag})`;
+        if (scaleSelection.usedFallback) {
+          badgeText += `${badgeText ? ' ' : ''}(Female shruti: −5 from ${matchedBhajan.shruti})`;
+        }
+
+        document.getElementById('badgeDetails').textContent = badgeText;
+
+        // Wire Music Sheet & Lyrics Links
+        const sheetLinkSpan = document.getElementById('badgeSheetLink');
+        const sheetAnchor = document.getElementById('sheetMusicLink');
+        if (sheetLinkSpan && sheetAnchor) {
+          if (matchedBhajan.sheet_filename) {
+            sheetAnchor.href = `/sheets/${encodeURIComponent(matchedBhajan.sheet_filename)}`;
+            sheetLinkSpan.style.display = 'inline-block';
+          } else {
+            sheetLinkSpan.style.display = 'none';
+          }
+        }
+
+        const lyricsLinkSpan = document.getElementById('badgeLyricsLink');
+        const lyricsAnchor = document.getElementById('lyricsPageLink');
+        if (lyricsLinkSpan && lyricsAnchor && matchedBhajan.id) {
+          lyricsAnchor.href = `/bhajan/${matchedBhajan.id}`;
+          lyricsLinkSpan.style.display = 'inline-block';
+        } else if (lyricsLinkSpan) {
+          lyricsLinkSpan.style.display = 'none';
+        }
+
+        badge.style.display = 'flex';
+      } else {
+        // If they type a custom bhajan not in the list, hide the badge
+        const badge = document.getElementById('masterDataBadge');
+        if (badge) badge.style.display = 'none';
+        const sheetLinkSpan = document.getElementById('badgeSheetLink');
+        if (sheetLinkSpan) sheetLinkSpan.style.display = 'none';
+        const lyricsLinkSpan = document.getElementById('badgeLyricsLink');
+        if (lyricsLinkSpan) lyricsLinkSpan.style.display = 'none';
+        document.getElementById('speedInput').value = 'Not specified';
+        document.getElementById('ragaInput').value = 'Not specified';
+        document.getElementById('hiddenLevel').value = '';
+        document.getElementById('hiddenLanguage').value = '';
+      }
     }, 300);
   });
 
@@ -532,9 +572,9 @@ document.addEventListener('DOMContentLoaded', function() {
       titleInput.setAttribute('aria-expanded', 'false');
     }
   });
-  
+
   // Instantly swap scale if they change gender AFTER picking a bhajan
-  document.getElementById('gender')?.addEventListener('change', function(e) {
+  document.getElementById('gender')?.addEventListener('change', function (e) {
     const selectedTitle = document.getElementById('bhajanTitleInput').value;
     if (selectedTitle && currentMasterBhajans) {
       const matchedBhajan = currentMasterBhajans.find(b => b.title === selectedTitle);
@@ -554,7 +594,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('bhajanForm');
 
   if (preSubmitBtn) {
-    preSubmitBtn.addEventListener('click', function() {
+    preSubmitBtn.addEventListener('click', function () {
       // Check standard HTML5 validation
       if (!form.checkValidity()) {
         form.reportValidity();
@@ -577,7 +617,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const singer = document.getElementById('singerName').value;
       const partner = document.getElementById('partnerName').value;
       document.getElementById('modSinger').textContent = singer + (partner ? ` (& ${partner})` : '');
-      
+
       document.getElementById('modDeity').textContent = document.getElementById('selectedDeity').value;
       document.getElementById('modTitle').textContent = document.getElementById('bhajanTitleInput').value;
       document.getElementById('modScale').textContent = document.getElementById('scaleInput').value || 'Not specified';
@@ -592,7 +632,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (confirmBtn) {
-    confirmBtn.addEventListener('click', function() {
+    confirmBtn.addEventListener('click', function () {
       if (!isAdmin) {
         const name = document.querySelector('input[name="singer_name"]').value;
         const gender = document.querySelector('select[name="gender"]').value;
@@ -604,7 +644,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   if (form) {
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', function (e) {
       const masterIdInput = document.getElementById('selectedMasterBhajanId');
       if (!masterIdInput || !masterIdInput.value) {
         e.preventDefault();
@@ -624,7 +664,7 @@ document.addEventListener('DOMContentLoaded', function() {
     closeSelectBhajanBtn.addEventListener('click', closeSelectBhajanModal);
   }
 
-  window.addEventListener('keydown', function(event) {
+  window.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
       const selectModal = document.getElementById('selectBhajanModal');
       if (selectModal && selectModal.classList.contains('show')) {
@@ -662,43 +702,7 @@ function filterTable() {
   }, 250);
 }
 
-let filterMasterBankTimeout;
-function filterMasterBank(immediate = false) {
-  clearTimeout(filterMasterBankTimeout);
-  const doFilter = () => {
-    const titleFilter = (document.getElementById('filterBankTitle')?.value || '').toUpperCase();
-    const deityFilter = (document.getElementById('filterBankDeity')?.value || '').toUpperCase();
-    const tempoFilter = (document.getElementById('filterBankTempo')?.value || '').toUpperCase();
-    const ragaFilter = (document.getElementById('filterBankRaga')?.value || '').toUpperCase();
-    
-    const table = document.getElementById('masterBankTable');
-    if (!table) return;
-    const tr = table.getElementsByTagName('tr');
-    
-    for (let i = 1; i < tr.length; i++) { // Skip header
-      const tds = tr[i].getElementsByTagName('td');
-      if (tds.length > 3) {
-        const txtTitle = (tds[0].textContent || tds[0].innerText).toUpperCase();
-        const txtDeity = (tds[1].textContent || tds[1].innerText).toUpperCase();
-        const txtTempo = (tds[2].textContent || tds[2].innerText).toUpperCase();
-        const txtRaga = (tds[3].textContent || tds[3].innerText).toUpperCase();
-        
-        const matchTitle = txtTitle.indexOf(titleFilter) > -1;
-        const matchDeity = deityFilter === "" || txtDeity === deityFilter;
-        const matchTempo = tempoFilter === "" || txtTempo === tempoFilter;
-        const matchRaga = ragaFilter === "" || txtRaga === ragaFilter;
-        
-        tr[i].style.display = (matchTitle && matchDeity && matchTempo && matchRaga) ? "" : "none";
-      }
-    }
-  };
-
-  if (immediate) {
-    doFilter();
-  } else {
-    filterMasterBankTimeout = setTimeout(doFilter, 250);
-  }
-}
+// Master bank filtering is managed natively with instant in-memory search in master-bank.ejs
 
 // Admin Calendar Modal Logic
 let currentAdminDate = null;
@@ -715,12 +719,12 @@ function closeAdminModal() {
 }
 
 function viewAdminDate() {
-  if(currentAdminDate) window.location.href = '/admin/date/' + currentAdminDate;
+  if (currentAdminDate) window.location.href = '/admin/date/' + currentAdminDate;
 }
 
 function updatePermission(type) {
-  if(!currentAdminDate) return;
-  
+  if (!currentAdminDate) return;
+
   const description = document.getElementById('permDescription').value.trim();
 
   if (type !== 'clear' && !description) {
@@ -733,25 +737,25 @@ function updatePermission(type) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ date: currentAdminDate, type: type, description: description })
   })
-  .then(res => {
-    if (res.status === 401) {
-      alert('Your admin session has expired. Please log in again.');
-      window.location.href = '/admin-login';
-      return null;
-    }
-    return res.json();
-  })
-  .then(data => {
-    if (!data) return;
-    if (data.success) {
-      location.reload();
-    } else {
-      alert(data.error || 'Error updating permission');
-    }
-  })
-  .catch(err => {
-    alert('Network error updating permission: ' + err.message);
-  });
+    .then(res => {
+      if (res.status === 401) {
+        alert('Your admin session has expired. Please log in again.');
+        window.location.href = '/admin-login';
+        return null;
+      }
+      return res.json();
+    })
+    .then(data => {
+      if (!data) return;
+      if (data.success) {
+        location.reload();
+      } else {
+        alert(data.error || 'Error updating permission');
+      }
+    })
+    .catch(err => {
+      alert('Network error updating permission: ' + err.message);
+    });
 }
 
 // Missing Bhajan Catcher Modals
@@ -777,21 +781,21 @@ function reconcileBhajan(submittedTitle, action, masterBhajanId) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ submitted_title: submittedTitle, action, master_bhajan_id: masterBhajanId })
   })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      if (action === 'link') {
-        alert(`✅ Done! Updated ${data.updatedCount} session record(s) to use master title:\n"${data.masterTitle}"`);
-        // Hide this reconcile card
-        const cardId = 'card-' + encodeURIComponent(submittedTitle);
-        const card = document.getElementById(cardId);
-        if (card) card.remove();
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        if (action === 'link') {
+          alert(`✅ Done! Updated ${data.updatedCount} session record(s) to use master title:\n"${data.masterTitle}"`);
+          // Hide this reconcile card
+          const cardId = 'card-' + encodeURIComponent(submittedTitle);
+          const card = document.getElementById(cardId);
+          if (card) card.remove();
+        }
+      } else {
+        alert('Error: ' + (data.error || 'Unknown error'));
       }
-    } else {
-      alert('Error: ' + (data.error || 'Unknown error'));
-    }
-  })
-  .catch(err => alert('Request failed: ' + err.message));
+    })
+    .catch(err => alert('Request failed: ' + err.message));
 }
 function saveMissingBhajan() {
   const data = {
@@ -808,11 +812,11 @@ function saveMissingBhajan() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   })
-  .then(res => res.json())
-  .then(result => {
-    if (result.success) { alert('✅ Successfully added to Master Database!'); location.reload(); }
-    else { alert('Error adding to Master DB: ' + result.error); }
-  });
+    .then(res => res.json())
+    .then(result => {
+      if (result.success) { alert('✅ Successfully added to Master Database!'); location.reload(); }
+      else { alert('Error adding to Master DB: ' + result.error); }
+    });
 }
 
 // Deity Rules Management
@@ -820,34 +824,34 @@ function saveDeityRules() {
   const table = document.getElementById('rulesTable');
   const date = document.getElementById('ruleDate').value;
   if (!table) return;
-  
+
   const rules = [];
   const trs = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-  
-  for(let tr of trs) {
+
+  for (let tr of trs) {
     const deity = tr.querySelector('.rule-deity').value;
     const min = parseInt(tr.querySelector('.rule-min').value, 10);
     const max = parseInt(tr.querySelector('.rule-max').value, 10);
     rules.push({ deity_name: deity, min_required: min, max_allowed: max });
   }
-  
+
   fetch('/admin/update-rules', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rules, date })
   })
-  .then(res => res.json())
-  .then(data => {
-    if(data.success) { alert('✅ ' + data.message); window.location.href = date === 'default' ? '/admin' : '/admin/date/' + date; }
-    else { alert('Error: ' + data.error); }
-  });
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) { alert('✅ ' + data.message); window.location.href = date === 'default' ? '/admin' : '/admin/date/' + date; }
+      else { alert('Error: ' + data.error); }
+    });
 }
 
 function getWesternScale(indianScale) {
   if (!indianScale || indianScale === '-' || indianScale === 'Not specified') return '-';
   const match = indianScale.toString().trim().match(/^([\d\.]+)\s*([PMpm])?.*$/);
   if (!match) return '-';
-  const numMap = {'1':0, '1.5':1, '2':2, '2.5':3, '3':4, '4':5, '4.5':6, '5':7, '5.5':8, '6':9, '6.5':10, '7':11};
+  const numMap = { '1': 0, '1.5': 1, '2': 2, '2.5': 3, '3': 4, '4': 5, '4.5': 6, '5': 7, '5.5': 8, '6': 9, '6.5': 10, '7': 11 };
   if (numMap[match[1]] === undefined) return '-';
   let index = numMap[match[1]];
   if ((match[2] || '').toUpperCase() === 'M') index = (index + 5) % 12;
@@ -859,7 +863,7 @@ function editMasterRow(id) {
   const row = document.getElementById(`row-${id}`);
   if (!row) return;
   const cells = row.querySelectorAll('.edit-cell');
-  
+
   cells.forEach(cell => {
     const rawVal = cell.textContent || '';
     const currentValue = rawVal.trim() === '-' ? '' : rawVal.trim();
@@ -890,39 +894,39 @@ function saveMasterRow(id) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updatedData)
   })
-  .then(res => res.json())
-  .then(response => {
-    if(response.success) {
-      const row = document.getElementById(`row-${id}`);
-      if (row) {
-        row.setAttribute('data-deity', (updatedData.deity || '').toLowerCase());
-        const cells = row.querySelectorAll('.edit-cell');
-        cells.forEach(cell => {
-          const fieldName = cell.getAttribute('data-field');
-          const val = updatedData[fieldName] || '-';
-          if (fieldName === 'deity') {
-            cell.innerHTML = `<span class="deity-pill">${escapeHTML ? escapeHTML(val) : val}</span>`;
-          } else {
-            cell.textContent = val;
-          }
-        });
-      }
-      
-      // Update western scale display dynamically
-      const westM = document.getElementById(`west-m-${id}`);
-      const westF = document.getElementById(`west-f-${id}`);
-      if (westM) westM.textContent = getWesternScale(updatedData.shruti);
-      if (westF) westF.textContent = getWesternScale(updatedData.shruti_female);
+    .then(res => res.json())
+    .then(response => {
+      if (response.success) {
+        const row = document.getElementById(`row-${id}`);
+        if (row) {
+          row.setAttribute('data-deity', (updatedData.deity || '').toLowerCase());
+          const cells = row.querySelectorAll('.edit-cell');
+          cells.forEach(cell => {
+            const fieldName = cell.getAttribute('data-field');
+            const val = updatedData[fieldName] || '-';
+            if (fieldName === 'deity') {
+              cell.innerHTML = `<span class="deity-pill">${escapeHTML ? escapeHTML(val) : val}</span>`;
+            } else {
+              cell.textContent = val;
+            }
+          });
+        }
 
-      const actionCell = row.querySelector('.action-cell');
-      if (actionCell) {
-        actionCell.innerHTML = `<button class="button" style="padding:6px 12px; font-size:12px; background:#4dabf7; border:none; margin-right:4px;" onclick="editMasterRow(${id})">✏️ Edit</button><button class="button" style="padding:6px 12px; font-size:12px; background:#e03131; border:none;" onclick="deleteMasterRow(${id})">❌ Del</button>`;
+        // Update western scale display dynamically
+        const westM = document.getElementById(`west-m-${id}`);
+        const westF = document.getElementById(`west-f-${id}`);
+        if (westM) westM.textContent = getWesternScale(updatedData.shruti);
+        if (westF) westF.textContent = getWesternScale(updatedData.shruti_female);
+
+        const actionCell = row.querySelector('.action-cell');
+        if (actionCell) {
+          actionCell.innerHTML = `<button class="button" style="padding:6px 12px; font-size:12px; background:#4dabf7; border:none; margin-right:4px;" onclick="editMasterRow(${id})">✏️ Edit</button><button class="button" style="padding:6px 12px; font-size:12px; background:#e03131; border:none;" onclick="deleteMasterRow(${id})">❌ Del</button>`;
+        }
+      } else {
+        alert('Error: ' + response.error);
       }
-    } else {
-      alert('Error: ' + response.error);
-    }
-  })
-  .catch(err => { alert('Failed to save changes.'); console.error(err); });
+    })
+    .catch(err => { alert('Failed to save changes.'); console.error(err); });
 }
 
 function deleteMasterRow(id) {
@@ -931,16 +935,16 @@ function deleteMasterRow(id) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   })
-  .then(res => res.json())
-  .then(response => {
-    if(response.success) {
-      const row = document.getElementById(`row-${id}`);
-      if (row) row.remove();
-    } else {
-      alert('Error: ' + response.error);
-    }
-  })
-  .catch(err => { alert('Failed to delete.'); console.error(err); });
+    .then(res => res.json())
+    .then(response => {
+      if (response.success) {
+        const row = document.getElementById(`row-${id}`);
+        if (row) row.remove();
+      } else {
+        alert('Error: ' + response.error);
+      }
+    })
+    .catch(err => { alert('Failed to delete.'); console.error(err); });
 }
 
 function sortTable(n, tableId) {
@@ -950,12 +954,12 @@ function sortTable(n, tableId) {
   const tbody = table.getElementsByTagName("TBODY")[0] || table;
   let rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
   switching = true;
-  dir = "asc"; 
-  
+  dir = "asc";
+
   while (switching) {
     switching = false;
     rows = tbody.getElementsByTagName("TR");
-    
+
     for (i = 0; i < (rows.length - 1); i++) {
       shouldSwitch = false;
       x = rows[i].getElementsByTagName("TD")[n];
@@ -984,7 +988,7 @@ function sortTable(n, tableId) {
     if (shouldSwitch) {
       rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
       switching = true;
-      switchcount++;      
+      switchcount++;
     } else {
       if (switchcount === 0 && dir === "asc") {
         dir = "desc";
@@ -1080,13 +1084,13 @@ function saveReorderSequence() {
     id: parseInt(row.getAttribute('data-id')),
     order: index + 1
   }));
-  
+
   fetch('/api/admin/reorder', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderData })
   }).then(res => res.json()).then(data => {
-    if(data.success) location.reload();
+    if (data.success) location.reload();
     else alert('Error saving sequence');
   });
 }
@@ -1097,7 +1101,7 @@ function toggleSessionLock(date, isLocked) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ date, is_locked: isLocked })
   }).then(res => res.json()).then(data => {
-    if(data.success) location.reload();
+    if (data.success) location.reload();
   });
 }
 
@@ -1150,7 +1154,7 @@ function submitCopySession() {
 }
 
 // Real-time Activity & Presence Heartbeat
-(function() {
+(function () {
   let pageStartTime = Date.now();
   function sendHeartbeat() {
     const elapsedSeconds = Math.round((Date.now() - pageStartTime) / 1000);
@@ -1159,20 +1163,20 @@ function submitCopySession() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ page: window.location.pathname + window.location.search, duration: elapsedSeconds })
-    }).catch(function() {});
+    }).catch(function () { });
   }
 
   function sendOfflineBeacon() {
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/activity/offline');
     } else {
-      fetch('/api/activity/offline', { method: 'POST', keepalive: true }).catch(function() {});
+      fetch('/api/activity/offline', { method: 'POST', keepalive: true }).catch(function () { });
     }
   }
 
   setInterval(sendHeartbeat, 8000);
   window.addEventListener('pagehide', sendOfflineBeacon);
-  document.addEventListener('visibilitychange', function() {
+  document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') {
       sendOfflineBeacon();
     }
@@ -1207,7 +1211,7 @@ function toggleSearchDropdown(containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
   const menu = container.querySelector('.dd-menu');
-  const btn  = container.querySelector('.dd-toggle');
+  const btn = container.querySelector('.dd-toggle');
   const isOpening = menu.style.display === 'none' || menu.style.display === '';
 
   // Close all dropdowns first
@@ -1276,7 +1280,7 @@ function selectDropdownOption(containerId, val, label) {
   filterMasterBank();
 }
 
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
   if (!e.target.closest('.searchable-dropdown')) {
     document.querySelectorAll('.dd-menu').forEach(m => m.style.display = 'none');
   }

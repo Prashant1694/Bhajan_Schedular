@@ -9,20 +9,20 @@ const Singer = require("../models/Singer");
 const MasterBhajan = require("../models/MasterBhajan");
 
 const {
-    getNextThursday,
-    getThursdaySubmissionStatus,
-    getLocalDateStr,
-    deityOrderKey,
-    SPEED_ORDER,
-    normalizeName
+  getNextThursday,
+  getThursdaySubmissionStatus,
+  getLocalDateStr,
+  deityOrderKey,
+  SPEED_ORDER,
+  normalizeName
 } = require("../services/helpers");
 
 const {
-    generateSubmitFormHtml,
-    generateErrorHtml,
-    generatePlanViewHtml,
-    generateDatePickerHtml,
-    escapeHtml
+  generateSubmitFormHtml,
+  generateErrorHtml,
+  generatePlanViewHtml,
+  generateDatePickerHtml,
+  escapeHtml
 } = require("../templates");
 
 const normalizeBhajanTitle = (title) =>
@@ -32,12 +32,12 @@ const normalizeBhajanTitle = (title) =>
 const getAvailableDates = async () => {
   const todayStr = getLocalDateStr();
   const status = getThursdaySubmissionStatus();
-  
+
   const specialDays = await SessionPermission.findAll({
     where: { date: { [Sequelize.Op.gt]: todayStr } },
     order: [['date', 'ASC']]
   });
-  
+
   const dates = new Map();
   if (status.openThursday) {
     dates.set(status.openThursday, { label: 'Next Thursday', desc: 'Regular Session' });
@@ -50,7 +50,7 @@ const getAvailableDates = async () => {
 };
 
 exports.showSubmitForm = async (req, res) => {
-    
+
   try {
     const isAdmin = req.query.admin === 'true' || !!(req.session && req.session.admin);
     const showSuccess = req.query.success === 'true';
@@ -74,8 +74,8 @@ exports.showSubmitForm = async (req, res) => {
       });
       const homeUrl = isAdmin ? '/admin' : '/';
       const themeHeadScript = `<script>(function(){try{var t=localStorage.getItem('bp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>`;
-      const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">🌙</span><span class="icon-sun">☀️</span></button>`;
-      return res.send(`<!DOCTYPE html><html><head><title>Select Session</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">🗓️ Select Session</h2><p style="color:var(--ink-soft); margin-bottom:20px;">${msg}</p><div style="background:var(--surface); padding:20px; border-radius:12px; border:1px solid var(--border);"><div style="display:flex; flex-direction:column; gap:10px;">${optionsHtml}</div></div><div style="margin-top:25px;"><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`);
+      const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">ðŸŒ™</span><span class="icon-sun">â˜€ï¸</span></button>`;
+      return res.send(`<!DOCTYPE html><html><head><title>Select Session</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">ðŸ—“ï¸ Select Session</h2><p style="color:var(--ink-soft); margin-bottom:20px;">${msg}</p><div style="background:var(--surface); padding:20px; border-radius:12px; border:1px solid var(--border);"><div style="display:flex; flex-direction:column; gap:10px;">${optionsHtml}</div></div><div style="margin-top:25px;"><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`);
     };
 
     // If no date provided, check if we should show selection screen or 8pm notice
@@ -88,10 +88,10 @@ exports.showSubmitForm = async (req, res) => {
           return renderSelectionScreen(`${msg}<br><br>You can submit for available Special/Festival sessions below:`);
         } else {
           const homeUrl = isAdmin ? '/admin' : '/';
-          const homeText = isAdmin ? '🏠 Return to Dashboard' : '🏠 Return Home';
+          const homeText = isAdmin ? 'ðŸ  Return to Dashboard' : 'ðŸ  Return Home';
           const themeHeadScript = `<script>(function(){try{var t=localStorage.getItem('bp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>`;
-          const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">🌙</span><span class="icon-sun">☀️</span></button>`;
-          return res.send(`<!DOCTYPE html><html><head><title>Submissions Opening at 8:00 PM</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">🔒 Submissions Opening at 8:00 PM</h2><p style="color:var(--ink-soft); margin-bottom:25px; line-height:1.6;">${msg}</p><div><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`);
+          const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">ðŸŒ™</span><span class="icon-sun">â˜€ï¸</span></button>`;
+          return res.send(`<!DOCTYPE html><html><head><title>Submissions Opening at 8:00 PM</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">ðŸ”’ Submissions Opening at 8:00 PM</h2><p style="color:var(--ink-soft); margin-bottom:25px; line-height:1.6;">${msg}</p><div><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`);
         }
       }
 
@@ -108,7 +108,7 @@ exports.showSubmitForm = async (req, res) => {
     const isNextThuUnopened = !isAdmin && sessionDate === thuStatus.nextThursdayDate && thuStatus.opensAt8pmToday;
 
     if (!isAdmin && (isManuallyLocked || isPastOrToday)) {
-      // Session has already locked and moved — redirect directly to history tab
+      // Session has already locked and moved â€” redirect directly to history tab
       return res.redirect("/database");
     }
 
@@ -128,7 +128,7 @@ exports.showSubmitForm = async (req, res) => {
     }
 
     const isSpecialOrFestival = !!permission;
-    
+
     // Load rules specifically for this session
     let rules = await DeityRule.findAll({ where: { session_date: sessionDate } });
     if (rules.length === 0) rules = await DeityRule.findAll({ where: { session_date: 'default' } });
@@ -137,7 +137,7 @@ exports.showSubmitForm = async (req, res) => {
     const results = await BhajanSubmission.findAll({
       where: { session_date: sessionDate }
     });
-    
+
     // Build base deityStatus dynamically
     const deityStatus = {};
     const ALL_DEITIES = ["Ganesha", "Guru", "Mata", "SarvaDharma", "Sai", "Shiva", "Krishna", "Rama", "Narayana", "Vitthala", "Hanuman"];
@@ -159,19 +159,19 @@ exports.showSubmitForm = async (req, res) => {
         deityStatus[bhajan.deity].count += 1;
       }
     });
-    
+
     const mandatoryFilled = Object.values(deityStatus).filter(d => d.mandatory && d.count >= 1).length;
     const totalMandatory = Object.values(deityStatus).filter(d => d.mandatory).length;
-      
+
     const optionalFilled = Object.values(deityStatus).filter(d => !d.mandatory && d.count >= 1).length;
     const totalOptional = Object.values(deityStatus).filter(d => !d.mandatory && d.maxAllowed > 0).length;
-    
+
     // Generate deity cards HTML
     const generateCardHtml = (deity) => {
       const status = deityStatus[deity];
       let cardClass, statusBadge, onclick;
       const countClass = `count-${Math.min(status.count, 3)}`;
-      
+
       if (status.maxAllowed === 0) {
         return `<div class="deity-card disabled ${countClass}" style="opacity:0.4; pointer-events:none;"><div class="deity-name">${deity}</div><span class="badge badge-taken" style="background:#e03131;">Blocked</span></div>`;
       }
@@ -181,15 +181,15 @@ exports.showSubmitForm = async (req, res) => {
 
       if (isFull) {
         cardClass = `deity-card taken ${countClass}`;
-        statusBadge = `<span class="badge badge-taken">✓ ${status.count} Taken</span>`;
+        statusBadge = `<span class="badge badge-taken">âœ“ ${status.count} Taken</span>`;
         onclick = `onclick="showDetails('${deity}', '${status.by.replace(/'/g, "\\'")}', '${status.bhajan.replace(/'/g, "\\'")}', '${status.scale}', '${status.speed}')" style="cursor:pointer;"`;
       } else {
         cardClass = `deity-card available ${countClass}`;
         statusBadge = `<span class="badge badge-available">${bhajanText}</span>`;
         onclick = "";
       }
-      
-      let mandatoryLabel = status.mandatory ? `<div class="rule-warning" style="color:#ff9933; font-size:11px; margin-top:6px; font-weight:700;">⭐ Required (${status.minReq})</div>` : '';
+
+      let mandatoryLabel = status.mandatory ? `<div class="rule-warning" style="color:#ff9933; font-size:11px; margin-top:6px; font-weight:700;">â­ Required (${status.minReq})</div>` : '';
 
       return `
         <div class="${cardClass}" data-deity="${deity}" ${onclick}>
@@ -205,7 +205,7 @@ exports.showSubmitForm = async (req, res) => {
     let otherDeitiesHtml = "";
     otherDeities.forEach(d => otherDeitiesHtml += generateCardHtml(d));
     let hanumanCard = generateCardHtml("Hanuman").replace('deity-card', 'deity-card hanuman-card');
-    
+
     // Send HTML response
     const submissionRowsHtml = results
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
@@ -222,34 +222,34 @@ exports.showSubmitForm = async (req, res) => {
       .join("");
 
     res.send(generateSubmitFormHtml(sessionDate, mandatoryFilled, totalMandatory, optionalFilled, totalOptional, ganeshaCardHtml, otherDeitiesHtml, hanumanCard, isAdmin, showSuccess, submissionRowsHtml, results.length));
-    
+
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
   };
 };
 
-  exports.submitForm = async (req, res) => {
+exports.submitForm = async (req, res) => {
   try {
     const { session_date, singer_name, gender, locked_gender, partner_name, deity, title, speed, scale, raga, level, language, admin, master_bhajan_id } = req.body;
     const isAdmin = admin === 'true' || !!(req.session && req.session.admin);
-    
+
     if (!session_date || !singer_name || !deity || !title) {
       return res.status(400).send('<h1>Error</h1><p>Missing required fields.</p><a class="button" href="javascript:history.back()">Go Back</a>');
     }
 
     // Dropdown selection enforcement: Must be selected from the master bhajan database
     if (!master_bhajan_id) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Cannot submit bhajan without selecting from dropdown</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Selection Required</h2><p>Cannot submit bhajan without selecting from dropdown. Manual entry without selecting a suggested bhajan is not allowed.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Cannot submit bhajan without selecting from dropdown</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>âš ï¸ Selection Required</h2><p>Cannot submit bhajan without selecting from dropdown. Manual entry without selecting a suggested bhajan is not allowed.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
     }
 
     const masterBhajan = await MasterBhajan.findByPk(master_bhajan_id);
-    if (!masterBhajan) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan was not found in the master list.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+    if (!masterBhajan || !masterBhajan.is_active) {
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>âš ï¸ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan was not found in the active master list.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
     }
 
     // Verify title matches canonical master bhajan title
     if (normalizeBhajanTitle(masterBhajan.title) !== normalizeBhajanTitle(title)) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. Title does not match the selected suggestion.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>âš ï¸ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. Title does not match the selected suggestion.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
     }
 
     const DEITY_ALIASES = {
@@ -265,9 +265,9 @@ exports.showSubmitForm = async (req, res) => {
     const titleMatcher = DEITY_TITLE_MATCHERS[deity];
     const deityMatches = aliases.includes(masterBhajan.deity) || (titleMatcher && titleMatcher.test(masterBhajan.title));
     if (!deityMatches) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan does not belong to ${escapeHtml(deity)}.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>âš ï¸ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan does not belong to ${escapeHtml(deity)}.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
     }
-    
+
     const todayStr = getLocalDateStr();
     const thuStatus = getThursdaySubmissionStatus();
     const isPastOrToday = todayStr >= session_date;
@@ -304,11 +304,11 @@ exports.showSubmitForm = async (req, res) => {
     // Check if special/festival
     const permission = await SessionPermission.findByPk(session_date);
     const isSpecialOrFestival = !!permission;
-    
+
     // Load rules specifically for this session
     let rules = await DeityRule.findAll({ where: { session_date } });
     if (rules.length === 0) rules = await DeityRule.findAll({ where: { session_date: 'default' } });
-    
+
     const ruleForDeity = rules.find(r => r.deity_name === deity) || { max_allowed: 2 };
     const maxAllowed = ruleForDeity.max_allowed;
 
@@ -323,7 +323,7 @@ exports.showSubmitForm = async (req, res) => {
         return res.send(generateErrorHtml(deity, existingEntries[existingEntries.length - 1], session_date));
       }
     }
-    
+
     // Save a singer's gender the first time it is supplied. Once recorded,
     // always use that stored value rather than trusting a changed form value.
     //
@@ -340,7 +340,7 @@ exports.showSubmitForm = async (req, res) => {
     let singer = allSingers.find(s => normalizeName(s.name) === normalizedInputName) || null;
 
     if (!singer) {
-      // No existing singer found — create a new record using the trimmed submitted name
+      // No existing singer found â€” create a new record using the trimmed submitted name
       singer = await Singer.create({
         name: singer_name.trim(),
         gender: submittedGender || null
@@ -366,7 +366,7 @@ exports.showSubmitForm = async (req, res) => {
       language
     });
 
-    // ── Partner notification ───────────────────────────────────
+    // â”€â”€ Partner notification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // If a partner was specified, send a personalized notification
     // to the partner's registered devices (if any).
     if (partner_name && partner_name.trim()) {
@@ -388,11 +388,11 @@ exports.showSubmitForm = async (req, res) => {
               month: "long"
             });
             dateText = `${dayName}, ${dateFormatted}`;
-          } catch (e) {}
+          } catch (e) { }
 
           await notificationService.createPersonalized({
             type: "partner_bhajan",
-            title: "🔔 Bhajan Added With You",
+            title: "ðŸ”” Bhajan Added With You",
             body: `${singer_name} added "${title}" with you as partner for ${dateText}. Tap to view.`,
             link: `/session-link?session_date=${session_date}`,
             eventKey: `partner_bhajan:${newSubmission.id}`,
@@ -400,103 +400,124 @@ exports.showSubmitForm = async (req, res) => {
           });
         }
       } catch (notifErr) {
-        // Non-critical — don't fail the submission
+        // Non-critical â€” don't fail the submission
         console.error("Partner notification failed:", notifErr.message);
       }
     }
-    
+
     // Success response
     const adminQuery = isAdmin ? '&admin=true' : '';
     res.redirect(`/submit-form?session_date=${session_date}&success=true${adminQuery}`);
-    
+
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-       return res.send(generateErrorHtml(req.body.deity, { 
-         singer_name: "Another devotee", 
-         title: "Unknown", 
-         created_at: new Date() 
-       }, req.body.session_date));
+      return res.send(generateErrorHtml(req.body.deity, {
+        singer_name: "Another devotee",
+        title: "Unknown",
+        created_at: new Date()
+      }, req.body.session_date));
     }
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
   }
 };
 
 exports.planView = async (req, res) => {
-try {
+  try {
     const sessionDate = req.query.session_date;
-    
+
     if (!sessionDate) {
       // Show date picker
       const today = getNextThursday();
       return res.send(generateDatePickerHtml(today));
     }
-    
+
     // Fetch and display plan
     const results = await BhajanSubmission.findAll({
       where: { session_date: sessionDate }
     });
-    
+
+    const masterBhajans = await MasterBhajan.findAll({
+      where: { is_active: true },
+      attributes: ['id', 'title', 'sheet_filename']
+    });
+    const masterMap = new Map();
+    masterBhajans.forEach(mb => {
+      masterMap.set(normalizeBhajanTitle(mb.title), mb);
+    });
+
     const sorted = results.sort((a, b) => {
       // 1. Manual Drag-and-Drop sequence overrides everything else
       if (a.list_order > 0 || b.list_order > 0) {
-        if (a.list_order === 0) return 1; 
+        if (a.list_order === 0) return 1;
         if (b.list_order === 0) return -1;
         return a.list_order - b.list_order;
       }
 
       const deityCompare = deityOrderKey(a.deity) - deityOrderKey(b.deity);
       if (deityCompare !== 0) return deityCompare;
-      
-      const speedCompare = (SPEED_ORDER[(a.speed || '').toLowerCase()] || 1) - 
-                           (SPEED_ORDER[(b.speed || '').toLowerCase()] || 1);
+
+      const speedCompare = (SPEED_ORDER[(a.speed || '').toLowerCase()] || 1) -
+        (SPEED_ORDER[(b.speed || '').toLowerCase()] || 1);
       if (speedCompare !== 0) return speedCompare;
-      
+
       return a.singer_name.toLowerCase().localeCompare(b.singer_name.toLowerCase());
     });
-    
+
     let rowsHtml = "";
     let whatsappLines = [];
-    
+
     if (sorted.length === 0) {
       rowsHtml = '<tr><td colspan="7" style="text-align:center;">No bhajans found for this date.</td></tr>';
       whatsappLines.push("No bhajans found for this date.");
     } else {
       sorted.forEach((item, index) => {
+        const matchedMaster = masterMap.get(normalizeBhajanTitle(item.title));
+        const sheetFilename = matchedMaster ? matchedMaster.sheet_filename : null;
+        const sheetBtnHtml = sheetFilename
+          ? `<br><a href="/sheets/${encodeURIComponent(sheetFilename)}" target="_blank" rel="noopener noreferrer" class="sheet-link-pill no-print" title="Open official reference sheet music (PDF)">ðŸ“„ Music Sheet</a>`
+          : '';
+        const lyricsLinkHtml = matchedMaster
+          ? `<a href="/bhajan/${matchedMaster.id}" style="color:inherit; text-decoration:none;" title="View lyrics & details">${escapeHtml(item.title)}</a>`
+          : escapeHtml(item.title);
+
         rowsHtml += `
           <tr>
             <td data-label="#">${index + 1}</td>
             <td data-label="Singer"><strong>${escapeHtml(item.singer_name)}</strong></td>
             <td data-label="Partner">${escapeHtml(item.partner_name || "-")}</td>
-            <td data-label="Bhajan">${escapeHtml(item.title)}</td>
+            <td data-label="Bhajan">
+              <strong>${lyricsLinkHtml}</strong>
+              ${sheetBtnHtml}
+            </td>
             <td data-label="Deity"><span class="deity-pill">${escapeHtml(item.deity)}</span></td>
             <td data-label="Scale">${escapeHtml(item.scale || "-")}</td>
             <td data-label="Speed">${escapeHtml(item.speed)}</td>
           </tr>
         `;
-        
+
         let line = `${index + 1}) ${item.singer_name}`;
         if (item.partner_name) line += ` (${item.partner_name})`;
-        line += ` – [${item.deity}] ${item.title} – Scale: ${item.scale || "N/A"}, Speed: ${item.speed ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1) : "N/A"}`;
+        line += ` â€“ [${item.deity}] ${item.title} â€“ Scale: ${item.scale || "N/A"}, Speed: ${item.speed ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1) : "N/A"}`;
         whatsappLines.push(line);
       });
     }
-    
-    const headerLine = `Bhajan Plan – ${sessionDate}`;
+
+    const headerLine = `Bhajan Plan â€“ ${sessionDate}`;
     const whatsappText = headerLine + "\n" + whatsappLines.join("\n");
     const whatsappEncoded = encodeURIComponent(whatsappText);
-    
+
     const html = generatePlanViewHtml(sessionDate, rowsHtml, whatsappText, whatsappEncoded);
     res.send(html);
-    
+
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
   }
 };
 exports.submitApi = async (req, res) => {
 
-try {
+  try {
     const { session_date, singer_name, partner_name, bhajans } = req.body;
-    
+
     for (const bhajan of bhajans) {
       await BhajanSubmission.create({
         session_date,
@@ -508,7 +529,7 @@ try {
         speed: bhajan.speed
       });
     }
-    
+
     res.json({
       status: "ok",
       message: "Bhajans saved to database.",
@@ -518,33 +539,33 @@ try {
     res.status(500).json({ error: error.message });
   }
 };
-exports.getPlan = async (req,res)=>{
-    try {
+exports.getPlan = async (req, res) => {
+  try {
     const { session_date } = req.params;
-    
+
     const results = await BhajanSubmission.findAll({
       where: { session_date }
     });
-    
+
     const sorted = results.sort((a, b) => {
       // 1. Manual Drag-and-Drop sequence overrides everything else
       if (a.list_order > 0 || b.list_order > 0) {
-        if (a.list_order === 0) return 1; 
+        if (a.list_order === 0) return 1;
         if (b.list_order === 0) return -1;
         return a.list_order - b.list_order;
       }
-      
+
       // 2. Default fallback sorting
       const deityCompare = deityOrderKey(a.deity) - deityOrderKey(b.deity);
       if (deityCompare !== 0) return deityCompare;
-      
-      const speedCompare = (SPEED_ORDER[(a.speed || '').toLowerCase()] || 1) - 
-                           (SPEED_ORDER[(b.speed || '').toLowerCase()] || 1);
+
+      const speedCompare = (SPEED_ORDER[(a.speed || '').toLowerCase()] || 1) -
+        (SPEED_ORDER[(b.speed || '').toLowerCase()] || 1);
       if (speedCompare !== 0) return speedCompare;
-      
+
       return a.singer_name.toLowerCase().localeCompare(b.singer_name.toLowerCase());
     });
-    
+
     const plan = sorted.map((item, index) => ({
       order: index + 1,
       session_date: item.session_date,
@@ -555,14 +576,14 @@ exports.getPlan = async (req,res)=>{
       scale: item.scale,
       speed: item.speed
     }));
-    
+
     res.json(plan);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-// ── Smart session redirection (routes to submit-form if open, history if moved/closed) ──
+// â”€â”€ Smart session redirection (routes to submit-form if open, history if moved/closed) â”€â”€
 exports.sessionLink = async (req, res) => {
   try {
     const { getLocalDateStr } = require("../services/helpers");
@@ -598,7 +619,7 @@ exports.sessionLink = async (req, res) => {
       return res.redirect("/database");
     }
 
-    // Submissions are open — direct to submit-form for this session
+    // Submissions are open â€” direct to submit-form for this session
     return res.redirect(`/submit-form?session_date=${sessionDate}`);
   } catch (error) {
     console.error("sessionLink error:", error);

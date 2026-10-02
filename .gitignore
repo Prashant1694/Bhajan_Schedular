@@ -108,4 +108,10 @@ exports/
 *.xls
 *.pdf
 *.csv
-playwright-report/
+playwright-report/
+
+# Whitelist official production music sheets and data manifests
+!public/sheets/
+!public/sheets/*.pdf
+!data/
+!data/*

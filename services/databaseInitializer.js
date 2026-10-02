@@ -48,20 +48,43 @@ async function initializeSuperAdmin() {
   console.log("✅ Initial super admin account created.");
 }
 
+async function ensureMasterBhajanSchema() {
+  try {
+    const [columns] = await sequelize.query("PRAGMA table_info(master_bhajans)");
+    if (columns && !columns.some((col) => col.name === "lyrics")) {
+      await sequelize.query("ALTER TABLE master_bhajans ADD COLUMN lyrics TEXT");
+    }
+    if (columns && !columns.some((col) => col.name === "raga_notes")) {
+      await sequelize.query("ALTER TABLE master_bhajans ADD COLUMN raga_notes TEXT");
+    }
+    if (columns && !columns.some((col) => col.name === "sheet_filename")) {
+      await sequelize.query("ALTER TABLE master_bhajans ADD COLUMN sheet_filename VARCHAR(255)");
+    }
+    if (columns && !columns.some((col) => col.name === "is_active")) {
+      await sequelize.query("ALTER TABLE master_bhajans ADD COLUMN is_active BOOLEAN DEFAULT 1");
+    }
+    await sequelize.query("CREATE INDEX IF NOT EXISTS idx_master_bhajans_is_active ON master_bhajans(is_active)");
+  } catch (err) {
+    console.error("MasterBhajan schema check failed:", err.message);
+  }
+}
+
 async function loadMasterBhajans() {
   try {
-    const count = await MasterBhajan.count();
+    const count = await MasterBhajan.count({ where: { is_active: true } });
     if (count !== 0) return;
 
+    // Database is authoritative. Only populate if database is completely empty.
     const filePath = path.join(__dirname, "..", "master_bhajans.json");
     if (!fs.existsSync(filePath)) {
-      console.log("⚠️ master_bhajans.json not found. Skipping load.");
+      console.log("ℹ️ Database is the authoritative Master Bhajan Bank.");
       return;
     }
 
     const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
-    await MasterBhajan.bulkCreate(data);
-    console.log(`✅ Loaded ${data.length} master bhajans into database.`);
+    const cleanData = data.map(item => ({ ...item, is_active: true }));
+    await MasterBhajan.bulkCreate(cleanData);
+    console.log(`✅ Loaded ${cleanData.length} clean master bhajans into empty database.`);
   } catch (error) {
     console.error("Error loading master bhajans:", error);
   }
@@ -211,6 +234,7 @@ async function initializeDatabase() {
 
     await initializeSuperAdmin();
     await migrateLegacySubmissions();
+    await ensureMasterBhajanSchema();
     await loadMasterBhajans();
     await initDeityRules();
     await normalizeDeityNames();

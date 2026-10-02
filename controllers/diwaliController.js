@@ -522,9 +522,15 @@ exports.searchMasterBhajans = async (req, res) => {
       return res.json([]);
     }
 
+    const tokens = q.split(/\s+/).filter(Boolean);
+    const likeConditions = tokens.map(tok => ({
+      title: { [Op.like]: `%${tok}%` }
+    }));
+
     const bhajans = await MasterBhajan.findAll({
       where: {
-        title: { [Op.like]: `%${q}%` }
+        is_active: true,
+        [Op.and]: likeConditions
       },
       limit: 15,
       order: [["title", "ASC"]]

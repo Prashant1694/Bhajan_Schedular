@@ -875,4 +875,26 @@ html, body {
   color: #f8fafc;
 }
 
-
+/* ── Print Media: Completely Suppress Notification UI ── */
+@media print {
+  .notif-bell-btn,
+  #notifBellBtn,
+  .notif-badge,
+  #notifBadge,
+  .notif-panel,
+  #notifPanel,
+  .notif-overlay,
+  #notifOverlay,
+  .notif-prompt-overlay,
+  #notifPromptOverlay,
+  .notification-bell-container {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}

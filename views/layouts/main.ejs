@@ -21,45 +21,70 @@
         ? pageTitle
         : "Bhajan Planner" %>
 </title>
-    <!-- Global CSS -->
-<link rel="stylesheet" href="/css/style.css">
-<link rel="stylesheet" href="/css/pwa.css">
-<link rel="stylesheet" href="/css/notifications.css">
-<link rel="stylesheet" href="/css/bulletin.css">
+    <!-- Global CSS with Cache Busting -->
+<link rel="stylesheet" href="/css/style.css?v=2.7">
+<link rel="stylesheet" href="/css/pwa.css?v=2.7">
+<link rel="stylesheet" href="/css/notifications.css?v=2.7">
+<link rel="stylesheet" href="/css/bulletin.css?v=2.7">
 
 <% if (typeof showLoader !== "undefined" && showLoader) { %>
-<link rel="stylesheet" href="/css/loading.css">
+<link rel="stylesheet" href="/css/loading.css?v=2.7">
 <% } %>
 
 <% if (typeof isAdminPage !== "undefined" && isAdminPage) { %>
-<link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/admin.css?v=2.7">
 <% } %>
 
 <!-- Optional page-specific CSS -->
 <% if (pageCSS) { %>
-<link rel="stylesheet" href="/css/<%= pageCSS %>">
+<link rel="stylesheet" href="/css/<%= pageCSS %>?v=2.7">
 <% } %>
 
-<!-- Critical Anti-FOUC for Floating Theme Toggle -->
+<!-- Critical Anti-FOUC for Floating Theme Toggle & Absolute Print Elimination -->
 <style>
-.theme-toggle {
-  position: fixed !important;
-  bottom: 88px !important;
-  right: 24px !important;
-  z-index: 9998 !important;
-  width: 52px !important;
-  height: 52px !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-@media (max-width: 360px) {
+@media screen {
   .theme-toggle {
-    width: 46px !important;
-    height: 46px !important;
-    bottom: 74px !important;
-    right: 16px !important;
+    position: fixed !important;
+    bottom: 88px !important;
+    right: 24px !important;
+    z-index: 9998 !important;
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  @media (max-width: 360px) {
+    .theme-toggle {
+      width: 46px !important;
+      height: 46px !important;
+      bottom: 74px !important;
+      right: 16px !important;
+    }
+  }
+}
+@media print {
+  .theme-toggle,
+  #themeToggle,
+  .notif-bell-btn,
+  #notifBellBtn,
+  .notif-badge,
+  .notif-panel,
+  .notif-overlay,
+  .notif-prompt-overlay,
+  .pwa-install-overlay,
+  #pwaInstallOverlay,
+  .notification-bell-container {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    position: fixed !important;
+    left: -9999px !important;
+    top: -9999px !important;
+    width: 0 !important;
+    height: 0 !important;
+    pointer-events: none !important;
   }
 }
 </style>
@@ -115,7 +140,6 @@
       aria-label="Toggle dark mode"
       aria-pressed="false"
       data-tooltip="Switch to Dark"
-      style="position: fixed; bottom: 88px; right: 24px; z-index: 9998; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"
     >
       <span class="icon-moon" aria-hidden="true">🌙</span>
       <span class="icon-sun"  aria-hidden="true">☀️</span>
@@ -147,7 +171,7 @@
     <% } %>
 
     <!-- Optional page-specific JS -->
-    <% if (typeof pageJS !== "undefined") { %>
+    <% if (typeof pageJS !== "undefined" && pageJS) { %>
         <script src="/js/<%= pageJS %>"></script>
     <% } %>
 

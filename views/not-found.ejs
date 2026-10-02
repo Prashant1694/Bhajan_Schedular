@@ -1,0 +1,17 @@
+<div class="container" style="max-width: 560px; margin: 60px auto; padding: 0 16px; text-align: center;">
+  <div class="card-elevated" style="background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 48px 32px; box-shadow: 0 8px 30px rgba(0,0,0,0.04);">
+    <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+    <h2 style="font-family: 'Fraunces', Georgia, serif; font-size: 26px; color: var(--ink); margin-bottom: 12px;">Bhajan Not Found</h2>
+    <p style="color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 28px;">
+      <%= typeof message !== 'undefined' ? message : 'The requested bhajan could not be found or has been deactivated.' %>
+    </p>
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      <a href="/master-bank" class="button" style="padding: 10px 22px; font-weight: 600; text-decoration: none; border-radius: 10px; background: var(--saffron); color: #fff;">
+        📖 Master Bhajan Bank
+      </a>
+      <a href="/" class="button secondary" style="padding: 10px 22px; font-weight: 600; text-decoration: none; border-radius: 10px;">
+        🏠 Home
+      </a>
+    </div>
+  </div>
+</div>

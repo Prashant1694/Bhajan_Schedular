@@ -84,7 +84,7 @@ exports.dashboard = async (req, res) => {
       recentActivity,
     ] = await Promise.all([
       SessionMeta.count(),
-      MasterBhajan.count(),
+      MasterBhajan.count({ where: { is_active: true } }),
       BhajanSubmission.count({
         distinct: true,
         col: "singer_name",
@@ -260,9 +260,30 @@ exports.sessionView = async (req, res) => {
     const meta = await SessionMeta.findByPk(date);
     const isLocked = meta ? meta.is_locked : false;
 
+    // Enrich submissions with MasterBhajan references (sheet_filename, id)
+    const masterBhajans = await MasterBhajan.findAll({
+      where: { is_active: true },
+      attributes: ['id', 'title', 'sheet_filename']
+    });
+    const masterMap = new Map();
+    const normalizeTitle = (t) => String(t || '').trim().replace(/\s+/g, ' ').toLowerCase();
+    masterBhajans.forEach(mb => {
+      masterMap.set(normalizeTitle(mb.title), mb);
+    });
+
+    const enrichedSubmissions = sorted.map(sub => {
+      const plain = sub.get ? sub.get({ plain: true }) : { ...sub };
+      const matched = masterMap.get(normalizeTitle(plain.title));
+      if (matched) {
+        plain.sheet_filename = matched.sheet_filename || null;
+        plain.master_id = matched.id;
+      }
+      return plain;
+    });
+
     res.render("admin-session-view", {
       date,
-      submissions: sorted,
+      submissions: enrichedSubmissions,
       isLocked,
       pageTitle: `Session - ${date}`,
     });
@@ -525,6 +546,7 @@ exports.showMissingBhajans = async (req, res) => {
     });
 
     const masterTitles = await MasterBhajan.findAll({
+      where: { is_active: true },
       attributes: [[Sequelize.fn("DISTINCT", Sequelize.col("title")), "title"]],
       raw: true,
     });
@@ -550,6 +572,7 @@ exports.showMissingBhajans = async (req, res) => {
     let missingBhajans = [];
     if (pageTitles.length > 0) {
       const allMasterBhajans = await MasterBhajan.findAll({
+        where: { is_active: true },
         attributes: ['id', 'title', 'deity', 'raga', 'shruti'],
         raw: true
       });

@@ -5,14 +5,15 @@ const BhajanSubmission = require("../models/BhajanSubmission");
 const { normalizeBhajanTitle } = require("../services/fuzzyMatcher");
 const { invalidateMissingCount } = require("../services/helpers");
 
-const{
-    escapeHTML
+const {
+  escapeHTML
 } = require("../templates");
 
-exports.showMasterBank = async (req, res) =>{
-    try {
+exports.showMasterBank = async (req, res) => {
+  try {
     const isAdmin = !!(req.session && req.session.adminUserId);
     const bhajans = await MasterBhajan.findAll({
+      where: { is_active: true },
       order: [['title', 'ASC']]
     });
     res.render('master-bank', { bhajans, isAdmin });
@@ -20,10 +21,10 @@ exports.showMasterBank = async (req, res) =>{
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
   }
 };
-exports.addMasterBhajan = async (req,res) =>{
-    try {
-    const { title, deity, raga, tempo, level, shruti, shruti_female } = req.body;
-    await MasterBhajan.create({ title, deity, raga, tempo, level, shruti, shruti_female });
+exports.addMasterBhajan = async (req, res) => {
+  try {
+    const { title, deity, raga, raga_notes, tempo, level, shruti, shruti_female, lyrics, sheet_filename } = req.body;
+    await MasterBhajan.create({ title, deity, raga, raga_notes, tempo, level, shruti, shruti_female, lyrics, sheet_filename, is_active: true });
     invalidateMissingCount();
     res.json({ success: true });
   } catch (error) {
@@ -32,29 +33,38 @@ exports.addMasterBhajan = async (req,res) =>{
 }
 exports.updateMasterBhajan = async (req, res) => {
   try {
-    const { title, deity, level, tempo, raga, shruti, shruti_female, language } = req.body;
-    
+    const { title, deity, level, tempo, raga, raga_notes, shruti, shruti_female, language, lyrics, sheet_filename } = req.body;
+
+    const updateFields = { title, deity, level, tempo, raga, raga_notes, shruti, shruti_female, language, lyrics };
+    if (sheet_filename !== undefined) {
+      updateFields.sheet_filename = sheet_filename || null;
+    }
+
     await MasterBhajan.update(
-      { title, deity, level, tempo, raga, shruti, shruti_female, language },
+      updateFields,
       { where: { id: req.params.id } }
     );
-    
+
     res.json({ success: true, message: "Bhajan updated successfully!" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 exports.deleteMasterBhajan = async (req, res) => {
-    try {
-    await MasterBhajan.destroy({ where: { id: req.params.id } });
-    res.json({ success: true, message: "Bhajan deleted successfully" });
+  try {
+    // Soft-delete / archive to preserve historical foreign references
+    await MasterBhajan.update({ is_active: false }, { where: { id: req.params.id } });
+    res.json({ success: true, message: "Bhajan archived successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
-exports.exportMaster = async (req, res) =>{
-    try {
-    const allBhajans = await MasterBhajan.findAll();
+exports.exportMaster = async (req, res) => {
+  try {
+    const allBhajans = await MasterBhajan.findAll({
+      where: { is_active: true },
+      order: [['title', 'ASC']]
+    });
     const jsonString = JSON.stringify(allBhajans, null, 2);
     res.setHeader('Content-disposition', 'attachment; filename=cleaned_master_bhajans.json');
     res.setHeader('Content-type', 'application/json');
@@ -62,7 +72,35 @@ exports.exportMaster = async (req, res) =>{
   } catch (error) {
     res.status(500).send("Export failed");
   }
-}
+};
+
+exports.showArchivedMasterBank = async (req, res) => {
+  try {
+    const isAdmin = !!(req.session && req.session.adminUserId);
+    const archivedBhajans = await MasterBhajan.findAll({
+      where: { is_active: false },
+      order: [['title', 'ASC']]
+    });
+
+    const [diwaliRefs] = await sequelize.query(`
+      SELECT master_bhajan_id, COUNT(*) as ref_count
+      FROM diwali_participant_bhajans
+      WHERE master_bhajan_id IS NOT NULL
+      GROUP BY master_bhajan_id
+    `);
+    const refMap = new Map();
+    diwaliRefs.forEach(r => refMap.set(Number(r.master_bhajan_id), r.ref_count));
+
+    const bhajansWithRefs = archivedBhajans.map(b => ({
+      ...b.toJSON(),
+      refCount: refMap.get(b.id) || 0
+    }));
+
+    res.render('admin-archived-master', { bhajans: bhajansWithRefs, isAdmin });
+  } catch (error) {
+    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+  }
+};
 
 /**
  * POST /api/admin/reconcile-bhajan
@@ -87,9 +125,9 @@ exports.reconcileBhajan = async (req, res) => {
         return res.status(400).json({ error: 'master_bhajan_id is required for link action.' });
       }
 
-      const master = await MasterBhajan.findByPk(master_bhajan_id);
+      const master = await MasterBhajan.findOne({ where: { id: master_bhajan_id, is_active: true } });
       if (!master) {
-        return res.status(404).json({ error: 'Master bhajan not found.' });
+        return res.status(404).json({ error: 'Active Master bhajan not found.' });
       }
 
       const normSubmitted = normalizeBhajanTitle(submitted_title);
@@ -125,5 +163,58 @@ exports.reconcileBhajan = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.showBhajanDetails = async (req, res) => {
+  try {
+    const rawId = req.params.id;
+    if (!rawId || rawId === 'null' || rawId === 'undefined') {
+      return res.status(404).render("not-found", {
+        pageTitle: "Bhajan Not Found",
+        message: "The requested bhajan could not be identified or found in the catalog.",
+        pageCSS: null
+      });
+    }
+
+    const trimmed = String(rawId).trim();
+    let bhajan = null;
+
+    if (/^\d+$/.test(trimmed)) {
+      bhajan = await MasterBhajan.findByPk(parseInt(trimmed, 10));
+    } else {
+      // Allow title-based lookup fallback
+      const decoded = decodeURIComponent(trimmed);
+      bhajan = await MasterBhajan.findOne({
+        where: {
+          is_active: true,
+          title: { [Sequelize.Op.like]: decoded }
+        }
+      });
+    }
+
+    if (!bhajan || !bhajan.is_active) {
+      return res.status(404).render("not-found", {
+        pageTitle: "Bhajan Not Found",
+        message: "The requested bhajan could not be found or has been archived.",
+        pageCSS: null
+      });
+    }
+
+    const isAdmin = !!(req.session && (req.session.adminUserId || req.session.admin));
+
+    res.render("bhajan-details", {
+      bhajan,
+      pageTitle: `${bhajan.title} — Lyrics & Details`,
+      pageCSS: "bhajan-details.css",
+      isAdmin
+    });
+  } catch (error) {
+    console.error("Error in showBhajanDetails:", error);
+    res.status(404).render("not-found", {
+      pageTitle: "Bhajan Not Found",
+      message: "The requested bhajan could not be retrieved at this time.",
+      pageCSS: null
+    });
   }
 };

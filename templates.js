@@ -160,8 +160,14 @@ function generateSubmitFormHtml(
                 <div id="bhajanSuggestions" class="bhajan-suggestions" role="listbox" aria-label="Bhajan suggestions"></div>
               </div>
               
-              <div id="masterDataBadge" style="display:none; color:#28a745; font-size:12px; margin-top:4px; font-weight:600;">
-                ✅ Master DB Synced <span id="badgeDetails"></span>
+              <div id="masterDataBadge" style="display:none; color:#28a745; font-size:12px; margin-top:4px; font-weight:600; align-items:center; gap:8px; flex-wrap:wrap;">
+                <span>✅ Master DB Synced <span id="badgeDetails"></span></span>
+                <span id="badgeSheetLink" style="display:none;">
+                  <a href="#" id="sheetMusicLink" target="_blank" rel="noopener noreferrer" class="sheet-link-pill" style="margin-top:0;" title="Open official reference sheet music (PDF)">📄 Music Sheet ↗</a>
+                </span>
+                <span id="badgeLyricsLink" style="display:none;">
+                  <a href="#" id="lyricsPageLink" target="_blank" rel="noopener noreferrer" class="sheet-link-pill" style="margin-top:0; background:rgba(30,64,175,0.12); color:#1e40af; border-color:rgba(30,64,175,0.3);" title="Open sacred lyrics & singing guide">📖 Lyrics ↗</a>
+                </span>
               </div>
               
               <div id="cooldownWarning" style="display:none; color:#d32f2f; background:#ffebee; padding:8px; border-radius:6px; font-size:12px; margin-top:8px; font-weight:500;"></div>
@@ -569,7 +575,7 @@ function generateAdminCalendarHtml(
     } else if (count > 0) {
       colorClass = "day-festival";
     }
-    
+
     const dayClass = `calendar-day ${colorClass} ${isToday ? "today" : ""}`;
 
     // Changed from <a> to <div onclick> for popup
@@ -641,20 +647,19 @@ function generateAdminCalendarHtml(
       <h2 style="color: #d9480f; margin-bottom: 15px;">🚨 Missing Bhajan Catcher</h2>
       <p style="font-size:14px; margin-bottom:15px; color:#555;">The following bhajans have been sung in sessions but are missing from the Master Database.</p>
       <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
-        ${
-          missingBhajans.length === 0
-            ? '<li style="color:#2b8a3e; font-weight:bold;">✅ All sung bhajans are safely in the Master Database!</li>'
-            : missingBhajans
-                .map(
-                  (b) => `
+        ${missingBhajans.length === 0
+      ? '<li style="color:#2b8a3e; font-weight:bold;">✅ All sung bhajans are safely in the Master Database!</li>'
+      : missingBhajans
+        .map(
+          (b) => `
           <li style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:10px 15px; border-radius:8px; border:1px solid #ffd43b;">
             <strong>${b}</strong>
             <button class="button" style="padding:6px 12px; font-size:12px; background:#4dabf7; border:none;" onclick="openMissingBhajanModal('${b.replace(/'/g, "\\'")}')">➕ Add to Master</button>
           </li>
         `,
-                )
-                .join("")
-        }
+        )
+        .join("")
+    }
       </ul>
     </div>
 
