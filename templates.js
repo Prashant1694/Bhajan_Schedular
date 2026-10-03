@@ -102,7 +102,7 @@ function generateSubmitFormHtml(
             <div class="form-group">
               <label>Singer Name <span class="required">*</span></label>
               <div class="singer-autocomplete">
-                <input type="text" name="singer_name" id="singerName" required placeholder="Enter your full name" autocomplete="off" aria-autocomplete="list" aria-controls="singerSuggestions" aria-expanded="false" value="${currentSinger ? escapeHtml(currentSinger.name) : ''}" ${currentSinger && !isAdminBool ? 'readonly style="background:#f1f5f9; cursor:not-allowed;"' : ''} />
+                <input type="text" name="singer_name" id="singerName" required placeholder="Enter your full name" autocomplete="off" aria-autocomplete="list" aria-controls="singerSuggestions" aria-expanded="false" value="${currentSinger ? escapeHtml(currentSinger.name) : ''}" data-verified-singer="${currentSinger ? escapeHtml(currentSinger.name) : ''}" data-verified-gender="${currentSinger && currentSinger.gender ? escapeHtml(currentSinger.gender) : ''}" ${currentSinger && !isAdminBool ? 'readonly style="background:#f1f5f9; cursor:not-allowed;"' : ''} />
                 <div id="singerSuggestions" class="bhajan-suggestions" role="listbox" aria-label="Singer suggestions"></div>
               </div>
               <datalist id="singerList"></datalist>

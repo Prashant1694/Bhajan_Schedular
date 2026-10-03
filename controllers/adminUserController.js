@@ -2,9 +2,12 @@ const bcrypt = require("bcrypt");
 const AdminUser = require("../models/AdminUser");
 const adminUserService = require("../services/adminUserService");
 
+const Singer = require("../models/Singer");
+
 exports.listAdmins = async (req, res) => {
   try {
     const admins = await AdminUser.findAll({
+      include: [{ model: Singer, as: "singer", required: false }],
       order: [
         ["role", "ASC"],
         ["display_name", "ASC"]
@@ -20,66 +23,52 @@ exports.listAdmins = async (req, res) => {
     res.status(500).send(error.message);
   }
 };
-exports.showCreateForm = (req, res) => {
+exports.showCreateForm = async (req, res) => {
+  try {
+    const singers = await Singer.findAll({ order: [["name", "ASC"]] });
     res.render("admin-user-form", {
-        pageTitle: "Create Administrator",
-        admin: null,
-        error: null
+      pageTitle: "Create Administrator",
+      admin: null,
+      singers,
+      error: null
     });
+  } catch (err) {
+    res.render("admin-user-form", {
+      pageTitle: "Create Administrator",
+      admin: null,
+      singers: [],
+      error: err.message
+    });
+  }
 };
 exports.createAdmin = async (req, res) => {
-
-    try {
-
-        await adminUserService.createAdmin(
-            req.body
-        );
-
-        res.redirect(
-            "/admin/admin-users"
-        );
-
-    }
-
-    catch (error) {
-
-        res.render(
-            "admin-user-form",
-            {
-                admin: null,
-                error: error.message
-            }
-        );
-
-    }
-
+  try {
+    await adminUserService.createAdmin(req.body);
+    res.redirect("/admin/admin-users");
+  } catch (error) {
+    const singers = await Singer.findAll({ order: [["name", "ASC"]] }).catch(() => []);
+    res.render("admin-user-form", {
+      pageTitle: "Create Administrator",
+      admin: null,
+      singers,
+      error: error.message
+    });
+  }
 };
 
 exports.showEditForm = async (req, res) => {
-
-    try {
-
-        const admin =
-            await adminUserService.findById(
-                req.params.id
-            );
-
-        res.render(
-            "admin-user-form",
-            {
-                admin,
-                error: null
-            }
-        );
-
-    }
-
-    catch (error) {
-
-        res.status(404).send(error.message);
-
-    }
-
+  try {
+    const admin = await adminUserService.findById(req.params.id);
+    const singers = await Singer.findAll({ order: [["name", "ASC"]] });
+    res.render("admin-user-form", {
+      pageTitle: "Edit Administrator",
+      admin,
+      singers,
+      error: null
+    });
+  } catch (error) {
+    res.status(404).send(error.message);
+  }
 };
 exports.updateAdmin = async (req, res) => {
 

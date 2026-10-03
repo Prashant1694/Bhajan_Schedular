@@ -58,6 +58,11 @@ const AdminUser = sequelize.define(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true
+    },
+
+    singer_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
     }
   },
   {
@@ -67,5 +72,8 @@ const AdminUser = sequelize.define(
     updatedAt: "updated_at"
   }
 );
+
+const Singer = require("./Singer");
+AdminUser.belongsTo(Singer, { foreignKey: "singer_id", as: "singer" });
 
 module.exports = AdminUser;

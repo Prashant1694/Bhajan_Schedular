@@ -1,98 +1,586 @@
-/* ===========================
-   Fullscreen Loader
-=========================== */
+/* ==========================================================================
+   Sri Sathya Sai Seva Organisation • Gandhinagar Samiti
+   Phase 2: The Prasanthi Mandir & Sarva Dharma Dawn Loader
+   Serene Ivory & Gold Dawn Palette with Smooth Fade-Out
+   ========================================================================== */
 
-#loader-overlay {
+:root {
+  --loader-gold: #d98a2b;
+  --loader-gold-soft: #fcf2dc;
+  --loader-amber: #b86f1e;
+  --loader-maroon: #7d2f45;
+  --loader-maroon-dk: #5e2233;
+  --loader-ink: #221e2a;
+  --loader-ink-soft: #6b6377;
+  --loader-bg-light: #fffdfa;
+  --loader-bg-mid: #faf3e8;
+  --loader-bg-soft: #f4eae0;
+}
+
+/* ==========================================================================
+   Sleek Top Navigation Progress Bar (YouTube/GitHub Style)
+   ========================================================================== */
+.top-nav-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3.5px;
+  z-index: 9999999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.top-nav-progress.active {
+  opacity: 1;
+}
+
+.top-nav-fill {
+  position: relative;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #d98a2b 0%, #ea580c 50%, #f59e0b 100%);
+  box-shadow: 0 0 10px rgba(217, 138, 43, 0.8), 0 0 4px rgba(234, 88, 12, 0.6);
+  transition: width 0.2s ease-out;
+}
+
+.top-nav-glow {
+  position: absolute;
+  right: 0;
+  top: -2px;
+  bottom: -2px;
+  width: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px #ffffff, 0 0 14px #fbbf24;
+}
+
+/* ==========================================================================
+   Full Screen Fixed Container with Smooth Dawn Dissolve
+   ========================================================================== */
+.sarva-dharma-loader {
   position: fixed;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  width: 100vw;
+  height: 100vh;
   z-index: 999999;
-  overflow: hidden;
-  transition: opacity 0.5s ease;
-}
-
-.loader-backdrop {
-  position: absolute;
-  inset: 0;
-  backdrop-filter: blur(16px);
-  background: rgba(34, 30, 42, 0.6);
-}
-
-.loader-container {
-  position: relative;
-  width: min(760px, 82vw);
-  height: min(60vh, 520px);
+  background: radial-gradient(circle at 50% 32%, var(--loader-bg-light) 0%, var(--loader-bg-mid) 48%, var(--loader-bg-soft) 100%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   display: flex;
-  justify-content: center;
   align-items: center;
-  flex-shrink: 0;
-}
-
-.loader-image {
-  border-radius: 24px;
+  justify-content: center;
   overflow: hidden;
-  position: absolute;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.35),
-    0 0 60px rgba(233, 200, 118, 0.1);
-  width: min(760px, 82vw);
-  max-height: 78vh;
-  object-fit: contain;
-  opacity: 0;
-  transform: scale(0.96);
-  transition: opacity 0.9s ease, transform 3.2s ease;
-  -webkit-mask-image: radial-gradient(
-    ellipse at center,
-    black 62%,
-    rgba(0, 0, 0, 0.95) 72%,
-    rgba(0, 0, 0, 0.6) 84%,
-    transparent 100%
-  );
-  mask-image: radial-gradient(
-    ellipse at center,
-    black 62%,
-    rgba(0, 0, 0, 0.95) 72%,
-    rgba(0, 0, 0, 0.6) 84%,
-    transparent 100%
-  );
-}
-
-.loader-image.active {
+  user-select: none;
   opacity: 1;
-  transform: scale(1.05);
+  visibility: visible;
+  transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+              backdrop-filter 0.65s ease,
+              -webkit-backdrop-filter 0.65s ease,
+              transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-#loader-overlay.hidden {
+/* Soft preliminary fade-out as loading approaches 100% */
+.sarva-dharma-loader.fade-out-start {
+  opacity: 0.92;
+}
+
+/* Final smooth exit dissolve into the application */
+.sarva-dharma-loader.dismissing {
   opacity: 0;
-  visibility: hidden;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  transform: scale(1.02);
   pointer-events: none;
 }
 
-.loader-quote {
-  position: static;
-  margin-top: 26px;
-  width: min(680px, 88vw);
-  text-align: center;
-  z-index: 10;
-}
-
-#loader-quote-text {
-  color: #f3dfa4;
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 21px;
+/* Instant Skip Button */
+.loader-skip-btn {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(217, 138, 43, 0.35);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.78rem;
   font-weight: 600;
-  letter-spacing: 0.3px;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 18px rgba(233, 200, 118, 0.18);
-  opacity: 1;
-  transition: opacity 0.45s ease, transform 0.45s ease;
+  color: var(--loader-maroon);
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(125, 47, 69, 0.08);
+  transition: all 0.2s ease;
 }
 
-.loader-quote-author {
-  margin-top: 8px;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: 13px;
+.loader-skip-btn:hover {
+  background: #ffffff;
+  color: var(--loader-gold);
+  border-color: var(--loader-gold);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 138, 43, 0.2);
+}
+
+/* Dark Theme Complement */
+body.dark-theme .sarva-dharma-loader {
+  background: radial-gradient(circle at 50% 32%, #221b2d 0%, #171120 48%, #0d0a13 100%);
+}
+
+body.dark-theme .loader-title-sairam {
+  background: linear-gradient(135deg, #ffffff 0%, #fef08a 50%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body.dark-theme .loader-org-name {
+  color: rgba(254, 240, 138, 0.8);
+}
+
+body.dark-theme .mandir-quote-card {
+  background: rgba(30, 20, 48, 0.7);
+  border-color: rgba(251, 191, 36, 0.24);
+}
+
+body.dark-theme .mandir-quote-text {
+  color: #fef9c3;
+}
+
+body.dark-theme .mandir-status-text {
+  color: #fef08a;
+}
+
+body.dark-theme .mandir-progress-num {
+  color: #fbbf24;
+}
+
+body.dark-theme .mandir-progress-track {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+body.dark-theme .loader-skip-btn {
+  background: rgba(45, 30, 65, 0.85);
+  color: #fef08a;
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+body.loading-lock {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+/* ==========================================================================
+   Dawn Canvas & Volumetric Sunbeams
+   ========================================================================== */
+.dawn-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Rotating Golden Dawn Light Rays */
+.dawn-light-rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140vmax;
+  height: 140vmax;
+  margin-top: -70vmax;
+  margin-left: -70vmax;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.45;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    rgba(217, 138, 43, 0.08) 0deg 12deg,
+    transparent 12deg 24deg
+  );
+  animation: dawnRaysRotate 45s linear infinite;
+  mask-image: radial-gradient(circle at 50% 50%, black 20%, transparent 68%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, black 20%, transparent 68%);
+}
+
+@keyframes dawnRaysRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Divine Sun Glow Behind Stage */
+.divine-sun-glow {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(580px, 85vw);
+  height: min(580px, 85vw);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.32) 0%, rgba(217, 138, 43, 0.12) 45%, transparent 70%);
+  filter: blur(36px);
+  pointer-events: none;
+  z-index: 2;
+  animation: sunGlowPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes sunGlowPulse {
+  0% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.7; }
+  100% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.95; }
+}
+
+/* ==========================================================================
+   Central Stage & Content Wrapper
+   ========================================================================== */
+.mandir-stage {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(840px, 92vw);
+  max-height: 92vh;
+  padding: 16px 20px;
+  text-align: center;
+}
+
+/* ==========================================================================
+   Top Header: Sarva Dharma Emblem + Om Sri Sai Ram
+   ========================================================================== */
+.loader-emblem-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.emblem-halo-wrapper {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.emblem-ambient-glow {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(217, 138, 43, 0.35) 0%, transparent 70%);
+  filter: blur(6px);
+  animation: emblemPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes emblemPulse {
+  0% { transform: scale(0.95); opacity: 0.6; }
+  100% { transform: scale(1.12); opacity: 1; }
+}
+
+.sarva-dharma-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 4px 10px rgba(125, 47, 69, 0.2));
+  animation: logoFloat 4s ease-in-out infinite alternate;
+}
+
+@keyframes logoFloat {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+.loader-title-block {
+  text-align: left;
+}
+
+.loader-title-sairam {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(1.25rem, 3.2vw, 1.65rem);
+  font-weight: 700;
   letter-spacing: 2px;
+  color: var(--loader-maroon);
+  background: linear-gradient(135deg, #7d2f45 0%, #b86f1e 50%, #7d2f45 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 2px rgba(217, 138, 43, 0.2));
+}
+
+.loader-org-name {
+  margin: 2px 0 0 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: clamp(0.72rem, 1.8vw, 0.82rem);
+  color: var(--loader-ink-soft);
+  letter-spacing: 0.8px;
+  font-weight: 500;
+}
+
+/* ==========================================================================
+   The Prasanthi Nilayam Sanctum Showcase Frame
+   ========================================================================== */
+.mandir-display-frame {
+  position: relative;
+  width: min(680px, 88vw);
+  height: clamp(190px, 34vh, 290px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 0 16px 0;
+}
+
+.mandir-aura-backdrop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  height: 90%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(251, 191, 36, 0.28) 0%, rgba(217, 138, 43, 0.1) 55%, transparent 75%);
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.mandir-photo {
+  position: absolute;
+  max-width: 96%;
+  max-height: 96%;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(0.96);
+  filter: drop-shadow(0 12px 28px rgba(125, 47, 69, 0.12))
+          drop-shadow(0 4px 12px rgba(217, 138, 43, 0.15));
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 2.4s cubic-bezier(0.25, 1, 0.5, 1);
+  will-change: opacity, transform;
+}
+
+.mandir-photo.active {
+  opacity: 1;
+  transform: scale(1.02);
+}
+
+.mandir-bottom-blend {
+  position: absolute;
+  bottom: 0;
+  left: 5%;
+  right: 5%;
+  height: 35px;
+  background: linear-gradient(to top, rgba(244, 234, 224, 0.8) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Devotional Status & Golden Progress Bar
+   ========================================================================== */
+.mandir-progress-section {
+  width: min(520px, 86vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mandir-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.mandir-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.mandir-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--loader-gold);
+  box-shadow: 0 0 8px var(--loader-gold);
+  flex-shrink: 0;
+  animation: dotPulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes dotPulse {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  100% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 10px #ea580c; }
+}
+
+.mandir-status-text {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: clamp(0.7rem, 1.8vw, 0.78rem);
+  font-weight: 600;
+  letter-spacing: 1.1px;
+  color: var(--loader-maroon-dk);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s ease;
+}
+
+.mandir-progress-num {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(0.82rem, 2.2vw, 0.95rem);
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--loader-amber);
+  min-width: 44px;
+  text-align: right;
+}
+
+/* Track & Animated Fill */
+.mandir-progress-track {
+  position: relative;
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(125, 47, 69, 0.08);
+  border: 1px solid rgba(217, 138, 43, 0.35);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.mandir-progress-fill {
+  position: relative;
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d98a2b 0%, #ea580c 50%, #b86f1e 100%);
+  box-shadow: 0 0 10px rgba(217, 138, 43, 0.5);
+  transition: width 0.15s linear;
+}
+
+.progress-glow-head {
+  position: absolute;
+  right: 0;
+  top: -2px;
+  bottom: -2px;
+  width: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px #ffffff, 0 0 14px #d98a2b;
+}
+
+/* ==========================================================================
+   Sathya Sai Sacred Quotes Card (Frosted Pearl Glass)
+   ========================================================================== */
+.mandir-quote-card {
+  width: min(580px, 88vw);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(217, 138, 43, 0.28);
+  border-radius: 16px;
+  padding: 12px 18px;
+  box-shadow: 0 8px 24px rgba(125, 47, 69, 0.06),
+              0 2px 6px rgba(217, 138, 43, 0.05),
+              inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.mandir-quote-inner {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.quote-open-mark,
+.quote-close-mark {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 1.4rem;
+  color: var(--loader-gold);
+  line-height: 1;
+}
+
+.mandir-quote-text {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: clamp(0.92rem, 2.4vw, 1.05rem);
+  font-weight: 500;
+  font-style: italic;
+  color: var(--loader-ink);
+  letter-spacing: 0.3px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  line-height: 1.4;
+}
+
+.mandir-quote-author {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: clamp(0.68rem, 1.7vw, 0.74rem);
+  color: var(--loader-maroon);
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   Mobile Responsive Adjustments
+   ========================================================================== */
+@media (max-width: 640px) {
+  .mandir-stage {
+    padding: 10px 12px;
+  }
+  .loader-skip-btn {
+    top: 14px;
+    right: 16px;
+    padding: 5px 11px;
+    font-size: 0.72rem;
+  }
+  .loader-emblem-header {
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .emblem-halo-wrapper {
+    width: 46px;
+    height: 46px;
+  }
+  .sarva-dharma-logo {
+    width: 42px;
+    height: 42px;
+  }
+  .mandir-display-frame {
+    height: clamp(170px, 30vh, 230px);
+    margin: 4px 0 12px 0;
+  }
+  .mandir-progress-section {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .mandir-quote-card {
+    padding: 10px 14px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-height: 580px) and (orientation: landscape) {
+  .mandir-stage {
+    padding: 6px;
+  }
+  .mandir-display-frame {
+    height: 135px;
+    margin: 4px 0;
+  }
+  .mandir-quote-card {
+    padding: 6px 12px;
+  }
 }

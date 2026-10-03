@@ -68,7 +68,7 @@
 - **Aligned 52px Controls**: Notification bell and theme toggle buttons unified in size and alignment.
 
 ### 📞 Home Contact & Help Card
-- **Dedicated Homepage Card**: Samiti support information, direct telephone links for coordinators (`+91 9265056242`, `+91 7990983186`), official email, and centre address with interactive micro-animations.
+- **Dedicated Homepage Card**: Samiti support information, direct telephone links for coordinators (`+91 9265056242`, `+91 9624888795`), official email, and centre address with interactive micro-animations.
 
 ---
 

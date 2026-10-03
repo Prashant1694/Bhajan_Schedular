@@ -252,18 +252,37 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // 1. Load saved details only if not in admin mode
-  if (!isAdmin) {
-    const savedName = localStorage.getItem('bj_singer_name');
-    const savedGender = localStorage.getItem('bj_gender');
+  // 1. Ensure verified devotee profile identity is preserved, or fallback to saved details
+  const nameInput = document.querySelector('input[name="singer_name"]');
+  const activeGenderEl = genderSelect || document.querySelector('select[name="gender"]');
 
-    if (savedName) {
-      const nameInput = document.querySelector('input[name="singer_name"]');
-      if (nameInput) nameInput.value = savedName;
-    }
-    if (savedGender) {
-      const genderSelect = document.querySelector('select[name="gender"]');
-      if (genderSelect) genderSelect.value = savedGender;
+  if (nameInput) {
+    const verifiedName = nameInput.getAttribute('data-verified-singer') || '';
+    const verifiedGender = nameInput.getAttribute('data-verified-gender') || '';
+
+    if (verifiedName && verifiedName.trim().length > 0) {
+      // Devotee is authenticated: strictly enforce verified session identity
+      nameInput.value = verifiedName.trim();
+      try {
+        localStorage.setItem('bj_singer_name', verifiedName.trim());
+        if (verifiedGender) {
+          localStorage.setItem('bj_gender', verifiedGender);
+        }
+      } catch (_) {}
+      if (verifiedGender && genderSelect) {
+        genderSelect.value = verifiedGender;
+      }
+    } else if (!isAdmin) {
+      // Non-authenticated fallback: load saved details only if input is empty
+      const savedName = localStorage.getItem('bj_singer_name');
+      const savedGender = localStorage.getItem('bj_gender');
+
+      if (savedName && !nameInput.value) {
+        nameInput.value = savedName;
+      }
+      if (savedGender && genderSelect && !genderSelect.value) {
+        genderSelect.value = savedGender;
+      }
     }
   }
 
@@ -1423,4 +1442,73 @@ document.addEventListener('click', function (e) {
     }
   });
 })();
+
+// ==========================================================================
+// Top Navigation Progress Bar Controller (YouTube / GitHub Style)
+// Smooth, non-intrusive feedback on in-app link navigation & form submission
+// ==========================================================================
+(function() {
+  const topBar = document.getElementById('top-nav-bar');
+  const topFill = document.getElementById('top-nav-fill');
+  if (!topBar || !topFill) return;
+
+  let progressTimer = null;
+  let currentWidth = 0;
+
+  function startTopNav() {
+    clearTimeout(progressTimer);
+    topBar.classList.add('active');
+    currentWidth = 18;
+    topFill.style.width = '18%';
+
+    function step() {
+      if (currentWidth < 85) {
+        currentWidth += Math.random() * 14 + 6;
+        if (currentWidth > 85) currentWidth = 85;
+        topFill.style.width = currentWidth + '%';
+        progressTimer = setTimeout(step, 160);
+      }
+    }
+    progressTimer = setTimeout(step, 100);
+  }
+
+  function finishTopNav() {
+    clearTimeout(progressTimer);
+    topFill.style.width = '100%';
+    setTimeout(() => {
+      topBar.classList.remove('active');
+      setTimeout(() => {
+        topFill.style.width = '0%';
+        currentWidth = 0;
+      }, 250);
+    }, 200);
+  }
+
+  // Intercept navigation links
+  document.addEventListener('click', function(e) {
+    const link = e.target.closest('a');
+    if (!link) return;
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('tel:') || href.startsWith('mailto:')) return;
+    if (link.target === '_blank' || link.hasAttribute('download')) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    if (link.origin && link.origin !== window.location.origin) return;
+
+    startTopNav();
+  });
+
+  // Intercept form submissions
+  document.addEventListener('submit', function(e) {
+    const form = e.target;
+    if (form && form.target !== '_blank') {
+      startTopNav();
+    }
+  });
+
+  // Complete on pageshow (including back/forward cache navigation)
+  window.addEventListener('pageshow', function() {
+    finishTopNav();
+  });
+})();
+
 

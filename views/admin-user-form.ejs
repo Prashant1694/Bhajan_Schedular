@@ -75,6 +75,23 @@
 
                     <div class="field">
 
+                        <label>Linked Singer Profile (for My Hub &amp; Bhajan Submissions)</label>
+
+                        <select name="singer_id" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border, #cbd5e1); font-size: 14px; background: var(--surface, #fff); color: var(--ink, #1e293b);">
+                            <option value="">-- Auto-detect by Name --</option>
+                            <% if (typeof singers !== 'undefined' && singers) { %>
+                                <% singers.forEach(function(s) { %>
+                                    <option value="<%= s.id %>" <%= (admin && admin.singer_id === s.id) ? 'selected' : '' %>>
+                                        <%= s.name %> <%= s.gender ? `(${s.gender})` : '' %>
+                                    </option>
+                                <% }); %>
+                            <% } %>
+                        </select>
+
+                    </div>
+
+                    <div class="field">
+
                         <label>Username</label>
 
                         <input

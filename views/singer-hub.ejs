@@ -6,6 +6,14 @@
       <span>←</span> Back to Home
     </a>
     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <a href="/admin" class="button secondary" style="padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border-color: #f59e0b; color: #d97706; font-weight: 700;">
+          ⚙️ Admin Tower
+        </a>
+        <button type="button" onclick="openAdminSwitchModal()" class="button secondary" style="padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border-color: #a855f7; color: #7e22ce; font-weight: 700;">
+          🔄 Switch Singer
+        </button>
+      <% } %>
       <button type="button" onclick="openChangePinModal()" class="button secondary" style="padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
         🔑 Change PIN
       </button>
@@ -31,6 +39,11 @@
           <% if (singer.gender) { %>
             <span style="background: rgba(255,255,255,0.15); font-size: 12px; padding: 2px 10px; border-radius: 999px; font-weight: 600;">
               <%= singer.gender %>
+            </span>
+          <% } %>
+          <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+            <span style="background: linear-gradient(135deg, #9333ea 0%, #6366f1 100%); color: #fff; font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 700; box-shadow: 0 2px 6px rgba(147, 51, 234, 0.3);">
+              👑 Admin Linked
             </span>
           <% } %>
         </div>
@@ -799,3 +812,97 @@ async function handlePreferredScaleSubmit(e) {
   }
 }
 </script>
+
+<% if (typeof isAdmin !== 'undefined' && isAdmin && typeof allSingers !== 'undefined' && allSingers.length > 0) { %>
+<!-- Admin Switch Singer Modal -->
+<div id="adminSwitchModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999; align-items: center; justify-content: center; padding: 16px;">
+  <div style="background: var(--surface, #fff); border-radius: 18px; max-width: 440px; width: 100%; padding: 26px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: left; border: 1px solid var(--border, #e2e8f0);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 style="margin: 0; font-size: 19px; font-weight: 800; color: var(--ink, #1e293b); display: flex; align-items: center; gap: 8px;">
+        <span>🔄</span> Switch Singer Profile
+      </h3>
+      <button type="button" onclick="closeAdminSwitchModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted, #64748b);">✕</button>
+    </div>
+    <p style="font-size: 13.5px; color: var(--muted, #64748b); margin-top: 0; margin-bottom: 16px; line-height: 1.5;">
+      As an administrator, switch to any singer profile to manage songbooks, examine singing analytics, or submit bhajans on their behalf.
+    </p>
+    <form id="adminSwitchForm" onsubmit="handleAdminSwitchSubmit(event)">
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 12.5px; font-weight: 700; color: var(--ink, #334155); margin-bottom: 6px;">Select Devotee Singer:</label>
+        <select id="adminSwitchSingerSelect" required style="width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--border, #cbd5e1); font-size: 14px; background: var(--surface, #fff); color: var(--ink, #1e293b);">
+          <% allSingers.forEach(function(s) { %>
+            <option value="<%= s.id %>" <%= s.id === singer.id ? 'selected' : '' %>>
+              <%= s.name %> <%= s.gender ? `(${s.gender})` : '' %>
+            </option>
+          <% }); %>
+        </select>
+      </div>
+      <div style="margin-bottom: 20px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft, #475569); cursor: pointer;">
+          <input type="checkbox" id="adminSwitchSavePermanent" value="1" checked style="width: 16px; height: 16px; accent-color: #9333ea;">
+          <span>Set as my permanent linked singer profile</span>
+        </label>
+      </div>
+      <div id="adminSwitchAlert" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px;"></div>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" onclick="closeAdminSwitchModal()" class="button secondary" style="padding: 9px 18px; font-size: 13.5px;">Cancel</button>
+        <button type="submit" id="adminSwitchSubmitBtn" class="button primary" style="background: #9333ea; border-color: #9333ea; padding: 9px 18px; font-size: 13.5px; font-weight: 700;">Switch Profile</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openAdminSwitchModal() {
+  const modal = document.getElementById('adminSwitchModal');
+  if (modal) modal.style.display = 'flex';
+  const alert = document.getElementById('adminSwitchAlert');
+  if (alert) alert.style.display = 'none';
+}
+function closeAdminSwitchModal() {
+  const modal = document.getElementById('adminSwitchModal');
+  if (modal) modal.style.display = 'none';
+}
+async function handleAdminSwitchSubmit(e) {
+  e.preventDefault();
+  const select = document.getElementById('adminSwitchSingerSelect');
+  const permCheck = document.getElementById('adminSwitchSavePermanent');
+  const alertBox = document.getElementById('adminSwitchAlert');
+  const btn = document.getElementById('adminSwitchSubmitBtn');
+
+  btn.disabled = true;
+  btn.textContent = 'Switching...';
+  alertBox.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/admin/switch-singer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        singer_id: select.value,
+        save_permanent: permCheck.checked
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to switch profile');
+
+    alertBox.textContent = data.message || 'Profile switched!';
+    alertBox.style.background = '#ecfdf5';
+    alertBox.style.color = '#065f46';
+    alertBox.style.display = 'block';
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 600);
+  } catch (err) {
+    alertBox.textContent = err.message;
+    alertBox.style.background = '#fee2e2';
+    alertBox.style.color = '#991b1b';
+    alertBox.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Switch Profile';
+  }
+}
+</script>
+<% } %>
+

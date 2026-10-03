@@ -4,14 +4,14 @@
     
     <div class="hero-banner">
       <div class="hero-img-container">
-        <img src="./images/logo.png" alt="Bhagwan Baba" class="hero-image" onerror="this.src='/images/logo.png'">
+        <img src="/images/logo.png" alt="Sri Sathya Sai Lotus Emblem" class="hero-image">
       </div>
       <div class="hero-text">
         <h2 class="hero-subtitle">Sri Sathya Sai Seva Organisations, Gandhinagar</h2>
         <h1 class="hero-title">Bhajan Planner</h1>
       </div>
       <div class="hero-img-container">
-        <img src="/images/logo_birthday.png" alt="Logo" class="hero-image">
+        <img src="/images/logo_birthday.png" alt="Sri Sathya Sai 100th Birthday Emblem" class="hero-image">
       </div>
     </div>
     <div class="menu-grid">
@@ -42,20 +42,32 @@
 
       <% if (typeof currentSinger !== 'undefined' && currentSinger) { %>
       <a href="/my-hub" class="menu-card card-purple" id="homeSingerHubCard" style="position: relative; border-color: #c084fc;">
-        <span style="position: absolute; top: 10px; right: 10px; background: #9333ea; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px;">Logged In</span>
+        <span style="position: absolute; top: 10px; right: 10px; background: #9333ea; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px;"><%= (typeof currentAdmin !== 'undefined' && currentAdmin) ? '👑 Admin' : 'Logged In' %></span>
         <div class="card-icon">🌟</div>
         <div class="card-content">
           <div class="card-title">My Hub</div>
           <div class="card-desc"><%= currentSinger.name %></div>
         </div>
       </a>
+      <% } else if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
+      <a href="/my-hub" class="menu-card card-purple" id="homeSingerHubCard" style="position: relative; border-color: #c084fc;">
+        <span style="position: absolute; top: 10px; right: 10px; background: #9333ea; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px;">👑 Admin</span>
+        <div class="card-icon">🌟</div>
+        <div class="card-content">
+          <div class="card-title">My Hub</div>
+          <div class="card-desc">Singer & Songbook Hub</div>
+        </div>
+      </a>
       <% } %>
 
-      <a href="/admin-login" class="menu-card card-yellow">
+      <a href="<%= (typeof currentAdmin !== 'undefined' && currentAdmin) ? '/admin' : '/admin-login' %>" class="menu-card card-yellow" style="position: relative;">
+        <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
+          <span style="position: absolute; top: 10px; right: 10px; background: #eab308; color: #713f12; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px;">Admin Active</span>
+        <% } %>
         <div class="card-icon">🔐</div>
         <div class="card-content">
           <div class="card-title">Administration</div>
-          <div class="card-desc">Schedular - Control Tower</div>
+          <div class="card-desc"><%= (typeof currentAdmin !== 'undefined' && currentAdmin) ? (currentAdmin.display_name || 'Control Tower') : 'Schedular - Control Tower' %></div>
         </div>
       </a>
     </div>

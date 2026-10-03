@@ -126,7 +126,10 @@ async hashPassword(password) {
         role:
             admin.role,
 
-        is_active: true
+        is_active: true,
+
+        singer_id:
+            admin.singer_id ? Number(admin.singer_id) : null
 
     });
 
@@ -185,6 +188,9 @@ async updateAdmin(id, data) {
     admin.username = username;
     admin.google_email = google_email || null;
     admin.role = role;
+    if (typeof data.singer_id !== "undefined") {
+      admin.singer_id = data.singer_id ? Number(data.singer_id) : null;
+    }
 
     await admin.save();
 

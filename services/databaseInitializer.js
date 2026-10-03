@@ -225,6 +225,9 @@ async function ensureAdminUserColumns() {
     if (columns && !columns.some((col) => col.name === "title")) {
       await sequelize.query("ALTER TABLE admin_users ADD COLUMN title VARCHAR(255) DEFAULT ''");
     }
+    if (columns && !columns.some((col) => col.name === "singer_id")) {
+      await sequelize.query("ALTER TABLE admin_users ADD COLUMN singer_id INTEGER NULL");
+    }
   } catch (err) {
     console.error("Column check failed for admin_users:", err.message);
   }

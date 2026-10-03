@@ -5,9 +5,13 @@ const AdminUser = require("../models/AdminUser");
 
 const googleClient = new OAuth2Client();
 
+const { resolveSingerForAdmin } = require("../middleware/singerAuth");
+
 async function createAdminSession(req, admin) {
   return new Promise((resolve, reject) => {
     const prevVisitorId = req.session?.visitorId;
+    const prevSinger = req.session?.singer; // Preserve existing singer session!
+
     req.session.regenerate(async (regenErr) => {
       if (regenErr) {
         console.error("Admin session regeneration error:", regenErr);
@@ -25,6 +29,27 @@ async function createAdminSession(req, admin) {
         displayName: admin.display_name,
         role: admin.role
       };
+
+      // Restore previously authenticated singer session OR auto-link admin's singer profile
+      if (prevSinger) {
+        req.session.singer = prevSinger;
+      } else {
+        try {
+          const singer = await resolveSingerForAdmin(admin.id, admin.display_name, admin.username);
+          if (singer) {
+            req.session.singer = {
+              id: singer.id,
+              name: singer.name,
+              gender: singer.gender,
+              preferred_scale: singer.preferred_scale || null,
+              pinVerifiedAt: Date.now(),
+              isAdminLinked: true
+            };
+          }
+        } catch (linkErr) {
+          console.error("Failed to auto-link singer profile for admin:", linkErr);
+        }
+      }
 
       try {
         const visitorId = req.session.visitorId;
@@ -274,13 +299,17 @@ exports.logout = async (req, res) => {
     console.error("Logout presence update failed:", err.message);
   }
 
-  req.session.destroy((error) => {
-    if (error) {
-      console.error("Logout failed:", error);
-    }
-
+  // Clear admin session while preserving user/singer identity
+  if (req.session) {
+    delete req.session.adminUserId;
+    delete req.session.admin;
+    req.session.save((saveErr) => {
+      if (saveErr) console.error("Session save error on admin logout:", saveErr);
+      res.redirect("/");
+    });
+  } else {
     res.redirect("/");
-  });
+  }
 };
 exports.showForgotPassword = (req, res) => {
 

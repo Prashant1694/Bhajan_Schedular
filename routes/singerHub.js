@@ -25,4 +25,7 @@ router.get("/api/singer/songbook/check/:masterId", singerHubController.checkSong
 router.get("/singer/logout", singerHubController.logout);
 router.post("/singer/logout", singerHubController.logout);
 
+// Admin Quick Switch / Link Singer
+router.post("/api/admin/switch-singer", singerHubController.adminSwitchSinger);
+
 module.exports = router;

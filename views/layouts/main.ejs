@@ -22,13 +22,13 @@
         : "Bhajan Planner" %>
 </title>
     <!-- Global CSS with Cache Busting -->
-<link rel="stylesheet" href="/css/style.css?v=2.7">
+<link rel="stylesheet" href="/css/style.css?v=2.9">
 <link rel="stylesheet" href="/css/pwa.css?v=2.7">
 <link rel="stylesheet" href="/css/notifications.css?v=2.7">
 <link rel="stylesheet" href="/css/bulletin.css?v=2.7">
 
 <% if (typeof showLoader !== "undefined" && showLoader) { %>
-<link rel="stylesheet" href="/css/loading.css?v=2.7">
+<link rel="stylesheet" href="/css/loading.css?v=3.4">
 <% } %>
 
 <% if (typeof isAdminPage !== "undefined" && isAdminPage) { %>
@@ -102,6 +102,13 @@
 
 <body class="<%= (typeof isAdminPage !== 'undefined' && isAdminPage && currentAdmin) ? 'admin-page' : '' %>">
 
+    <!-- Global Top Navigation Progress Bar (YouTube/GitHub style) -->
+    <div id="top-nav-bar" class="top-nav-progress" aria-hidden="true">
+      <div id="top-nav-fill" class="top-nav-fill">
+        <div class="top-nav-glow"></div>
+      </div>
+    </div>
+
     <!-- PWA Install Banner -->
     <div class="pwa-install-overlay" id="pwaInstallOverlay">
       <div class="pwa-install-banner">
@@ -167,7 +174,7 @@
     <% } %>
 
     <!-- Global JS -->
-    <script src="/js/script.js"></script>
+    <script src="/js/script.js?v=2.8"></script>
     <script src="/js/pwa.js"></script>
     <script src="/js/notifications.js"></script>
     <script>
@@ -197,7 +204,7 @@
     </script>
 
     <% if (typeof showLoader !== "undefined" && showLoader) { %>
-    <script src="/js/loading.js"></script>
+    <script src="/js/loading.js?v=3.4"></script>
     <% } %>
 
     <!-- Optional page-specific JS -->

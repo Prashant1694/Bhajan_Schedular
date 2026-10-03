@@ -1,25 +1,82 @@
-<div id="loader-overlay">
+<script>
+  (function () {
+    try {
+      if (sessionStorage.getItem("mandir_splash_seen") === "1") {
+        document.write('<style id="loader-pre-hide">#loader-overlay { display: none !important; }</style>');
+      }
+    } catch (e) {}
+  })();
+</script>
 
-    <div class="loader-backdrop"></div>
+<div id="loader-overlay" class="sarva-dharma-loader" aria-live="polite" role="status">
+  <!-- Instant Skip Button -->
+  <button id="loader-skip-btn" class="loader-skip-btn" type="button" aria-label="Skip to content">
+    Skip ✕
+  </button>
 
-    <div class="loader-container">
+  <!-- Dynamic Celestial Canvas (Golden light motes & dawn stardust) -->
+  <canvas id="loader-starfield" class="dawn-canvas"></canvas>
 
-        <img
-            id="loader-image-1"
-            class="loader-image active"
-            src="/images/loading/image_1_bg.png"
-            alt="Prasanthi Nilayam">
+  <!-- Volumetric Dawn Light Rays & Divine Sun Glow -->
+  <div class="dawn-light-rays"></div>
+  <div class="divine-sun-glow"></div>
 
-        <img
-            id="loader-image-2"
-            class="loader-image"
-            src="/images/loading/image_2_bg_old.png"
-            alt="Prasanthi Nilayam">
-
+  <!-- Central Sanctuary Stage -->
+  <div class="mandir-stage">
+    
+    <!-- Top Branding: Sarva Dharma Emblem + Om Sri Sai Ram -->
+    <div class="loader-emblem-header">
+      <div class="emblem-halo-wrapper">
+        <div class="emblem-ambient-glow"></div>
+        <img src="/images/logo.png" alt="Sri Sathya Sai Sarva Dharma Emblem" class="sarva-dharma-logo">
+      </div>
+      <div class="loader-title-block">
+        <h2 class="loader-title-sairam">OM SRI SAI RAM</h2>
+        <p class="loader-org-name">Sri Sathya Sai Seva Organisation • Gandhinagar Samiti</p>
+      </div>
     </div>
-    <div class="loader-quote">
-    <div id="loader-quote-text"></div>
-    <div class="loader-quote-author">— Sri Sathya Sai Baba —</div>
-</div>
 
+    <!-- The Prasanthi Nilayam Sanctum Showcase -->
+    <div class="mandir-display-frame">
+      <!-- Glow aura behind mandir -->
+      <div class="mandir-aura-backdrop"></div>
+      
+      <!-- Image 1: Yajur Mandir / Prasanthi Nilayam facade -->
+      <img id="mandir-img-1" class="mandir-photo active" src="/images/loading/image_1_bg.png" alt="Prasanthi Nilayam Mandir">
+      
+      <!-- Image 2: Sanctum Sanctorum Sai Kulwant Hall Mahasamadhi -->
+      <img id="mandir-img-2" class="mandir-photo" src="/images/loading/image_2_bg_old.png" alt="Sai Kulwant Hall Sanctum Sanctorum">
+      
+      <!-- Soft bottom feather gradient so it blends into the stage -->
+      <div class="mandir-bottom-blend"></div>
+    </div>
+
+    <!-- Devotional Status & Progress Bar -->
+    <div class="mandir-progress-section">
+      <div class="mandir-status-row">
+        <div class="mandir-status-indicator">
+          <span class="mandir-pulse-dot"></span>
+          <span id="loader-status-text" class="mandir-status-text">CONNECTING TO PRASANTHI NILAYAM SANCTUM...</span>
+        </div>
+        <div id="loader-progress-num" class="mandir-progress-num">0%</div>
+      </div>
+
+      <div class="mandir-progress-track">
+        <div id="loader-progress-bar" class="mandir-progress-fill">
+          <div class="progress-glow-head"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sathya Sai Sacred Quotes Card -->
+    <div class="mandir-quote-card">
+      <div class="mandir-quote-inner">
+        <span class="quote-open-mark">“</span>
+        <div id="loader-quote-text" class="mandir-quote-text">Love All • Serve All</div>
+        <span class="quote-close-mark">”</span>
+      </div>
+      <div class="mandir-quote-author">— Bhagawan Sri Sathya Sai Baba —</div>
+    </div>
+
+  </div>
 </div>

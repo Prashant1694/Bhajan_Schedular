@@ -5,7 +5,8 @@ const BhajanSubmission = require("../models/BhajanSubmission");
 const BhajanReport = require("../models/BhajanReport");
 const MasterBhajan = require("../models/MasterBhajan");
 const SingerBookmark = require("../models/SingerBookmark");
-const { NINETY_DAYS_MS } = require("../middleware/singerAuth");
+const AdminUser = require("../models/AdminUser");
+const { NINETY_DAYS_MS, resolveSingerForAdmin } = require("../middleware/singerAuth");
 const { getLocalDateStr } = require("../services/helpers");
 
 // In-memory account lockout tracker (5 attempts -> 15 min lock)
@@ -162,8 +163,10 @@ exports.login = async (req, res) => {
     // PIN verified: clear any failed attempts
     clearSingerFail(singer.id);
 
-    // Save existing visitorId before session regeneration
+    // Save existing visitorId AND admin credentials before session regeneration
     const existingVisitorId = req.session?.visitorId;
+    const existingAdmin = req.session?.admin;
+    const existingAdminUserId = req.session?.adminUserId;
     const showIntro = isFirstTime || !singer.last_login_at;
     const safeRedirect = redirect && redirect.startsWith("/") ? redirect : "/submit-form";
 
@@ -174,15 +177,24 @@ exports.login = async (req, res) => {
         return res.status(500).json({ error: "Login failed. Please try again." });
       }
 
-      req.session.visitorId = existingVisitorId;
+      if (existingVisitorId) req.session.visitorId = existingVisitorId;
+      if (existingAdmin) req.session.admin = existingAdmin;
+      if (existingAdminUserId) req.session.adminUserId = existingAdminUserId;
+
       req.session.singer = {
         id: singer.id,
         name: singer.name,
         gender: singer.gender,
+        preferred_scale: singer.preferred_scale || null,
         pinVerifiedAt: Date.now()
       };
       if (showIntro) {
         req.session.showHubWelcome = true;
+      }
+
+      // If user is also an admin, automatically associate this singer to their admin user record
+      if (existingAdminUserId) {
+        AdminUser.update({ singer_id: singer.id }, { where: { id: existingAdminUserId } }).catch(() => {});
       }
 
       req.session.save(() => {
@@ -206,17 +218,42 @@ exports.login = async (req, res) => {
  */
 exports.showHub = async (req, res) => {
   try {
-    const singerSession = req.session.singer;
+    const isAdmin = Boolean(req.session && (req.session.admin || req.session.adminUserId));
+    let singerSession = req.session.singer;
+
+    if (!singerSession && isAdmin) {
+      const adminId = req.session.adminUserId || req.session.admin?.id;
+      const displayName = req.session.admin?.display_name || req.session.admin?.displayName;
+      const username = req.session.admin?.username;
+      const resolved = await resolveSingerForAdmin(adminId, displayName, username);
+      if (resolved) {
+        req.session.singer = {
+          id: resolved.id,
+          name: resolved.name,
+          gender: resolved.gender,
+          preferred_scale: resolved.preferred_scale || null,
+          pinVerifiedAt: Date.now(),
+          isAdminLinked: true
+        };
+        singerSession = req.session.singer;
+      }
+    }
+
+    if (!singerSession) {
+      delete req.session.singer;
+      return res.redirect("/singer/login?redirect=/my-hub");
+    }
+
     const singer = await Singer.findByPk(singerSession.id);
     if (!singer) {
       delete req.session.singer;
-      return res.redirect("/singer/login");
+      return res.redirect("/singer/login?redirect=/my-hub");
     }
 
-    // Calculate days remaining in 90-day verification cycle
+    // Calculate days remaining in 90-day verification cycle (Admins are exempt)
     const verifiedAt = singerSession.pinVerifiedAt || Date.now();
     const elapsedMs = Date.now() - verifiedAt;
-    const daysRemaining = Math.max(0, Math.ceil((NINETY_DAYS_MS - elapsedMs) / (24 * 60 * 60 * 1000)));
+    const daysRemaining = isAdmin ? 90 : Math.max(0, Math.ceil((NINETY_DAYS_MS - elapsedMs) / (24 * 60 * 60 * 1000)));
 
     const todayStr = getLocalDateStr();
 
@@ -285,6 +322,15 @@ exports.showHub = async (req, res) => {
     const showWelcome = Boolean(req.session.showHubWelcome);
     req.session.showHubWelcome = false;
 
+    // If admin is viewing, load all singers for the quick-switch capability
+    let allSingers = [];
+    if (isAdmin) {
+      allSingers = await Singer.findAll({
+        attributes: ["id", "name", "gender"],
+        order: [["name", "ASC"]]
+      });
+    }
+
     res.render("singer-hub", {
       pageTitle: `${singer.name} | Singer Hub`,
       singer,
@@ -296,6 +342,8 @@ exports.showHub = async (req, res) => {
       myReports,
       myReportsCount,
       showWelcome,
+      isAdmin,
+      allSingers,
       pageCSS: null,
       pageJS: null
     });
@@ -306,20 +354,69 @@ exports.showHub = async (req, res) => {
 };
 
 /**
- * Devotee Logout
+ * Devotee Logout (Preserves admin session if logged in)
  */
 exports.logout = (req, res) => {
   if (req.session) {
     delete req.session.singer;
     delete req.session.showHubWelcome;
-    req.session.regenerate(() => {
-      if (req.xhr || req.headers.accept?.includes("application/json")) {
+    req.session.save(() => {
+      if (req.xhr || req.headers?.accept?.includes("application/json")) {
         return res.json({ success: true, redirect: "/" });
       }
       res.redirect("/");
     });
   } else {
     res.redirect("/");
+  }
+};
+
+/**
+ * Admin: Switch or link active Singer profile in session
+ */
+exports.adminSwitchSinger = async (req, res) => {
+  try {
+    const isAdmin = Boolean(req.session && (req.session.admin || req.session.adminUserId));
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Unauthorized: Admin access required." });
+    }
+
+    const { singer_id, save_permanent } = req.body;
+    if (!singer_id) {
+      return res.status(400).json({ error: "Singer ID is required." });
+    }
+
+    const singer = await Singer.findByPk(singer_id);
+    if (!singer) {
+      return res.status(404).json({ error: "Singer record not found." });
+    }
+
+    req.session.singer = {
+      id: singer.id,
+      name: singer.name,
+      gender: singer.gender,
+      preferred_scale: singer.preferred_scale || null,
+      pinVerifiedAt: Date.now(),
+      isAdminLinked: true
+    };
+
+    if (save_permanent) {
+      const adminId = req.session.adminUserId || req.session.admin?.id;
+      if (adminId) {
+        await AdminUser.update({ singer_id: singer.id }, { where: { id: adminId } });
+      }
+    }
+
+    req.session.save(() => {
+      res.json({
+        success: true,
+        message: `Switched active singer to ${singer.name}`,
+        singer: req.session.singer
+      });
+    });
+  } catch (error) {
+    console.error("adminSwitchSinger error:", error);
+    res.status(500).json({ error: error.message || "Failed to switch singer." });
   }
 };
 
