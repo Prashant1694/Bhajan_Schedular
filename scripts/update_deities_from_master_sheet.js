@@ -12,7 +12,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const xlsx = require("xlsx");
+const ExcelJS = require("exceljs");
 const sequelize = require("../config/database");
 const MasterBhajan = require("../models/MasterBhajan");
 
@@ -80,8 +80,32 @@ async function run() {
 
   // 1. Read master_sheet.xlsx Sheet1
   console.log(`Reading master sheet: ${masterSheetPath}...`);
-  const wbMaster = xlsx.readFile(masterSheetPath);
-  const masterRows = xlsx.utils.sheet_to_json(wbMaster.Sheets["Sheet1"]);
+  const wbMaster = new ExcelJS.Workbook();
+  await wbMaster.xlsx.readFile(masterSheetPath);
+  const masterSheet = wbMaster.getWorksheet("Sheet1") || wbMaster.worksheets[0];
+  const masterHeaders = [];
+  const masterRows = [];
+  masterSheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) {
+      row.eachCell((cell, colNumber) => {
+        masterHeaders[colNumber] = cell.text
+          ? cell.text.trim()
+          : cell.value
+            ? String(cell.value).trim()
+            : "";
+      });
+    } else {
+      const r = {};
+      for (let c = 1; c < masterHeaders.length; c++) {
+        const h = masterHeaders[c];
+        if (h) {
+          const val = row.getCell(c).value;
+          r[h] = val !== undefined ? val : null;
+        }
+      }
+      masterRows.push(r);
+    }
+  });
   console.log(`Loaded ${masterRows.length} rows from master_sheet.xlsx Sheet1.`);
 
   // Build exact title -> list of deities map
@@ -117,9 +141,33 @@ async function run() {
 
   // 2. Read enriched Excel file
   console.log(`\nReading enriched Excel: ${enrichedExcelPath}...`);
-  const wbEnriched = xlsx.readFile(enrichedExcelPath);
-  const enrichedSheetName = wbEnriched.SheetNames[0];
-  const enrichedRows = xlsx.utils.sheet_to_json(wbEnriched.Sheets[enrichedSheetName]);
+  const wbEnriched = new ExcelJS.Workbook();
+  await wbEnriched.xlsx.readFile(enrichedExcelPath);
+  const enrichedSheet = wbEnriched.worksheets[0];
+  const enrichedSheetName = enrichedSheet.name;
+  const enrichedHeaders = [];
+  const enrichedRows = [];
+  enrichedSheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) {
+      row.eachCell((cell, colNumber) => {
+        enrichedHeaders[colNumber] = cell.text
+          ? cell.text.trim()
+          : cell.value
+            ? String(cell.value).trim()
+            : "";
+      });
+    } else {
+      const r = {};
+      for (let c = 1; c < enrichedHeaders.length; c++) {
+        const h = enrichedHeaders[c];
+        if (h) {
+          const val = row.getCell(c).value;
+          r[h] = val !== undefined ? val : null;
+        }
+      }
+      enrichedRows.push(r);
+    }
+  });
   console.log(`Loaded ${enrichedRows.length} rows from ${enrichedExcelPath}.`);
 
   let matchedExactCount = 0;
@@ -153,9 +201,12 @@ async function run() {
 
   // 3. Write updated data back to master_bhajans_fully_enriched.xlsx
   console.log(`\nSaving updated workbook to ${enrichedExcelPath}...`);
-  const updatedSheet = xlsx.utils.json_to_sheet(updatedRows);
-  wbEnriched.Sheets[enrichedSheetName] = updatedSheet;
-  xlsx.writeFile(wbEnriched, enrichedExcelPath);
+  const newWb = new ExcelJS.Workbook();
+  const newSheet = newWb.addWorksheet(enrichedSheetName);
+  const colKeys = Object.keys(updatedRows[0] || {});
+  newSheet.columns = colKeys.map((k) => ({ header: k, key: k }));
+  updatedRows.forEach((r) => newSheet.addRow(r));
+  await newWb.xlsx.writeFile(enrichedExcelPath);
   console.log(`✅ Updated ${enrichedExcelPath} successfully.`);
 
   // 4. Update master_bhajans.json

@@ -1,4 +1,4 @@
-const xlsx = require("xlsx");
+const ExcelJS = require("exceljs");
 const path = require("path");
 const sequelize = require("../config/database");
 const MasterBhajan = require("../models/MasterBhajan");
@@ -25,8 +25,32 @@ async function validateIntegrity() {
 
   // 2. Read authoritative Excel
   const excelPath = path.join(__dirname, "..", "data", "master_bhajans_fully_enriched.xlsx");
-  const wb = xlsx.readFile(excelPath);
-  const rows = xlsx.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: null });
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.readFile(excelPath);
+  const sheet = wb.worksheets[0];
+  const headers = [];
+  const rows = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) {
+      row.eachCell((cell, colNumber) => {
+        headers[colNumber] = cell.text
+          ? cell.text.trim()
+          : cell.value
+            ? String(cell.value).trim()
+            : "";
+      });
+    } else {
+      const r = {};
+      for (let c = 1; c < headers.length; c++) {
+        const h = headers[c];
+        if (h) {
+          const val = row.getCell(c).value;
+          r[h] = val !== undefined ? val : null;
+        }
+      }
+      rows.push(r);
+    }
+  });
   const excelExistingIds = new Set();
   rows.forEach((r) => {
     if (r.id !== null && r.id !== undefined && String(r.id).trim() !== "") {

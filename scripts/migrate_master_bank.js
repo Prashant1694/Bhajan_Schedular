@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const xlsx = require("xlsx");
+const ExcelJS = require("exceljs");
 const sequelize = require("../config/database");
 const { normalizeBhajanTitle } = require("../services/fuzzyMatcher");
 
@@ -25,15 +25,41 @@ function getTimestamp() {
   return `${YYYY}${MM}${DD}_${hh}${mm}${ss}`;
 }
 
-function readAndValidateExcel() {
+async function readAndValidateExcel() {
   if (!fs.existsSync(EXCEL_FILE)) {
     throw new Error(`Excel source file not found at: ${EXCEL_FILE}`);
   }
 
-  const workbook = xlsx.readFile(EXCEL_FILE);
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const rawRows = xlsx.utils.sheet_to_json(sheet, { defval: null });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(EXCEL_FILE);
+  const sheet = workbook.worksheets[0];
+  const headers = [];
+  const rawRows = [];
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) {
+      row.eachCell((cell, colNumber) => {
+        headers[colNumber] = cell.text
+          ? cell.text.trim()
+          : cell.value
+            ? String(cell.value).trim()
+            : "";
+      });
+    } else {
+      const r = {};
+      for (let c = 1; c < headers.length; c++) {
+        const h = headers[c];
+        if (h) {
+          let val = row.getCell(c).value;
+          if (val && typeof val === "object") {
+            if (val.text) val = val.text;
+            else if (val.result !== undefined) val = val.result;
+          }
+          r[h] = val !== undefined ? val : null;
+        }
+      }
+      rawRows.push(r);
+    }
+  });
 
   let recordsWithId = 0;
   let recordsWithoutId = 0;
@@ -271,7 +297,7 @@ async function runMigration({ isExecute = false }) {
   console.log("====================================================\n");
 
   // Step 1: Read and validate Excel
-  const excelData = readAndValidateExcel();
+  const excelData = await readAndValidateExcel();
   console.log(`Excel validation passed.`);
   console.log(`- Total Excel rows: ${excelData.rawRowCount}`);
   console.log(`- Records with existing IDs: ${excelData.recordsWithId}`);
