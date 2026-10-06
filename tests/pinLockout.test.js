@@ -1,6 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert");
 const request = require("supertest");
+const { setupTestDb } = require("./setup");
+
+test.before(async () => {
+  await setupTestDb();
+});
+
 const { app } = require("../app");
 
 test("Singer PIN lockout: fails with dummy bcrypt for non-existent singer", async () => {
@@ -31,4 +37,19 @@ test("Singer PIN lockout: rejects invalid pin format (not 4 digits)", async () =
 
   assert.strictEqual(res.status, 400);
   assert.ok(res.body.error.includes("4-digit"));
+});
+
+test("Singer PIN lockout: rejects incorrect PIN for seeded singer (id 1)", async () => {
+  const agent = request.agent(app);
+  const getRes = await agent.get("/singer/login");
+  const csrfMatch = getRes.text.match(/name="csrf-token" content="([^"]+)"/);
+  const csrfToken = csrfMatch ? csrfMatch[1] : "";
+
+  const res = await agent.post("/api/singer/login").set("X-CSRF-Token", csrfToken).send({
+    singer_id: 1,
+    pin: "9999"
+  });
+
+  assert.strictEqual(res.status, 403);
+  assert.ok(res.body.error.includes("Incorrect 4-digit PIN"));
 });

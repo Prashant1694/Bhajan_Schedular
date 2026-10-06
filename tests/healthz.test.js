@@ -1,6 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert");
 const request = require("supertest");
+const { setupTestDb } = require("./setup");
+
+test.before(async () => {
+  await setupTestDb();
+});
+
 const { app } = require("../app");
 
 test("GET /healthz returns 200 with healthy status and database status", async () => {

@@ -1,9 +1,16 @@
 const { Sequelize } = require("sequelize");
 const path = require("path");
+const os = require("os");
+
+const storagePath =
+  process.env.DB_PATH ||
+  (process.env.NODE_ENV === "test"
+    ? path.join(os.tmpdir(), `bhajan-test-${process.pid}.db`)
+    : path.join(__dirname, "..", "bhajans.db"));
 
 const sequelize = new Sequelize({
   dialect: "sqlite",
-  storage: process.env.DB_PATH || path.join(__dirname, "..", "bhajans.db"),
+  storage: storagePath,
   logging: false,
   pool: {
     max: 5,

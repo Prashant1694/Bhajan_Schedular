@@ -31,6 +31,18 @@ async function initializeSuperAdmin() {
   const displayName = process.env.SUPER_ADMIN_DISPLAY_NAME || "Super Admin";
 
   if (!username || !password) {
+    if (process.env.NODE_ENV === "test") {
+      const testHash = await bcrypt.hash("testadmin123", 10);
+      await AdminUser.create({
+        username: "testadmin",
+        display_name: "Test Admin",
+        password_hash: testHash,
+        role: "super_admin",
+        is_active: true
+      });
+      console.log("✅ Test super admin account created.");
+      return;
+    }
     throw new Error("SUPER_ADMIN_USER and SUPER_ADMIN_PASS must be configured.");
   }
 
@@ -101,44 +113,49 @@ async function syncMasterBhajans() {
     }
 
     // 2. Synchronize / upsert authoritative 1,024 Prashanti Mandir bhajans
-    for (const item of data) {
-      let deityClean = item.deity;
-      if (deityClean) {
-        deityClean = deityClean
-          .split(",")
-          .map((s) => {
-            const t = s.trim();
-            const l = t.toLowerCase();
-            if (
-              l === "anjaneya" ||
-              l === "aanjaneya" ||
-              l === "hanuman" ||
-              l === "maruti" ||
-              l === "maruthi"
-            )
-              return "Hanuman";
-            if (l === "vittala" || l === "vithhala" || l === "vithala" || l === "vitthala")
-              return "Vitthala";
-            return t;
-          })
-          .join(", ");
+    await sequelize.transaction(async (t) => {
+      for (const item of data) {
+        let deityClean = item.deity;
+        if (deityClean) {
+          deityClean = deityClean
+            .split(",")
+            .map((s) => {
+              const t = s.trim();
+              const l = t.toLowerCase();
+              if (
+                l === "anjaneya" ||
+                l === "aanjaneya" ||
+                l === "hanuman" ||
+                l === "maruti" ||
+                l === "maruthi"
+              )
+                return "Hanuman";
+              if (l === "vittala" || l === "vithhala" || l === "vithala" || l === "vitthala")
+                return "Vitthala";
+              return t;
+            })
+            .join(", ");
+        }
+        await MasterBhajan.upsert(
+          {
+            id: item.id,
+            title: item.title,
+            deity: deityClean,
+            level: item.level || null,
+            tempo: item.tempo || null,
+            raga: item.raga || null,
+            raga_notes: item.raga_notes || null,
+            shruti: item.shruti || null,
+            shruti_female: item.shruti_female || null,
+            language: item.language || null,
+            lyrics: item.lyrics || null,
+            sheet_filename: item.sheet_filename || null,
+            is_active: true
+          },
+          { transaction: t }
+        );
       }
-      await MasterBhajan.upsert({
-        id: item.id,
-        title: item.title,
-        deity: deityClean,
-        level: item.level || null,
-        tempo: item.tempo || null,
-        raga: item.raga || null,
-        raga_notes: item.raga_notes || null,
-        shruti: item.shruti || null,
-        shruti_female: item.shruti_female || null,
-        language: item.language || null,
-        lyrics: item.lyrics || null,
-        sheet_filename: item.sheet_filename || null,
-        is_active: true
-      });
-    }
+    });
 
     const activeCount = await MasterBhajan.count({ where: { is_active: true } });
     console.log(
@@ -403,13 +420,15 @@ async function initializeDatabase() {
     await initDeityRules();
     await normalizeDeityNames();
 
-    // Start session lifecycle scheduler for automatic notifications
-    const { startSessionScheduler } = require("./sessionScheduler");
-    startSessionScheduler();
+    if (process.env.NODE_ENV !== "test") {
+      // Start session lifecycle scheduler for automatic notifications
+      const { startSessionScheduler } = require("./sessionScheduler");
+      startSessionScheduler();
 
-    // Start nightly database backup scheduler
-    const { startNightlyBackupScheduler } = require("./backupService");
-    startNightlyBackupScheduler();
+      // Start nightly database backup scheduler
+      const { startNightlyBackupScheduler } = require("./backupService");
+      startNightlyBackupScheduler();
+    }
 
     console.log("✅ Database initialization complete.");
   } catch (error) {

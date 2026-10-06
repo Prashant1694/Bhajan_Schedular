@@ -71,6 +71,7 @@ async function getOrGenerateBackup() {
  * Initializes nightly backup timer (runs every 24 hours)
  */
 function startNightlyBackupScheduler() {
+  if (process.env.NODE_ENV === "test") return;
   const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
   const timer = setInterval(async () => {
     try {

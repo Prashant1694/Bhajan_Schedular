@@ -20,6 +20,7 @@ let schedulerTimer = null;
 
 // ── Start the scheduler ──────────────────────────────────────
 function startSessionScheduler() {
+  if (process.env.NODE_ENV === "test") return;
   console.log("[Scheduler] Session lifecycle scheduler started (interval: 15 min)");
   // Run immediately on startup to catch anything missed during downtime
   runSchedulerCheck().catch((err) => console.error("[Scheduler] Initial check failed:", err));
