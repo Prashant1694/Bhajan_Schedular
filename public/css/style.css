@@ -214,6 +214,28 @@ a,
   touch-action: manipulation;
 }
 
+/* Touch accessibility: ensure mobile tap targets meet WCAG >= 44px */
+button,
+.btn,
+.button,
+.submit-btn,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  min-height: 44px;
+}
+
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="date"],
+  select {
+    min-height: 44px;
+  }
+}
+
 /* Respect notches / home indicators when this is wrapped in a native shell */
 body {
   padding-top: max(32px, env(safe-area-inset-top));

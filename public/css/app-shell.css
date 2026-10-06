@@ -357,6 +357,7 @@ body #notifBellBtn:not(.native-action-btn) {
   background: none;
   border: none;
   padding: 4px 2px 2px 2px;
+  min-height: 48px;
   border-radius: 12px;
   cursor: pointer;
   color: var(--muted, #64748b);

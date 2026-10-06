@@ -54,6 +54,28 @@ window.escapeHTML = escapeHTML;
       if (!form || form.tagName !== "FORM") return;
       var method = (form.method || "GET").toUpperCase();
       if (["POST", "PUT", "PATCH", "DELETE"].indexOf(method) !== -1) {
+        if (form.dataset.submitting === "true") {
+          e.preventDefault();
+          return false;
+        }
+        form.dataset.submitting = "true";
+        var submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+        if (submitBtn) {
+          setTimeout(function () {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = "0.7";
+            submitBtn.style.cursor = "wait";
+          }, 10);
+        }
+        setTimeout(function () {
+          delete form.dataset.submitting;
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = "";
+            submitBtn.style.cursor = "";
+          }
+        }, 8000);
+
         var token = getCsrfToken();
         if (token && !form.querySelector('input[name="_csrf"]')) {
           var input = document.createElement("input");

@@ -4,7 +4,7 @@
 // for static assets, cache Google Fonts
 // ============================================================
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v5.0";
 const CACHE_NAME = `bhajan-planner-${CACHE_VERSION}`;
 
 // Assets to pre-cache during the install step.

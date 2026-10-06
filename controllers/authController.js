@@ -111,6 +111,7 @@ exports.login = async (req, res) => {
     if (!admin || !admin.is_active) {
       return res.status(401).render("admin-login", {
         error: "Invalid username or password.",
+        username,
         googleClientId: process.env.GOOGLE_CLIENT_ID || null,
         showLoader: false
       });
@@ -120,6 +121,7 @@ exports.login = async (req, res) => {
     if (!passwordMatches) {
       return res.status(401).render("admin-login", {
         error: "Invalid username or password.",
+        username,
         googleClientId: process.env.GOOGLE_CLIENT_ID || null,
         showLoader: false
       });
@@ -132,6 +134,7 @@ exports.login = async (req, res) => {
         console.error("Session save failed:", error);
         return res.status(500).render("admin-login", {
           error: "Login failed. Please try again.",
+          username,
           googleClientId: process.env.GOOGLE_CLIENT_ID || null,
           showLoader: false
         });

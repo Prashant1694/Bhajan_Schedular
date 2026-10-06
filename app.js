@@ -262,6 +262,20 @@ app.use("/", diwaliRoutes);
 app.use("/", reportsRoutes);
 app.use("/", singerHubRoutes);
 
+// 404 Not Found Handler
+app.use((req, res, next) => {
+  const isJson =
+    req.xhr ||
+    (req.headers.accept && req.headers.accept.includes("json")) ||
+    req.path.startsWith("/api/");
+  if (isJson) {
+    return res.status(404).json({ error: "Resource not found." });
+  }
+  res.status(404).render("404", {
+    pageTitle: "Page Not Found | Bhajan Planner"
+  });
+});
+
 // CSRF token error handler
 app.use((error, req, res, next) => {
   if (error && (error.code === "EBADCSRFTOKEN" || error.message === "invalid csrf token")) {
@@ -294,7 +308,13 @@ app.use((error, req, res, next) => {
   if (isJson) {
     return res.status(500).json({ error: "Something went wrong. Please try again later." });
   }
-  res.status(500).send("Something went wrong. Please try again later.");
+  try {
+    res.status(500).render("500", {
+      pageTitle: "Error | Bhajan Planner"
+    });
+  } catch (_) {
+    res.status(500).send("Something went wrong. Please try again later.");
+  }
 });
 
 // ============================================================
