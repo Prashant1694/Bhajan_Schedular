@@ -128,5 +128,6 @@ module.exports = {
   reportSubmitLimit: rateLimit({ windowMs: 30 * 60 * 1000, max: 25, message: "Too many reports submitted. Please wait before submitting more." }),
   ticketRateLimit: rateLimit({ windowMs: 15 * 60 * 1000, max: 60, message: "Too many ticket requests. Please wait a moment." }),
   bhajanSubmitLimit: rateLimit({ windowMs: 5 * 60 * 1000, max: 30, message: "Too many bhajan submissions in a short period. Please wait a moment." }),
-  recoveryLimit: rateLimit({ windowMs: 60 * 60 * 1000, max: 15, message: "Too many recovery attempts. Please wait before trying again." })
+  recoveryLimit: rateLimit({ windowMs: 60 * 60 * 1000, max: 15, message: "Too many recovery attempts. Please wait before trying again." }),
+  activityLimit: rateLimit({ windowMs: 1 * 60 * 1000, max: 60, message: "Too many activity pings." })
 };

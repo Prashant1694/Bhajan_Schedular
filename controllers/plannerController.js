@@ -351,92 +351,97 @@ exports.submitForm = async (req, res) => {
       return res.status(403).send(`<h1>Locked</h1><p>${reasonMsg}</p><a class="button" href="${isAdmin ? '/admin' : '/'}">${isAdmin ? 'Return to Dashboard' : 'Go Home'}</a>`);
     }
 
-    // Fetch all submissions for this date to check rules
-    const allSubmissions = await BhajanSubmission.findAll({ where: { session_date } });
-
-    // A title may be used only once in a session, regardless of deity or
-    // singer. Normalize spaces and casing so minor typing differences cannot
-    // create a duplicate entry.
-    const duplicateBhajan = allSubmissions.find(
-      (submission) => normalizeBhajanTitle(submission.title) === normalizeBhajanTitle(title)
-    );
-    if (duplicateBhajan) {
-      const adminParam = isAdmin ? '&admin=true' : '';
-      return res.status(409).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Bhajan Already Added</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>Bhajan Already Added</h2><p><strong>${escapeHtml(duplicateBhajan.title)}</strong> has already been submitted for this session by <strong>${escapeHtml(duplicateBhajan.singer_name)}</strong>.</p><a class="button secondary" href="/submit-form?session_date=${encodeURIComponent(session_date)}${adminParam}">Go back to the form</a></div></body></html>`);
-    }
-
-    // Check if special/festival
-    const permission = await SessionPermission.findByPk(session_date);
-    const isSpecialOrFestival = !!permission;
-
-    // Load rules specifically for this session
-    let rules = await DeityRule.findAll({ where: { session_date } });
-    if (rules.length === 0) rules = await DeityRule.findAll({ where: { session_date: 'default' } });
-
-    const ruleForDeity = rules.find(r => r.deity_name === deity) || { max_allowed: 2 };
-    const maxAllowed = ruleForDeity.max_allowed;
-
-    if (!isAdmin) {
-      if (maxAllowed === 0) {
-        return res.send(generateErrorHtml(deity, { singer_name: "Admin", title: "Blocked for this session", created_at: new Date() }, session_date));
+    let newSubmission = null;
+    await sequelize.transaction(async (t) => {
+      // 1. Re-verify lock inside transaction
+      const meta = await SessionMeta.findByPk(session_date, { transaction: t });
+      if (!isAdmin && meta && meta.is_locked) {
+        const err = new Error("LOCKED");
+        err.reason = "This session has been locked by the coordinator.";
+        throw err;
       }
 
-      // Check existing count for requested deity against maxAllowed
-      const existingEntries = allSubmissions.filter(s => s.deity === deity);
-      if (existingEntries.length >= maxAllowed) {
-        return res.send(generateErrorHtml(deity, existingEntries[existingEntries.length - 1], session_date));
-      }
-    }
-
-    // Save a singer's gender the first time it is supplied. Once recorded,
-    // always use that stored value rather than trusting a changed form value.
-    //
-    // Normalize the submitted name to avoid creating duplicate singer records
-    // when the name differs only in case or spacing (e.g. 'Prashant Bhatt' vs
-    // ' Prashant  Bhatt'). We look for an existing record first using a
-    // case-insensitive SQL LIKE on the trimmed name, and only create a new
-    // row if no match is found.
-    const submittedGender = gender || locked_gender;
-    const normalizedInputName = normalizeName(effectiveSingerName);
-
-    // Try to find an existing singer whose normalized name matches
-    const allSingers = await Singer.findAll({ attributes: ['id', 'name', 'gender'] });
-    let singer = allSingers.find(s => normalizeName(s.name) === normalizedInputName) || null;
-
-    if (!singer) {
-      if (!isAdmin) {
-        return res.status(400).send('<h1>Error</h1><p>Singer profile not found in directory. Please sign in through Singer Hub.</p><a class="button" href="/singer/login">Login</a>');
-      }
-      // Admins only can create a new singer from free text
-      singer = await Singer.create({
-        name: effectiveSingerName,
-        gender: submittedGender || null
+      // 2. Fetch all submissions for this date inside transaction
+      const allSubmissions = await BhajanSubmission.findAll({
+        where: { session_date },
+        transaction: t
       });
-    } else if (!singer.gender && submittedGender) {
-      await singer.update({ gender: submittedGender });
-      singer.gender = submittedGender;
-    }
-    const resolvedGender = singer.gender || submittedGender || null;
 
-    // Save submission using strictly effectiveSingerName
-    const newSubmission = await BhajanSubmission.create({
-      session_date,
-      singer_name: effectiveSingerName,
-      gender: resolvedGender,
-      partner_name: partner_name ? partner_name.trim() : null,
-      title,
-      deity,
-      scale: scale || "Not specified",
-      speed,
-      raga,
-      level,
-      language
+      // 3. A title may be used only once in a session
+      const duplicateBhajan = allSubmissions.find(
+        (submission) => normalizeBhajanTitle(submission.title) === normalizeBhajanTitle(title)
+      );
+      if (duplicateBhajan) {
+        const err = new Error("DUPLICATE_BHAJAN");
+        err.duplicate = duplicateBhajan;
+        throw err;
+      }
+
+      // 4. Check deity limits strictly inside the transaction
+      if (!isAdmin) {
+        let rules = await DeityRule.findAll({ where: { session_date }, transaction: t });
+        if (rules.length === 0) rules = await DeityRule.findAll({ where: { session_date: 'default' }, transaction: t });
+
+        const ruleForDeity = rules.find(r => r.deity_name === deity) || { max_allowed: 2 };
+        const maxAllowed = ruleForDeity.max_allowed;
+
+        if (maxAllowed === 0) {
+          const err = new Error("DEITY_BLOCKED");
+          err.deity = deity;
+          throw err;
+        }
+
+        const existingEntries = allSubmissions.filter(s => s.deity === deity);
+        if (existingEntries.length >= maxAllowed) {
+          const err = new Error("DEITY_LIMIT_EXCEEDED");
+          err.deity = deity;
+          err.lastEntry = existingEntries[existingEntries.length - 1];
+          throw err;
+        }
+      }
+
+      // 5. Singer gender and profile resolution
+      const submittedGender = gender || locked_gender;
+      const normalizedInputName = normalizeName(effectiveSingerName);
+
+      const allSingers = await Singer.findAll({ attributes: ['id', 'name', 'gender'], transaction: t });
+      let singer = allSingers.find(s => normalizeName(s.name) === normalizedInputName) || null;
+
+      if (!singer) {
+        if (!isAdmin) {
+          const err = new Error("SINGER_NOT_FOUND");
+          throw err;
+        }
+        singer = await Singer.create({
+          name: effectiveSingerName,
+          gender: submittedGender || null
+        }, { transaction: t });
+      } else if (!singer.gender && submittedGender) {
+        await singer.update({ gender: submittedGender }, { transaction: t });
+        singer.gender = submittedGender;
+      }
+      const resolvedGender = singer.gender || submittedGender || null;
+
+      // 6. Save submission inside transaction
+      newSubmission = await BhajanSubmission.create({
+        session_date,
+        singer_name: effectiveSingerName,
+        gender: resolvedGender,
+        partner_name: partner_name ? partner_name.trim() : null,
+        title,
+        deity,
+        scale: scale || "Not specified",
+        speed,
+        raga,
+        level,
+        language
+      }, { transaction: t });
     });
 
-    // â”€â”€ Partner notification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Partner notification ──────────────────────────────────────────
     // If a partner was specified, send a personalized notification
     // to the partner's registered devices (if any).
-    if (partner_name && partner_name.trim()) {
+    if (partner_name && partner_name.trim() && newSubmission) {
       try {
         const notificationService = require("../services/notificationService");
         const partnerNormalized = normalizeName(partner_name);
@@ -467,7 +472,6 @@ exports.submitForm = async (req, res) => {
           });
         }
       } catch (notifErr) {
-        // Non-critical â€” don't fail the submission
         console.error("Partner notification failed:", notifErr.message);
       }
     }
@@ -477,8 +481,24 @@ exports.submitForm = async (req, res) => {
     res.redirect(`/submit-form?session_date=${session_date}&success=true${adminQuery}`);
 
   } catch (error) {
+    if (error.message === "DUPLICATE_BHAJAN" && error.duplicate) {
+      const adminParam = isAdmin ? '&admin=true' : '';
+      return res.status(409).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Bhajan Already Added</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>Bhajan Already Added</h2><p><strong>${escapeHtml(error.duplicate.title)}</strong> has already been submitted for this session by <strong>${escapeHtml(error.duplicate.singer_name)}</strong>.</p><a class="button secondary" href="/submit-form?session_date=${encodeURIComponent(req.body.session_date)}${adminParam}">Go back to the form</a></div></body></html>`);
+    }
+    if (error.message === "DEITY_BLOCKED") {
+      return res.status(409).send(generateErrorHtml(error.deity, { singer_name: "Admin", title: "Blocked for this session", created_at: new Date() }, req.body.session_date));
+    }
+    if (error.message === "DEITY_LIMIT_EXCEEDED" && error.lastEntry) {
+      return res.status(409).send(generateErrorHtml(error.deity, error.lastEntry, req.body.session_date));
+    }
+    if (error.message === "LOCKED") {
+      return res.status(403).send(`<h1>Locked</h1><p>${error.reason}</p><a class="button" href="${isAdmin ? '/admin' : '/'}">${isAdmin ? 'Return to Dashboard' : 'Go Home'}</a>`);
+    }
+    if (error.message === "SINGER_NOT_FOUND") {
+      return res.status(400).send('<h1>Error</h1><p>Singer profile not found in directory. Please sign in through Singer Hub.</p><a class="button" href="/singer/login">Login</a>');
+    }
     if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.send(generateErrorHtml(req.body.deity, {
+      return res.status(409).send(generateErrorHtml(req.body.deity, {
         singer_name: "Another devotee",
         title: req.body.title || "Selected Bhajan",
         created_at: new Date()
@@ -744,21 +764,26 @@ exports.planView = async (req, res) => {
   }
 };
 exports.submitApi = async (req, res) => {
-
   try {
     const { session_date, singer_name, partner_name, bhajans } = req.body;
-
-    for (const bhajan of bhajans) {
-      await BhajanSubmission.create({
-        session_date,
-        singer_name,
-        partner_name,
-        title: bhajan.title,
-        deity: bhajan.deity,
-        scale: bhajan.scale,
-        speed: bhajan.speed
-      });
+    if (!session_date || !singer_name || !Array.isArray(bhajans) || bhajans.length === 0) {
+      return res.status(400).json({ error: "Validation failed: session_date, singer_name, and bhajans array are required." });
     }
+
+    await sequelize.transaction(async (t) => {
+      for (const bhajan of bhajans) {
+        if (!bhajan.title || !bhajan.deity) continue;
+        await BhajanSubmission.create({
+          session_date,
+          singer_name,
+          partner_name: partner_name ? partner_name.trim() : null,
+          title: bhajan.title.trim(),
+          deity: bhajan.deity.trim(),
+          scale: bhajan.scale || null,
+          speed: bhajan.speed || null
+        }, { transaction: t });
+      }
+    });
 
     res.json({
       status: "ok",

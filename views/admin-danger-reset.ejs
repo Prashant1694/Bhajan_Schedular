@@ -1,13 +1,61 @@
-<div class="admin-form-wrapper">
+<div class="admin-form-wrapper" style="max-width: 650px; margin: 30px auto;">
   <div class="admin-page-header">
-    <div><h1>Reset session history</h1><p>This action is permanent and cannot be reversed.</p></div>
+    <div>
+      <h1>Reset session history</h1>
+      <p>This action is permanent and cannot be reversed without restoring from a backup.</p>
+    </div>
     <a class="back-btn" href="/admin">← Back to dashboard</a>
   </div>
-  <div class="admin-error">
-    <strong>Warning: irreversible deletion.</strong><br>
-    This permanently deletes every submitted bhajan and all session locks. The master bhajan bank and administrator accounts are not affected.
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="admin-error" style="margin-bottom: 20px; background: #ffe3e3; color: #c92a2a; border-left: 4px solid #c92a2a; padding: 12px 16px; border-radius: 6px;">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <div class="admin-error" style="background: #fff5f5; border-left: 4px solid #e03131; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+    <strong>⚠️ Warning: Irreversible Deletion.</strong><br>
+    This permanently deletes all bhajan submissions and session locks across history.
+    The Master Bhajan Bank, Singer Directory, and Administrator Accounts will remain intact.
+    <p style="margin-top: 8px; font-size: 13px; color: #555;">An automated backup will be created in the <code>backups/</code> folder immediately before deletion.</p>
   </div>
-  <form method="POST" action="/admin/danger-reset-history" onsubmit="return confirm('Final confirmation: permanently delete all session history? This cannot be undone.');">
-    <div class="admin-actions"><a class="secondary-btn" href="/admin">Cancel</a><button class="primary-btn" style="background:#b23b32;" type="submit">Permanently wipe history</button></div>
+
+  <div style="margin-bottom: 24px; padding: 14px 18px; background: var(--bg-card, #f8f9fa); border-radius: 8px; border: 1px solid var(--border-color, #e9ecef); display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <strong>📦 Database Backup</strong>
+      <p style="margin: 0; font-size: 13px; color: #666;">Download a complete SQLite snapshot before proceeding.</p>
+    </div>
+    <a href="/admin/download-backup" class="secondary-btn" style="text-decoration: none; padding: 8px 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+      ⬇️ Download Backup (.sqlite)
+    </a>
+  </div>
+
+  <form method="POST" action="/admin/danger-reset-history">
+    <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+    
+    <div style="margin-bottom: 20px;">
+      <label for="confirmation" style="display: block; font-weight: 600; margin-bottom: 6px;">
+        Type <span style="color: #e03131; font-family: monospace; font-size: 15px;">DELETE ALL HISTORY</span> to confirm:
+      </label>
+      <input type="text" id="confirmation" name="confirmation" required autocomplete="off"
+        placeholder="DELETE ALL HISTORY"
+        style="width: 100%; padding: 10px 14px; border: 2px solid #e03131; border-radius: 6px; font-size: 15px; font-family: monospace;">
+    </div>
+
+    <div style="margin-bottom: 24px;">
+      <label for="admin_password" style="display: block; font-weight: 600; margin-bottom: 6px;">
+        Current Administrator Password:
+      </label>
+      <input type="password" id="admin_password" name="admin_password" required autocomplete="current-password"
+        placeholder="Enter your admin password"
+        style="width: 100%; padding: 10px 14px; border: 1px solid var(--border-color, #ced4da); border-radius: 6px; font-size: 15px;">
+    </div>
+
+    <div class="admin-actions" style="display: flex; gap: 12px; justify-content: flex-end;">
+      <a class="secondary-btn" href="/admin">Cancel</a>
+      <button class="primary-btn" style="background: #b23b32; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;" type="submit">
+        Permanently wipe history
+      </button>
+    </div>
   </form>
 </div>

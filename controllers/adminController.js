@@ -6,6 +6,19 @@ const SessionPermission = require("../models/SessionPermission");
 const SessionMeta = require("../models/SessionMeta");
 const MasterBhajan = require("../models/MasterBhajan");
 const DeityRule = require("../models/DeityRule");
+const AdminUser = require("../models/AdminUser");
+const bcrypt = require("bcrypt");
+const path = require("path");
+const {
+  validateCopySession,
+  validateUpdatePermission,
+  validateReorder,
+  validateToggleLock
+} = require("../services/validators");
+const {
+  createBackup,
+  getOrGenerateBackup
+} = require("../services/backupService");
 
 const {
   getNextThursday,
@@ -516,7 +529,11 @@ exports.updateRules = async (req, res) => {
 };
 exports.updatePermission = async (req, res) => {
   try {
-    const { date, type, description } = req.body;
+    const validation = validateUpdatePermission(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({ error: "Validation failed", details: validation.errors });
+    }
+    const { date, type, description } = validation.data;
     if (type === "clear") {
       await SessionPermission.destroy({ where: { date } });
     } else {
@@ -524,12 +541,18 @@ exports.updatePermission = async (req, res) => {
     }
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("updatePermission error:", error);
+    res.status(500).json({ error: "Unable to update session permissions." });
   }
 };
+
 exports.toggleLock = async (req, res) => {
   try {
-    const { date, is_locked } = req.body;
+    const validation = validateToggleLock(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({ error: "Validation failed", details: validation.errors });
+    }
+    const { date, is_locked } = validation.data;
     await SessionMeta.upsert({ session_date: date, is_locked });
 
     // When a session is locked, trigger schedule-published notification
@@ -544,69 +567,137 @@ exports.toggleLock = async (req, res) => {
 
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("toggleLock error:", error);
+    res.status(500).json({ error: "Unable to update session lock." });
   }
 };
+
 exports.reorderBhajans = async (req, res) => {
   try {
-    const { orderData } = req.body; // Array of { id, order }
-    for (let item of orderData) {
-      await BhajanSubmission.update(
-        { list_order: item.order },
-        { where: { id: item.id } },
-      );
+    const validation = validateReorder(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({ error: "Validation failed", details: validation.errors });
     }
+    const orderData = validation.data;
+    await sequelize.transaction(async (t) => {
+      for (const item of orderData) {
+        await BhajanSubmission.update(
+          { list_order: item.order },
+          { where: { id: item.id }, transaction: t }
+        );
+      }
+    });
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("reorderBhajans error:", error);
+    res.status(500).json({ error: "Unable to save new order." });
   }
 };
+
 exports.copySession = async (req, res) => {
   try {
-    const { source_date, target_date } = req.body;
-    const sourceSubs = await BhajanSubmission.findAll({
-      where: { session_date: source_date },
-      raw: true,
+    const validation = validateCopySession(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({ error: "Validation failed", details: validation.errors });
+    }
+    const { source_date, target_date } = validation.data;
+
+    await sequelize.transaction(async (t) => {
+      const sourceSubs = await BhajanSubmission.findAll({
+        where: { session_date: source_date },
+        raw: true,
+        transaction: t
+      });
+
+      const newSubs = sourceSubs.map((s) => {
+        delete s.id;
+        s.session_date = target_date;
+        s.list_order = 0; // Reset order for new session
+        s.created_at = new Date();
+        return s;
+      });
+      if (newSubs.length > 0) {
+        await BhajanSubmission.bulkCreate(newSubs, { transaction: t });
+      }
     });
 
-    const newSubs = sourceSubs.map((s) => {
-      delete s.id;
-      s.session_date = target_date;
-      s.list_order = 0; // Reset order for new session
-      s.created_at = new Date();
-      return s;
-    });
-    await BhajanSubmission.bulkCreate(newSubs);
-    res.redirect(`/admin/date/${target_date}`);
+    res.redirect(`/admin/date/${encodeURIComponent(target_date)}`);
   } catch (e) {
-    res.status(500).send(e.message);
+    console.error("copySession error:", e);
+    res.status(500).send("Unable to copy session at this time.");
   }
 };
+
 exports.showDangerResetHistory = (req, res) => {
-  res.render("admin-danger-reset", { page: "danger", pageTitle: "Reset History" });
+  res.render("admin-danger-reset", { page: "danger", pageTitle: "Reset History", error: null });
 };
 
 exports.dangerResetHistory = async (req, res) => {
   try {
-    // Wipes all history and resets the ID counters
-    await BhajanSubmission.destroy({ where: {}, truncate: true });
-    await SessionMeta.destroy({ where: {}, truncate: true }); // Removes all locks
+    const { confirmation, admin_password } = req.body;
+    if ((confirmation || "").trim() !== "DELETE ALL HISTORY") {
+      return res.status(400).render("admin-danger-reset", {
+        page: "danger",
+        pageTitle: "Reset History",
+        error: "Confirmation phrase did not match 'DELETE ALL HISTORY'."
+      });
+    }
 
-    // Drop the old v1 table so it doesn't automatically restore data on server restart
+    const adminId = req.session?.admin?.id || req.session?.adminUserId;
+    if (!adminId) {
+      return res.status(403).send("Unauthorized: Admin session required.");
+    }
+
+    const admin = await AdminUser.scope("withSecrets").findByPk(adminId);
+    if (!admin) {
+      return res.status(403).send("Unauthorized: Admin record not found.");
+    }
+
+    const passwordMatches = await bcrypt.compare(admin_password || "", admin.password_hash);
+    if (!passwordMatches) {
+      return res.status(403).render("admin-danger-reset", {
+        page: "danger",
+        pageTitle: "Reset History",
+        error: "Incorrect administrator password."
+      });
+    }
+
+    // Step 1: Create automatic backup before wipe
+    await createBackup("before_danger_reset");
+
+    // Step 2: Transactional wipe
+    await sequelize.transaction(async (t) => {
+      await BhajanSubmission.destroy({ where: {}, truncate: true, transaction: t });
+      await SessionMeta.destroy({ where: {}, truncate: true, transaction: t });
+    });
+
+    // Drop legacy table if exists
     try {
       await sequelize.query("DROP TABLE IF EXISTS bhajan_submissions");
-    } catch (err) {}
+    } catch (_) {}
 
     res.send(`
-      <!DOCTYPE html><html><head><link rel="stylesheet" href="/css/style.css"><title>Reset Complete</title></head>
+      <!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/css/style.css"><title>Reset Complete</title></head>
       <body style="text-align:center; padding:50px; background:#fff5f5;">
         <h1 style="color:#e03131; font-size:40px;">🚨 History Wiped!</h1>
         <p style="font-size:18px; margin-bottom:20px;">All past bhajan submissions and session locks have been permanently deleted.</p>
-        <a class="button" href="/admin">Return to Control Tower</a>
+        <p style="font-size:14px; color:#555; margin-bottom:30px;">A pre-wipe backup was automatically preserved in the backups directory.</p>
+        <a class="button" href="/admin" style="background:#b23b32; color:#fff; padding:12px 24px; text-decoration:none; border-radius:6px;">Return to Control Tower</a>
       </body></html>
     `);
   } catch (error) {
-    res.status(500).send(error.message);
+    console.error("dangerResetHistory error:", error);
+    res.status(500).send("Failed to execute danger reset.");
+  }
+};
+
+exports.downloadBackup = async (req, res) => {
+  try {
+    const backupPath = await getOrGenerateBackup();
+    res.download(backupPath, path.basename(backupPath));
+  } catch (err) {
+    console.error("downloadBackup error:", err);
+    res.status(500).send("Unable to prepare database backup for download.");
   }
 };
 

@@ -18,9 +18,11 @@ const path = require('path');
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
+const compression = require('compression');
 const session = require('express-session');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const sequelize = require('./config/database');
+const logger = require('./services/logger');
 
 const sessionStore = new SequelizeStore({
   db: sequelize,
@@ -42,6 +44,35 @@ const {initializeDatabase} = require("./services/databaseInitializer");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+app.use(compression());
+
+// Healthcheck endpoint for Railway and deployment monitoring
+app.get("/healthz", async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    const mem = process.memoryUsage();
+    res.status(200).json({
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptimeSeconds: Math.floor(process.uptime()),
+      database: "connected",
+      memory: {
+        rssMb: Math.round(mem.rss / 1024 / 1024),
+        heapUsedMb: Math.round(mem.heapUsed / 1024 / 1024),
+        heapTotalMb: Math.round(mem.heapTotal / 1024 / 1024)
+      }
+    });
+  } catch (err) {
+    logger.error({ err }, "Healthcheck failed");
+    res.status(503).json({
+      status: "unhealthy",
+      timestamp: new Date().toISOString(),
+      error: "Database connectivity check failed"
+    });
+  }
+});
+
 // configure layout
 app.use(expressLayouts);
 app.set("layout", "layouts/main")
@@ -224,12 +255,68 @@ app.use((error, req, res, next) => {
   if (error?.type === "entity.too.large") {
     return res.status(413).send("Request payload is too large.");
   }
-  console.error(`[${req.id || 'NO-REQ-ID'}] Unhandled request error:`, error);
+  logger.error({ reqId: req.id || "NO-REQ-ID", err: error }, "Unhandled request error");
   const isJson = req.xhr || (req.headers.accept && req.headers.accept.includes("json")) || req.path.startsWith("/api/");
   if (isJson) {
     return res.status(500).json({ error: "Something went wrong. Please try again later." });
   }
   res.status(500).send("Something went wrong. Please try again later.");
+});
+
+// ============================================================
+// CRASH RESILIENCE & GRACEFUL SHUTDOWN
+// ============================================================
+
+let serverInstance = null;
+let isShuttingDown = false;
+
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  logger.info({ signal }, `Received ${signal}. Initiating graceful shutdown...`);
+
+  // Flush activity log and presence buffer
+  try {
+    const { flushActivityBuffer } = require("./middleware/activityTracker");
+    await flushActivityBuffer();
+  } catch (err) {
+    logger.error({ err }, "Error flushing activity buffer during shutdown");
+  }
+
+  const forceExitTimer = setTimeout(() => {
+    logger.error("Graceful shutdown timed out after 30s. Forcefully terminating.");
+    process.exit(1);
+  }, 30000);
+  if (forceExitTimer.unref) forceExitTimer.unref();
+
+  if (serverInstance) {
+    serverInstance.close(async () => {
+      logger.info("HTTP server closed. Closing database connection pool...");
+      try {
+        await sequelize.close();
+        logger.info("Database pool closed. Shutdown complete.");
+        process.exit(0);
+      } catch (dbErr) {
+        logger.error({ dbErr }, "Error closing database connection pool during shutdown");
+        process.exit(1);
+      }
+    });
+  } else {
+    process.exit(0);
+  }
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
+process.on("unhandledRejection", (reason, promise) => {
+  logger.fatal({ reason, promise }, "Unhandled Promise Rejection detected. Shutting down.");
+  process.exit(1);
+});
+
+process.on("uncaughtException", (error) => {
+  logger.fatal({ error }, "Uncaught Exception detected. Shutting down.");
+  process.exit(1);
 });
 
 // ============================================================
@@ -239,20 +326,14 @@ async function startServer() {
   try {
     await initializeDatabase();
 
-    app.listen(PORT, () => {
-      console.log(
-        `🕉️ Sai Ram! Bhajan Scheduler is running on http://localhost:${PORT}`,
-      );
-
-      console.log(`📋 Submit Form: http://localhost:${PORT}/submit-form`);
-
-      console.log(`📊 Plan View: http://localhost:${PORT}/plan-view`);
-
-      console.log(`🛠️ Admin Dashboard: http://localhost:${PORT}/admin`);
+    serverInstance = app.listen(PORT, () => {
+      logger.info(`🕉️ Sai Ram! Bhajan Scheduler running on port ${PORT}`);
+      console.log(`🕉️ Sai Ram! Bhajan Scheduler is running on http://localhost:${PORT}`);
     });
+    return serverInstance;
   } catch (error) {
+    logger.fatal({ error }, "Server startup failed");
     console.error("❌ Server startup failed:", error);
-
     process.exit(1);
   }
 }
@@ -261,4 +342,4 @@ if (require.main === module) {
   startServer();
 }
 
-module.exports = { app, startServer };
+module.exports = { app, startServer, gracefulShutdown };

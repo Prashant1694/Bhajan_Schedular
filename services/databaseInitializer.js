@@ -330,6 +330,22 @@ async function ensureNotificationTables() {
   }
 }
 
+async function ensureDatabaseIndexes() {
+  try {
+    await sequelize.query("CREATE INDEX IF NOT EXISTS idx_sub_session_date ON bhajans_submitted_v2(session_date)");
+    await sequelize.query("CREATE INDEX IF NOT EXISTS idx_sub_singer_name ON bhajans_submitted_v2(singer_name)");
+    await sequelize.query("CREATE INDEX IF NOT EXISTS idx_sub_partner_name ON bhajans_submitted_v2(partner_name)");
+    await sequelize.query("CREATE INDEX IF NOT EXISTS idx_sub_date_title ON bhajans_submitted_v2(session_date, title)");
+    await sequelize.query("CREATE INDEX IF NOT EXISTS idx_singers_name ON singer_dictionary(name)");
+    await sequelize.query("CREATE INDEX IF NOT EXISTS idx_bhajan_reports_status_created ON bhajan_reports(status, created_at)");
+    await sequelize.query("CREATE INDEX IF NOT EXISTS idx_activity_logs_session_created ON activity_logs(session_id, created_at)");
+    await sequelize.query("CREATE INDEX IF NOT EXISTS idx_activity_logs_ip_created ON activity_logs(ip_address, created_at)");
+    await sequelize.query("CREATE INDEX IF NOT EXISTS idx_user_presence_last_seen ON user_presence(last_seen_at)");
+  } catch (err) {
+    console.error("Index creation notice:", err.message);
+  }
+}
+
 async function initializeDatabase() {
   try {
     await sequelize.sync();
@@ -338,6 +354,7 @@ async function initializeDatabase() {
     await ensureSingerPinColumn();
     await ensureActivityTables();
     await ensureNotificationTables();
+    await ensureDatabaseIndexes();
     const { runDiwaliMigration } = require("./diwaliMigration");
     await runDiwaliMigration();
 
@@ -351,6 +368,10 @@ async function initializeDatabase() {
     // Start session lifecycle scheduler for automatic notifications
     const { startSessionScheduler } = require("./sessionScheduler");
     startSessionScheduler();
+
+    // Start nightly database backup scheduler
+    const { startNightlyBackupScheduler } = require("./backupService");
+    startNightlyBackupScheduler();
 
     console.log("✅ Database initialization complete.");
   } catch (error) {

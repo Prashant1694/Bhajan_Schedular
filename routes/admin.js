@@ -40,5 +40,6 @@ router.post(
   requireSuperAdmin,
   adminController.dangerResetHistory,
 );
+router.get("/admin/download-backup", requireSuperAdmin, adminController.downloadBackup);
 
 module.exports = router;

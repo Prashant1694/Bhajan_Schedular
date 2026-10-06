@@ -5,7 +5,7 @@ const UserPresence = require("../models/UserPresence");
 
 // Automatic Log Retention Cleanup Routine (Runs every 12 hours)
 // Purges logs older than 30 days and presence records older than 7 days
-setInterval(async () => {
+const cleanupTimer = setInterval(async () => {
   try {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     await ActivityLog.destroy({
@@ -24,6 +24,7 @@ setInterval(async () => {
     // Silent background cleanup error handling
   }
 }, 12 * 60 * 60 * 1000);
+if (cleanupTimer.unref) cleanupTimer.unref();
 
 function getSectionName(urlPath) {
   if (urlPath === "/" || urlPath.startsWith("/submit-form")) return "Submit Form";
@@ -99,24 +100,6 @@ function getActionDetails(req, section, username, userType) {
         details: `${username} toggled session lineup lock`
       };
     }
-    if (path.includes("update-rules")) {
-      return {
-        action: "UPDATE_RULES",
-        details: `${username} updated deity allocation & session rules`
-      };
-    }
-    if (path.includes("add-singer")) {
-      return {
-        action: "ADD_SINGER",
-        details: `${username} added new singer "${body.name || ''}"`
-      };
-    }
-    if (path.includes("edit-singer") || path.includes("singers/")) {
-      return {
-        action: "EDIT_SINGER",
-        details: `${username} edited singer profile`
-      };
-    }
     if (path.includes("master")) {
       return {
         action: "MODIFY_MASTER_BANK",
@@ -136,12 +119,57 @@ function getActionDetails(req, section, username, userType) {
   };
 }
 
+// In-memory write buffers for batched activity logs & presence tracking
+let activityBuffer = [];
+const presenceMap = new Map();
+let isFlushing = false;
+
+async function flushActivityBuffer() {
+  if (isFlushing || (activityBuffer.length === 0 && presenceMap.size === 0)) return;
+  isFlushing = true;
+
+  const logsToInsert = activityBuffer;
+  activityBuffer = [];
+  const presencesToUpsert = Array.from(presenceMap.values());
+  presenceMap.clear();
+
+  try {
+    if (logsToInsert.length > 0) {
+      await ActivityLog.bulkCreate(logsToInsert);
+    }
+    if (presencesToUpsert.length > 0) {
+      for (const presence of presencesToUpsert) {
+        await UserPresence.upsert(presence);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to flush activity buffer:", err.message);
+  } finally {
+    isFlushing = false;
+  }
+}
+
+// Periodic flush every 5 seconds
+const flushTimer = setInterval(flushActivityBuffer, 5000);
+if (flushTimer.unref) flushTimer.unref();
+
+const BOT_REGEX = /bot|googlebot|crawler|spider|robot|crawling|uptime|pingdom|healthcheck/i;
+
 const trackActivity = async (req, res, next) => {
   try {
     const path = req.path || "";
-    // Filter out static assets, service worker, telemetry polls, unread badge counters
+    const userAgent = (req.headers["user-agent"] || "").slice(0, 250);
+
+    // Stop tracking static files, health checks, and crawlers/bots
     if (
-      path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map)$/i) ||
+      BOT_REGEX.test(userAgent) ||
+      path === "/healthz" ||
+      path === "/favicon.ico" ||
+      path === "/manifest.json" ||
+      path.startsWith("/sheets/") ||
+      path.startsWith("/images/") ||
+      path.startsWith("/icons/") ||
+      path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map|webmanifest)$/i) ||
       path.startsWith("/css/") ||
       path.startsWith("/js/") ||
       path.startsWith("/api/activity/") ||
@@ -181,15 +209,14 @@ const trackActivity = async (req, res, next) => {
       username = req.body.singer_name.trim();
     }
 
-    // Skip high-frequency read pings if not changing pages
     const section = getSectionName(path);
     const { action, details } = getActionDetails(req, section, username, userType);
 
-    const ip = req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "127.0.0.1";
-    const userAgent = (req.headers["user-agent"] || "").slice(0, 250);
+    // Capture real client IP behind reverse proxy via req.ip
+    const ip = req.ip || req.socket?.remoteAddress || "127.0.0.1";
 
-    // Update Live Presence
-    await UserPresence.upsert({
+    // Update Live Presence buffer
+    presenceMap.set(sessionId, {
       session_id: sessionId,
       admin_id: adminId,
       username: username,
@@ -200,8 +227,8 @@ const trackActivity = async (req, res, next) => {
       last_seen_at: new Date()
     });
 
-    // Create Activity Log
-    await ActivityLog.create({
+    // Append to in-memory activity log buffer
+    activityBuffer.push({
       session_id: sessionId,
       user_type: userType,
       admin_id: adminId,
@@ -213,8 +240,14 @@ const trackActivity = async (req, res, next) => {
       ip_address: ip,
       user_agent: userAgent,
       duration_seconds: 0,
-      details: details
+      details: details,
+      created_at: new Date()
     });
+
+    // Flush immediately if buffer reaches 50 items
+    if (activityBuffer.length >= 50) {
+      flushActivityBuffer().catch(() => {});
+    }
   } catch (err) {
     // Non-blocking logging
   }
@@ -224,6 +257,6 @@ const trackActivity = async (req, res, next) => {
 
 module.exports = {
   trackActivity,
-  getSectionName
+  getSectionName,
+  flushActivityBuffer
 };
-
