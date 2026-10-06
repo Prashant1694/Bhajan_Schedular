@@ -1,3 +1,13 @@
+<%
+  const safeDaysRemaining = typeof daysRemaining !== 'undefined' ? daysRemaining : 90;
+  const safeSongbook = typeof songbook !== 'undefined' ? songbook : (typeof bookmarks !== 'undefined' ? bookmarks : []);
+  const safePastHistory = typeof pastHistory !== 'undefined' ? pastHistory : (typeof pastSubmissions !== 'undefined' ? pastSubmissions : []);
+  const safeMyReports = typeof myReports !== 'undefined' ? myReports : (typeof reports !== 'undefined' ? reports : []);
+  const safeMyReportsCount = typeof myReportsCount !== 'undefined' ? myReportsCount : safeMyReports.length;
+  const safeDeitySummary = typeof deitySummary !== 'undefined' && deitySummary ? deitySummary : {};
+  const safeShowWelcome = typeof showWelcome !== 'undefined' ? showWelcome : false;
+%>
+
 <div class="container singer-hub-container" style="max-width: 960px; margin: 30px auto; padding: 24px 20px 32px 20px;">
 
   <!-- Profile Actions Bar -->
@@ -67,7 +77,7 @@
           </span>
           <span>•</span>
           <span class="singer-hub-meta-item" style="color: #38bdf8;">
-            <span>⏳</span> <strong><%= daysRemaining %> days</strong> active on this device
+            <span>⏳</span> <strong><%= safeDaysRemaining %> days</strong> active on this device
           </span>
         </div>
 
@@ -110,7 +120,7 @@
         <div class="metric-card-icon metric-icon-songbook">📖</div>
       </div>
       <div class="metric-card-val metric-val-songbook">
-        <%= songbook.length %>
+        <%= safeSongbook.length %>
       </div>
       <div class="metric-card-sub">Prepared repertoire</div>
     </div>
@@ -121,7 +131,7 @@
         <div class="metric-card-icon metric-icon-history">🪔</div>
       </div>
       <div class="metric-card-val metric-val-history">
-        <%= pastHistory.length %>
+        <%= safePastHistory.length %>
       </div>
       <div class="metric-card-sub">In Samiti records</div>
     </div>
@@ -132,7 +142,7 @@
         <div class="metric-card-icon metric-icon-tickets">🎫</div>
       </div>
       <div class="metric-card-val metric-val-tickets">
-        <%= myReportsCount %>
+        <%= safeMyReportsCount %>
       </div>
       <a href="/my-reports" class="metric-card-sub" style="color: #0284c7; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
         Track reports →
@@ -147,13 +157,13 @@
       <span>📅</span> Upcoming Schedule (<%= upcomingSubmissions.length %>)
     </button>
     <button type="button" class="hub-tab-btn" onclick="switchHubTab('songbook', this)" data-haptic="light">
-      <span>📖</span> My Songbook & Scales (<%= songbook.length %>)
+      <span>📖</span> My Songbook & Scales (<%= safeSongbook.length %>)
     </button>
     <button type="button" class="hub-tab-btn" onclick="switchHubTab('history', this)" data-haptic="light">
-      <span>📜</span> Singing History (<%= pastHistory.length %>)
+      <span>📜</span> Singing History (<%= safePastHistory.length %>)
     </button>
     <button type="button" class="hub-tab-btn" onclick="switchHubTab('reports', this)" data-haptic="light">
-      <span>🎫</span> My Reports (<%= myReportsCount %>)
+      <span>🎫</span> My Reports (<%= safeMyReportsCount %>)
     </button>
   </div>
 
@@ -236,9 +246,9 @@
       </a>
     </div>
 
-    <% if (songbook && songbook.length > 0) { %>
+    <% if (safeSongbook && safeSongbook.length > 0) { %>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px;">
-        <% songbook.forEach(function(item) { %>
+        <% safeSongbook.forEach(function(item) { %>
           <% const b = item.masterBhajan; %>
           <% if (!b) return; %>
           <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: space-between;">
@@ -307,21 +317,21 @@
       </p>
 
       <!-- Deity Summary Badges -->
-      <% const deityKeys = Object.keys(deitySummary); %>
+      <% const deityKeys = Object.keys(safeDeitySummary); %>
       <% if (deityKeys.length > 0) { %>
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
           <% deityKeys.forEach(function(d) { %>
             <span style="background: var(--surface); border: 1px solid var(--border); font-size: 12px; font-weight: 700; color: var(--ink); padding: 4px 10px; border-radius: 8px;">
-              <%= d %>: <span style="color: #ea580c;"><%= deitySummary[d] %></span>
+              <%= d %>: <span style="color: #ea580c;"><%= safeDeitySummary[d] %></span>
             </span>
           <% }); %>
         </div>
       <% } %>
     </div>
 
-    <% if (pastHistory && pastHistory.length > 0) { %>
+    <% if (safePastHistory && safePastHistory.length > 0) { %>
       <div style="display: flex; flex-direction: column; gap: 10px;">
-        <% pastHistory.forEach(function(item) { %>
+        <% safePastHistory.forEach(function(item) { %>
           <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div>
               <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
@@ -374,9 +384,9 @@
       </a>
     </div>
 
-    <% if (myReports && myReports.length > 0) { %>
+    <% if (safeMyReports && safeMyReports.length > 0) { %>
       <div style="display: flex; flex-direction: column; gap: 14px;">
-        <% myReports.forEach(function(r) { %>
+        <% safeMyReports.forEach(function(r) { %>
           <%
             let statusBg = '#fef3c7'; let statusColor = '#92400e'; let statusLabel = '🟡 Pending Review';
             if (r.status === 'under_review') {
@@ -585,7 +595,7 @@
 </div>
 
 <!-- Welcome Onboarding Modal -->
-<% if (showWelcome) { %>
+<% if (safeShowWelcome) { %>
 <div id="welcomeHubModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px);">
   <div style="background: var(--surface); border-radius: 20px; max-width: 500px; width: 100%; padding: 32px 28px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; position: relative; overflow: hidden;">
     <div style="position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #ea580c, #f59e0b);"></div>

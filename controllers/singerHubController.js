@@ -282,6 +282,21 @@ exports.showHubPage = async (req, res) => {
       });
     }
 
+    const verifiedAt = req.session?.singer?.pinVerifiedAt || Date.now();
+    const elapsedMs = Math.max(0, Date.now() - verifiedAt);
+    const daysRemaining = Math.max(
+      1,
+      Math.ceil((NINETY_DAYS_MS - elapsedMs) / (24 * 60 * 60 * 1000))
+    );
+
+    const deitySummary = {};
+    pastSubmissions.forEach((sub) => {
+      const d = sub.deity || "Other";
+      deitySummary[d] = (deitySummary[d] || 0) + 1;
+    });
+
+    const showWelcome = req.query.welcome === "true";
+
     res.render("singer-hub", {
       pageTitle: `${singer.name} | Singer Hub`,
       singer,
@@ -289,8 +304,15 @@ exports.showHubPage = async (req, res) => {
       allSingers,
       upcomingSubmissions,
       pastSubmissions,
+      pastHistory: pastSubmissions,
+      songbook: myBookmarks,
       bookmarks: myBookmarks,
       reports: myReports,
+      myReports,
+      myReportsCount: myReports.length,
+      deitySummary,
+      daysRemaining,
+      showWelcome,
       todayStr,
       pageCSS: "singer-hub.css",
       pageJS: "singer-hub.js"
