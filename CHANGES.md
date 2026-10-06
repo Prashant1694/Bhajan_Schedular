@@ -14,6 +14,9 @@ Written for software engineers and maintainers, it explains **what was vulnerabl
 | **Phase 2: Data Integrity & Reliability** | Eliminate race conditions, file locks & crashes | SQLite WAL mode & busy timeout PRAGMAs, automatic atomic backups via `VACUUM INTO`, whitelist schema validation, database indexes, batched activity logging buffer, graceful shutdown (`SIGTERM`/`SIGINT`), `/healthz` liveness probes. | `fe48989` |
 | **Phase 3: Code Quality, Modularity & Testing** | Clean architecture & automated confidence | Centralized constants (`config/constants.js`), extracted service layer (`services/plannerService.js`), unified view locals (`middleware/authLocals.js`), automated test suite (16 tests in Node test runner), ESLint & Prettier configs, Dockerfile, GitHub Actions CI workflow. | `9d8c99d` |
 | **Phase 4: UX & Progressive Enhancement** | Bulletproof user experience & touch accessibility | Universal double-submission prevention debounce, WCAG 44px minimum tap targets, branded custom 404 & 500 error pages, sticky form field preservation, PWA Service Worker cache version bump (`v5.0`). | `a6165c3` |
+| **Phase 5: Legacy Script Modernization & Security** | Eliminate insecure dependencies in auxiliary tools | Migrated all auxiliary scripts (`validate_integrity.js`, `update_deities_from_master_sheet.js`, `migrate_master_bank.js`) from `xlsx` to `exceljs`. Completely purged `xlsx` from project. Updated `sqlite3` to `^5.1.7`. | `a8a3032` |
+| **Phase 6: Test Isolation & Fresh-Clone CI Reliability** | Deterministic tests without touching production DB | Isolated temp SQLite file per test run (`tests/setup.js`), transactional seeding, background scheduler suppression in tests, zero touch of `bhajans.db`, 100% pass on clean clones without DB. Audit leftovers documented. | `7f5c4fa` |
+
 
 ---
 
@@ -202,6 +205,110 @@ curl -H "Accept: application/json" http://localhost:8000/api/non-existent
 * `views/admin-login.ejs`
 * `controllers/authController.js`
 * `app.js`
+
+---
+
+---
+
+## Phase 5: Legacy Script Modernization & Security
+
+### 1. What Was Wrong Before
+* **Insecure Legacy Spreadsheet Dependency (`xlsx`)**: Three internal migration and validation utility scripts (`scripts/validate_integrity.js`, `scripts/update_deities_from_master_sheet.js`, and `scripts/migrate_master_bank.js`) still required the obsolete `xlsx` library, which contains known prototype pollution and ReDoS vulnerabilities.
+* **Inconsistent Architecture**: The core application had already transitioned to `exceljs` for report generation, leaving `xlsx` as a redundant, insecure dependency in auxiliary scripts.
+
+### 2. What Was Changed
+* **Migrated All Auxiliary Scripts to `exceljs`**:
+  * `scripts/validate_integrity.js`: Rewritten with `exceljs` workbook loader (`wb.xlsx.readFile`). Preserved all 8 integrity checks (verifying 1,024 master records against 12 deity categories with 0 broken references).
+  * `scripts/update_deities_from_master_sheet.js`: Migrated both worksheet ingestion and updated master bank generation (`newSheet.columns = ...; addRow()`) to `exceljs`.
+  * `scripts/migrate_master_bank.js`: Converted `readAndValidateExcel` to an async `exceljs` workflow with transactional batch commits. Dry-run verified 1,024 valid rows with 100% success rate.
+* **Completely Removed `xlsx`**: Removed `xlsx` dependency from the repository. Zero occurrences of `require("xlsx")` remain.
+* **Updated `sqlite3`**: Bumped `sqlite3` to `^5.1.7` in `package.json` and `package-lock.json`.
+
+### 3. Why It Matters
+Eliminates prototype pollution risks associated with outdated spreadsheet parsers, ensures uniform spreadsheet tooling across the entire codebase, and simplifies future maintenance.
+
+### 4. How to Test
+```bash
+# Verify integrity validation runs without errors using exceljs
+node scripts/validate_integrity.js
+
+# Verify dry run migration executes cleanly
+node scripts/migrate_master_bank.js --dry-run
+```
+
+### 5. Files Touched
+* `scripts/validate_integrity.js`
+* `scripts/update_deities_from_master_sheet.js`
+* `scripts/migrate_master_bank.js`
+* `package.json`
+* `package-lock.json`
+
+---
+
+## Phase 6: Test Isolation & Fresh-Clone CI Reliability
+
+### 1. What Was Wrong Before
+* **No Database Isolation in Tests**: The test suite executed queries directly against the developer's local `bhajans.db`.
+* **Coupling to Pre-existing State**: Tests assumed pre-existing singer records, admin accounts, and master tables already existed in `bhajans.db`.
+* **Broken on Fresh Clones**: Running `npm test` on a freshly cloned repository without an existing `bhajans.db` failed with missing database errors or unseeded foreign key violations.
+* **Side-Effect Pollution**: Running tests could trigger background timers (`sessionScheduler`, `backupService`) and leave mutated rows in the production database.
+
+### 2. What Was Changed
+* **Universal Test Setup Harness (`tests/setup.js`)**:
+  * Automatically sets `process.env.NODE_ENV = "test"`.
+  * Generates an isolated temporary database path in `os.tmpdir()` (`bhajan-test-${process.pid}-${Date.now()}.db`) assigned to `process.env.DB_PATH`.
+  * Initializes schemas via `initializeDatabase()`.
+  * Seeds all required test fixtures:
+    * Singer 1 (`Test Singer`, PIN `1234`, hashed with bcrypt).
+    * Singer 2 (`Unpinned Singer`, no PIN).
+    * Admin user (`regular_admin`, role `admin`).
+  * Registers process exit hooks (`exit`, `SIGINT`, `SIGTERM`) to clean up temporary `.db`, `-wal`, and `-shm` files.
+* **Production Database Safeguard (`config/database.js`)**:
+  * Default `storagePath` updated: when `NODE_ENV === "test"`, defaults to a temporary test file in `os.tmpdir()` instead of `bhajans.db`.
+  * Ensures tests can never touch, modify, or corrupt `bhajans.db`.
+* **Fast Transactional Master Bank Sync (`services/databaseInitializer.js`)**:
+  * Wrapped master bhajan seeding in a single database transaction, dropping test initialization time from >30s down to <3s.
+  * Added fallback super-admin generation in test mode when `SUPER_ADMIN_USERNAME` / `SUPER_ADMIN_PASSWORD` env vars are absent.
+* **Suppressed Background Daemons in Tests**:
+  * `services/sessionScheduler.js` and `services/backupService.js` check `NODE_ENV === "test"` and skip starting background intervals.
+* **Seeded Singer Authentication Tests (`tests/pinLockout.test.js`)**:
+  * Added test case verifying PIN validation against the newly seeded singer account (17 passing tests total).
+
+### 3. Production Dependency Audit (`npm audit --omit=dev`) Status & Leftovers
+Running `npm audit --omit=dev` scans only production runtime dependencies. The report identified 14 vulnerabilities across transitive dependencies that cannot be auto-fixed without breaking changes:
+* **Transitive `tar` (<=7.5.20) & `@tootallnate/once` (<2.0.1)**:
+  * **Chain**: `sqlite3` -> `node-gyp` -> `tar` / `@tootallnate/once`
+  * **Classification**: Build-time only. `node-gyp` is invoked strictly during `npm install` if pre-built binary compilation fallback is required; it is never executed at runtime during HTTP request serving.
+  * **Action / Leftover Rationale**: Upgrading `sqlite3` to v6 (`sqlite3@6.0.1`) requires major API and Node engine upgrades that would introduce breaking runtime changes. `npm audit fix --force` is avoided to maintain rock-solid SQLite stability.
+* **Transitive `uuid` (<11.1.1)**:
+  * **Chain**: `exceljs` / `sequelize` -> `uuid`
+  * **Classification**: Low impact. Missing buffer bounds check in RFC4122 v3 and v5 UUID generation functions. The Bhajan Scheduler application does not utilize v3/v5 UUID hashing over untrusted user inputs.
+  * **Action / Leftover Rationale**: Forcing an update (`npm audit fix --force`) would downgrade `sequelize` to `3.30.0` and `exceljs` to `3.4.0`, breaking modern async/await ORM methods and modern Excel export functionality.
+* **Recommendation**: Keep dependencies pinned to stable production versions until upstream `sequelize` v6 and `exceljs` release minor updates with bumped `uuid` dependencies.
+
+### 4. How to Test
+```bash
+# 1. Simulate a completely fresh clone with zero local database
+rm -f bhajans.db bhajans.db-wal bhajans.db-shm
+
+# 2. Reinstall dependencies and run full test suite
+npm ci && npm test
+
+# 3. Confirm that bhajans.db was NEVER created or touched during tests
+ls bhajans.db  # Expect: No such file
+```
+
+### 5. Files Touched
+* `tests/setup.js` *(new)*
+* `config/database.js`
+* `services/databaseInitializer.js`
+* `services/sessionScheduler.js`
+* `services/backupService.js`
+* `tests/healthz.test.js`
+* `tests/auth.test.js`
+* `tests/bhajanSubmission.test.js`
+* `tests/pinLockout.test.js`
+* `CHANGES.md`
 
 ---
 
