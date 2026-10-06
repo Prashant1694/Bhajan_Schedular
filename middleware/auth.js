@@ -1,7 +1,7 @@
 const AdminUser = require("../models/AdminUser");
 
 const adminCache = new Map(); // adminId -> { user, cachedAt }
-const ADMIN_CACHE_TTL_MS = 60 * 1000;      // 60-second in-memory cache
+const ADMIN_CACHE_TTL_MS = 60 * 1000; // 60-second in-memory cache
 const ADMIN_IDLE_MAX_MS = 12 * 60 * 60 * 1000; // 12-hour rolling idle timeout
 
 /**
@@ -17,7 +17,7 @@ async function getValidatedAdmin(req) {
   const now = Date.now();
 
   // 1. Check 12-hour idle timeout
-  if (req.session.adminLastActive && (now - req.session.adminLastActive > ADMIN_IDLE_MAX_MS)) {
+  if (req.session.adminLastActive && now - req.session.adminLastActive > ADMIN_IDLE_MAX_MS) {
     delete req.session.adminUserId;
     delete req.session.admin;
     delete req.session.adminLastActive;
@@ -28,7 +28,7 @@ async function getValidatedAdmin(req) {
   // 2. Fetch admin (from cache if fresh, otherwise DB)
   let adminRecord;
   const cached = adminCache.get(adminId);
-  if (cached && (now - cached.cachedAt < ADMIN_CACHE_TTL_MS)) {
+  if (cached && now - cached.cachedAt < ADMIN_CACHE_TTL_MS) {
     adminRecord = cached.user;
   } else {
     adminRecord = await AdminUser.findByPk(adminId);
@@ -114,7 +114,10 @@ const requireSuperAdmin = async (req, res, next) => {
       return next();
     }
 
-    const isJson = req.xhr || (req.headers.accept && req.headers.accept.includes("json")) || req.path.includes("/api/");
+    const isJson =
+      req.xhr ||
+      (req.headers.accept && req.headers.accept.includes("json")) ||
+      req.path.includes("/api/");
     if (isJson) {
       return res.status(403).json({
         success: false,

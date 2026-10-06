@@ -1,7 +1,7 @@
-const sequelize = require('../config/database');
+const sequelize = require("../config/database");
 
 async function normalizeVitthala() {
-  console.log('Normalizing Vitthala across database tables...');
+  console.log("Normalizing Vitthala across database tables...");
 
   // 1. master_bhajans
   const [rows] = await sequelize.query(`
@@ -13,15 +13,23 @@ async function normalizeVitthala() {
   for (const r of rows) {
     const original = r.deity;
     // Replace any token vittala, vithhala, vithala (case insensitive) with Vitthala
-    const tokens = original.split(',').map(s => s.trim()).filter(Boolean);
-    const normalizedTokens = tokens.map(tok => {
+    const tokens = original
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const normalizedTokens = tokens.map((tok) => {
       const lower = tok.toLowerCase();
-      if (lower === 'vittala' || lower === 'vithhala' || lower === 'vithala' || lower === 'vitthala') {
-        return 'Vitthala';
+      if (
+        lower === "vittala" ||
+        lower === "vithhala" ||
+        lower === "vithala" ||
+        lower === "vitthala"
+      ) {
+        return "Vitthala";
       }
       return tok;
     });
-    const updated = normalizedTokens.join(', ');
+    const updated = normalizedTokens.join(", ");
     if (updated !== original) {
       await sequelize.query(`UPDATE master_bhajans SET deity = :updated WHERE id = :id`, {
         replacements: { updated, id: r.id }
@@ -39,8 +47,8 @@ async function normalizeVitthala() {
   `);
   for (const r of subRows) {
     const original = r.deity;
-    const lower = (original || '').toLowerCase().trim();
-    if (lower === 'vittala' || lower === 'vithhala' || lower === 'vithala') {
+    const lower = (original || "").toLowerCase().trim();
+    if (lower === "vittala" || lower === "vithhala" || lower === "vithala") {
       await sequelize.query(`UPDATE bhajans_submitted_v2 SET deity = 'Vitthala' WHERE id = :id`, {
         replacements: { id: r.id }
       });
@@ -55,8 +63,8 @@ async function normalizeVitthala() {
   `);
   for (const r of ruleRows) {
     const original = r.deity_name;
-    const lower = (original || '').toLowerCase().trim();
-    if (lower === 'vittala' || lower === 'vithhala' || lower === 'vithala') {
+    const lower = (original || "").toLowerCase().trim();
+    if (lower === "vittala" || lower === "vithhala" || lower === "vithala") {
       await sequelize.query(`UPDATE deity_rules_v4 SET deity_name = 'Vitthala' WHERE id = :id`, {
         replacements: { id: r.id }
       });
@@ -69,14 +77,14 @@ async function normalizeVitthala() {
     SELECT DISTINCT deity FROM master_bhajans 
     WHERE LOWER(deity) LIKE '%vitt%' OR LOWER(deity) LIKE '%vith%'
   `);
-  console.log('\nDistinct Vitthala deities in master_bhajans after normalization:');
-  console.log(afterDeities.map(d => d.deity));
+  console.log("\nDistinct Vitthala deities in master_bhajans after normalization:");
+  console.log(afterDeities.map((d) => d.deity));
 
-  console.log('\nVitthala normalization completed successfully!');
+  console.log("\nVitthala normalization completed successfully!");
   process.exit(0);
 }
 
-normalizeVitthala().catch(err => {
-  console.error('Error during normalization:', err);
+normalizeVitthala().catch((err) => {
+  console.error("Error during normalization:", err);
   process.exit(1);
 });

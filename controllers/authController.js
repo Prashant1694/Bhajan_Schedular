@@ -4,7 +4,11 @@ const AdminUser = require("../models/AdminUser");
 const UserPresence = require("../models/UserPresence");
 const { Op } = require("sequelize");
 const { resolveSingerForAdmin } = require("../middleware/singerAuth");
-const { safeJsonStringify, validatePasswordPolicy, safeRedirect } = require("../services/securityHelpers");
+const {
+  safeJsonStringify,
+  validatePasswordPolicy,
+  safeRedirect
+} = require("../services/securityHelpers");
 const { destroyAdminSessions } = require("../services/sessionManager");
 const { invalidateAdminCache } = require("../middleware/auth");
 
@@ -138,7 +142,7 @@ exports.login = async (req, res) => {
         try {
           localStorage.setItem('bp_is_admin', 'true');
           localStorage.setItem('bp_admin_name', ${safeJsonStringify(admin.display_name || admin.username)});
-          localStorage.setItem('bp_admin_role', ${safeJsonStringify(admin.role || 'admin')});
+          localStorage.setItem('bp_admin_role', ${safeJsonStringify(admin.role || "admin")});
         } catch(_) {}
         if (window.top && window.top !== window.self) {
           window.top.location.href = '/?tab=admin&login_ts=' + Date.now();

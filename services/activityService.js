@@ -5,7 +5,7 @@ exports.log = async (user, action, details = "") => {
   try {
     await ActivityLog.create({
       session_id: "system",
-      username: typeof user === "string" ? user : (user?.display_name || "Admin"),
+      username: typeof user === "string" ? user : user?.display_name || "Admin",
       user_type: "admin",
       action: action || "SYSTEM_ACTION",
       section: "Admin Dashboard",

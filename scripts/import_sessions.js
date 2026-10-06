@@ -6,16 +6,130 @@ const { normalizeName } = require("../services/helpers");
 const { Sequelize } = require("sequelize");
 
 const DEITY_KEYWORDS = [
-  { deity: "Ganesha", keywords: ["gajanana", "ganesha", "ganapathi", "vigneshwara", "vignesh", "gajananam", "ganayaka", "gajavadana", "gauri ganesh", "gauri sutaya", "vighna", "gananatha", "ganapati"] },
-  { deity: "Guru", keywords: ["guru", "gurunatha", "gurudeva", "subrahmanya", "sharavanabhava", "sadguru", "aruna ramana"] },
-  { deity: "Mata", keywords: ["devi", "mata", "jagadeeshwari", "amba", "durga", "bhawani", "janani", "amritanandamayi", "shakti", "raj rajeshwari", "parvati", "jaganmohini", "sharade", "gouri", "gauri", "triputa"] },
-  { deity: "Sai", keywords: ["sai", "baba", "parthi", "sathya", "puttaparthi", "shirdi", "partishwara", "sayeesha"] },
-  { deity: "Shiva", keywords: ["shiva", "shankara", "shambho", "hara", "bholenath", "nataraja", "mahadeva", "shankaram", "pashupati", "neelakantha", "lingam", "tatsat", "arunachal"] },
-  { deity: "Krishna", keywords: ["krishna", "gopal", "govinda", "radhey", "radhe", "madhav", "giridhari", "murlidhar", "kanna", "nandalal", "nanda", "kanhaiya", "radhika", "keshava", "muralidhara"] },
-  { deity: "Rama", keywords: ["rama", "raghu", "raghupathi", "ramachandra", "dasharatha", "ayodhya", "janaki", "raghuveer"] },
-  { deity: "Narayana", keywords: ["narayana", "hari", "vishnu", "govinda", "madhava", "vasudevaya", "vasudeva"] },
+  {
+    deity: "Ganesha",
+    keywords: [
+      "gajanana",
+      "ganesha",
+      "ganapathi",
+      "vigneshwara",
+      "vignesh",
+      "gajananam",
+      "ganayaka",
+      "gajavadana",
+      "gauri ganesh",
+      "gauri sutaya",
+      "vighna",
+      "gananatha",
+      "ganapati"
+    ]
+  },
+  {
+    deity: "Guru",
+    keywords: [
+      "guru",
+      "gurunatha",
+      "gurudeva",
+      "subrahmanya",
+      "sharavanabhava",
+      "sadguru",
+      "aruna ramana"
+    ]
+  },
+  {
+    deity: "Mata",
+    keywords: [
+      "devi",
+      "mata",
+      "jagadeeshwari",
+      "amba",
+      "durga",
+      "bhawani",
+      "janani",
+      "amritanandamayi",
+      "shakti",
+      "raj rajeshwari",
+      "parvati",
+      "jaganmohini",
+      "sharade",
+      "gouri",
+      "gauri",
+      "triputa"
+    ]
+  },
+  {
+    deity: "Sai",
+    keywords: [
+      "sai",
+      "baba",
+      "parthi",
+      "sathya",
+      "puttaparthi",
+      "shirdi",
+      "partishwara",
+      "sayeesha"
+    ]
+  },
+  {
+    deity: "Shiva",
+    keywords: [
+      "shiva",
+      "shankara",
+      "shambho",
+      "hara",
+      "bholenath",
+      "nataraja",
+      "mahadeva",
+      "shankaram",
+      "pashupati",
+      "neelakantha",
+      "lingam",
+      "tatsat",
+      "arunachal"
+    ]
+  },
+  {
+    deity: "Krishna",
+    keywords: [
+      "krishna",
+      "gopal",
+      "govinda",
+      "radhey",
+      "radhe",
+      "madhav",
+      "giridhari",
+      "murlidhar",
+      "kanna",
+      "nandalal",
+      "nanda",
+      "kanhaiya",
+      "radhika",
+      "keshava",
+      "muralidhara"
+    ]
+  },
+  {
+    deity: "Rama",
+    keywords: [
+      "rama",
+      "raghu",
+      "raghupathi",
+      "ramachandra",
+      "dasharatha",
+      "ayodhya",
+      "janaki",
+      "raghuveer"
+    ]
+  },
+  {
+    deity: "Narayana",
+    keywords: ["narayana", "hari", "vishnu", "govinda", "madhava", "vasudevaya", "vasudeva"]
+  },
   { deity: "Vitthala", keywords: ["vitthala", "vithala", "panduranga", "pandhari"] },
-  { deity: "Hanuman", keywords: ["hanuman", "maruti", "anjaneya", "aanjaneya", "ram duta", "vanara"] }
+  {
+    deity: "Hanuman",
+    keywords: ["hanuman", "maruti", "anjaneya", "aanjaneya", "ram duta", "vanara"]
+  }
 ];
 
 function normalizeDeity(deity) {
@@ -25,7 +139,21 @@ function normalizeDeity(deity) {
   if (["Anjaneya", "Maruti", "Hanuman"].includes(d)) return "Hanuman";
   if (["Vittala", "Vitthala", "Vithhala", "Vithala", "Panduranga"].includes(d)) return "Vitthala";
   if (["Subrahmanya"].includes(d)) return "Guru";
-  if (["Ganesha", "Guru", "Mata", "SarvaDharma", "Sai", "Shiva", "Krishna", "Rama", "Narayana", "Vitthala", "Hanuman"].includes(d)) {
+  if (
+    [
+      "Ganesha",
+      "Guru",
+      "Mata",
+      "SarvaDharma",
+      "Sai",
+      "Shiva",
+      "Krishna",
+      "Rama",
+      "Narayana",
+      "Vitthala",
+      "Hanuman"
+    ].includes(d)
+  ) {
     return d;
   }
   return "SarvaDharma";
@@ -60,7 +188,7 @@ async function parseBatchSessions(fullText) {
 
   // Pre-load all existing singers once so we can normalise-match without
   // hammering the DB inside the per-bhajan loop.
-  const existingSingers = await Singer.findAll({ attributes: ['id', 'name', 'gender'], raw: true });
+  const existingSingers = await Singer.findAll({ attributes: ["id", "name", "gender"], raw: true });
 
   /**
    * Resolve a raw singer name string to an existing Singer record (or create
@@ -70,7 +198,7 @@ async function parseBatchSessions(fullText) {
   async function resolveSinger(rawName) {
     if (!rawName || !rawName.trim()) return null;
     const norm = normalizeName(rawName);
-    let found = existingSingers.find(s => normalizeName(s.name) === norm);
+    let found = existingSingers.find((s) => normalizeName(s.name) === norm);
     if (!found) {
       const created = await Singer.create({ name: rawName.trim(), gender: null });
       found = { id: created.id, name: created.name, gender: created.gender };
@@ -87,7 +215,10 @@ async function parseBatchSessions(fullText) {
 
   const sessionSummary = [];
   for (const section of rawSections) {
-    const lines = section.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    const lines = section
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
     if (lines.length === 0) continue;
 
     const firstLine = lines[0];
@@ -118,7 +249,9 @@ async function parseBatchSessions(fullText) {
       // "1) Nisarg Chaudhari (Prashant Bhatt) – [Ganesha] Sharanam Sharanam Pahi Gajanana – Scale: 1.5P, Speed: Not specified"
       if (line.includes("[") && line.includes("]")) {
         // Match: 1) Singer (Partner) – [Deity] Title – Scale: X, Speed: Y
-        const planMatch = line.match(/^\d+[\.\)]\s*(.*?)\s*[-–—]\s*\[(.*?)\]\s*(.*?)(?:\s*[-–—]\s*(.*))?$/);
+        const planMatch = line.match(
+          /^\d+[\.\)]\s*(.*?)\s*[-–—]\s*\[(.*?)\]\s*(.*?)(?:\s*[-–—]\s*(.*))?$/
+        );
         if (planMatch) {
           let rawSinger = planMatch[1].trim();
           deity = normalizeDeity(planMatch[2].trim());
@@ -168,7 +301,10 @@ async function parseBatchSessions(fullText) {
           }
         }
 
-        const cleanTitle = title.replace(/\s*\(\d+.*?\)/g, "").replace(/\(.*?\)/g, "").trim();
+        const cleanTitle = title
+          .replace(/\s*\(\d+.*?\)/g, "")
+          .replace(/\(.*?\)/g, "")
+          .trim();
         let masterMatch = await MasterBhajan.findOne({
           where: {
             is_active: true,
@@ -197,7 +333,9 @@ async function parseBatchSessions(fullText) {
         list_order: listOrder
       });
 
-      console.log(`  [${listOrder}] ${singerName}${partnerName ? ` & ${partnerName}` : ''} | ${deity} | "${title}" | Scale: ${scale} | Speed: ${speed}`);
+      console.log(
+        `  [${listOrder}] ${singerName}${partnerName ? ` & ${partnerName}` : ""} | ${deity} | "${title}" | Scale: ${scale} | Speed: ${speed}`
+      );
       totalBhajans++;
     }
 
@@ -211,4 +349,3 @@ async function parseBatchSessions(fullText) {
 }
 
 module.exports = { parseBatchSessions };
-

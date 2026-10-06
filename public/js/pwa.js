@@ -5,11 +5,11 @@
 // ============================================================
 
 (function () {
-  'use strict';
+  "use strict";
 
   // ── Guard: don't run if already installed as standalone ─────
   if (
-    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia("(display-mode: standalone)").matches ||
     window.navigator.standalone === true
   ) {
     // Still register the SW for offline support inside the app
@@ -19,16 +19,16 @@
 
   // ── Service Worker Registration ─────────────────────────────
   function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
         navigator.serviceWorker
-          .register('/sw.js', { updateViaCache: 'none' })
+          .register("/sw.js", { updateViaCache: "none" })
           .then((reg) => {
-            console.log('[PWA] Service Worker registered – scope:', reg.scope);
+            console.log("[PWA] Service Worker registered – scope:", reg.scope);
             // Check for updates every 60 minutes
             setInterval(() => reg.update(), 60 * 60 * 1000);
           })
-          .catch((err) => console.error('[PWA] SW registration failed:', err));
+          .catch((err) => console.error("[PWA] SW registration failed:", err));
       });
     }
   }
@@ -36,7 +36,7 @@
   registerServiceWorker();
 
   // ── Constants ───────────────────────────────────────────────
-  const DISMISS_KEY  = 'pwa-install-dismissed';
+  const DISMISS_KEY = "pwa-install-dismissed";
   const DISMISS_DAYS = 7;
   const BANNER_DELAY = 2500; // ms before showing banner
 
@@ -51,9 +51,7 @@
   }
 
   function isIOS() {
-    return (
-      /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream
-    );
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   }
 
   /**
@@ -67,61 +65,61 @@
         if (usage > 0) return formatBytes(usage);
       }
     } catch (e) {
-      console.warn('[PWA] Could not estimate size:', e);
+      console.warn("[PWA] Could not estimate size:", e);
     }
-    return '< 2 MB'; // safe fallback
+    return "< 2 MB"; // safe fallback
   }
 
   function formatBytes(bytes) {
     const mb = bytes / (1024 * 1024);
-    if (mb < 1)  return '< 1 MB';
+    if (mb < 1) return "< 1 MB";
     if (mb < 10) return `~${mb.toFixed(1)} MB`;
     return `~${Math.round(mb)} MB`;
   }
 
   // ── Banner Show / Hide ──────────────────────────────────────
   function showBanner(customDelay) {
-    const overlay = document.getElementById('pwaInstallOverlay');
+    const overlay = document.getElementById("pwaInstallOverlay");
     if (!overlay) return;
 
     // Populate size
     getEstimatedSize().then((size) => {
-      const el = document.getElementById('pwaBannerSize');
+      const el = document.getElementById("pwaBannerSize");
       if (el) el.textContent = size;
     });
 
     // Show iOS-specific instructions if needed
     if (isIOS()) {
-      const iosEl = document.getElementById('pwaIosInstructions');
-      const installBtn = document.getElementById('pwaBtnInstall');
-      if (iosEl) iosEl.style.display = 'block';
-      if (installBtn) installBtn.style.display = 'none';
+      const iosEl = document.getElementById("pwaIosInstructions");
+      const installBtn = document.getElementById("pwaBtnInstall");
+      if (iosEl) iosEl.style.display = "block";
+      if (installBtn) installBtn.style.display = "none";
     }
 
-    const delay = typeof customDelay === 'number' ? customDelay : BANNER_DELAY;
-    setTimeout(() => overlay.classList.add('show'), delay);
+    const delay = typeof customDelay === "number" ? customDelay : BANNER_DELAY;
+    setTimeout(() => overlay.classList.add("show"), delay);
   }
 
   function hideBanner() {
-    const overlay = document.getElementById('pwaInstallOverlay');
-    if (overlay) overlay.classList.remove('show');
+    const overlay = document.getElementById("pwaInstallOverlay");
+    if (overlay) overlay.classList.remove("show");
   }
 
   // ── Global trigger for manual install buttons (e.g. footer) ─
   window.triggerPwaInstall = function () {
     const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia("(display-mode: standalone)").matches ||
       window.navigator.standalone === true;
 
     if (isStandalone) {
-      alert('✅ Bhajan Planner is already installed and running on your device!');
+      alert("✅ Bhajan Planner is already installed and running on your device!");
       return;
     }
 
     if (deferredPrompt) {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.then((choice) => {
-        console.log('[PWA] Install prompt outcome:', choice.outcome);
+        console.log("[PWA] Install prompt outcome:", choice.outcome);
         deferredPrompt = null;
         hideBanner();
       });
@@ -132,35 +130,35 @@
 
   // ── Wire up footer install button if present ────────────────
   function wireFooterInstallBtn() {
-    const btn = document.getElementById('footerPwaInstallBtn');
+    const btn = document.getElementById("footerPwaInstallBtn");
     if (!btn) return;
 
     const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia("(display-mode: standalone)").matches ||
       window.navigator.standalone === true;
 
     if (isStandalone) {
-      btn.innerHTML = '<span>✅</span> Installed on Device';
-      btn.classList.add('installed');
+      btn.innerHTML = "<span>✅</span> Installed on Device";
+      btn.classList.add("installed");
       btn.disabled = true;
       return;
     }
 
     if (isIOS()) {
-      btn.innerHTML = '<span>📲</span> Install on iPhone / iPad';
+      btn.innerHTML = "<span>📲</span> Install on iPhone / iPad";
     } else {
-      btn.innerHTML = '<span>📲</span> Install Bhajan Planner App';
+      btn.innerHTML = "<span>📲</span> Install Bhajan Planner App";
     }
 
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener("click", (e) => {
       e.preventDefault();
       window.triggerPwaInstall();
     });
   }
 
   // ── Intercept Chrome / Edge install prompt ──────────────────
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();          // suppress the browser's mini-infobar
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // suppress the browser's mini-infobar
     deferredPrompt = e;
 
     if (!wasDismissedRecently()) {
@@ -169,22 +167,22 @@
   });
 
   // ── Wire up banner buttons on DOM ready ─────────────────────
-  document.addEventListener('DOMContentLoaded', () => {
-    const installBtn  = document.getElementById('pwaBtnInstall');
-    const dismissBtn  = document.getElementById('pwaBtnDismiss');
-    const closeBtn    = document.getElementById('pwaBannerClose');
+  document.addEventListener("DOMContentLoaded", () => {
+    const installBtn = document.getElementById("pwaBtnInstall");
+    const dismissBtn = document.getElementById("pwaBtnDismiss");
+    const closeBtn = document.getElementById("pwaBannerClose");
 
     wireFooterInstallBtn();
 
     // Install
-    installBtn?.addEventListener('click', async () => {
+    installBtn?.addEventListener("click", async () => {
       if (!deferredPrompt) {
         showBanner(0);
         return;
       }
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      console.log('[PWA] Install prompt outcome:', outcome);
+      console.log("[PWA] Install prompt outcome:", outcome);
       deferredPrompt = null;
       hideBanner();
     });
@@ -194,12 +192,12 @@
       localStorage.setItem(DISMISS_KEY, Date.now().toString());
       hideBanner();
     }
-    dismissBtn?.addEventListener('click', dismiss);
-    closeBtn?.addEventListener('click', dismiss);
+    dismissBtn?.addEventListener("click", dismiss);
+    closeBtn?.addEventListener("click", dismiss);
 
     // Close on overlay click (outside the banner card)
-    const overlay = document.getElementById('pwaInstallOverlay');
-    overlay?.addEventListener('click', (e) => {
+    const overlay = document.getElementById("pwaInstallOverlay");
+    overlay?.addEventListener("click", (e) => {
       if (e.target === overlay) dismiss();
     });
 
@@ -210,14 +208,14 @@
   });
 
   // ── Track successful install ────────────────────────────────
-  window.addEventListener('appinstalled', () => {
+  window.addEventListener("appinstalled", () => {
     hideBanner();
     deferredPrompt = null;
-    const btn = document.getElementById('footerPwaInstallBtn');
+    const btn = document.getElementById("footerPwaInstallBtn");
     if (btn) {
-      btn.innerHTML = '<span>✅</span> Installed on Device';
+      btn.innerHTML = "<span>✅</span> Installed on Device";
       btn.disabled = true;
     }
-    console.log('[PWA] Bhajan Planner installed successfully!');
+    console.log("[PWA] Bhajan Planner installed successfully!");
   });
 })();

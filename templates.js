@@ -112,10 +112,8 @@ function generateSubmitFormHtml(
   submissionCount = 0,
   currentSinger = null
 ) {
-  const isAdminBool = isAdmin === true || isAdmin === 'true';
-  const dateAttr = isAdminBool
-    ? ""
-    : 'readonly style="cursor:not-allowed;"';
+  const isAdminBool = isAdmin === true || isAdmin === "true";
+  const dateAttr = isAdminBool ? "" : 'readonly style="cursor:not-allowed;"';
   const dateNotice = isAdminBool
     ? `<div class="date-notice date-notice-admin">
         🔐 <strong>Admin Mode:</strong> You can select any date and manage bhajans at any time.
@@ -167,11 +165,11 @@ function generateSubmitFormHtml(
             <div class="form-group">
               <label>Singer Name <span class="required">*</span></label>
               <div class="singer-autocomplete">
-                <input type="text" name="singer_name" id="singerName" required placeholder="Enter your full name" autocomplete="off" aria-autocomplete="list" aria-controls="singerSuggestions" aria-expanded="false" value="${currentSinger ? escapeHtml(currentSinger.name) : ''}" data-verified-singer="${currentSinger ? escapeHtml(currentSinger.name) : ''}" data-verified-gender="${currentSinger && currentSinger.gender ? escapeHtml(currentSinger.gender) : ''}" ${currentSinger && !isAdminBool ? 'readonly style="background:#f1f5f9; cursor:not-allowed;"' : ''} />
+                <input type="text" name="singer_name" id="singerName" required placeholder="Enter your full name" autocomplete="off" aria-autocomplete="list" aria-controls="singerSuggestions" aria-expanded="false" value="${currentSinger ? escapeHtml(currentSinger.name) : ""}" data-verified-singer="${currentSinger ? escapeHtml(currentSinger.name) : ""}" data-verified-gender="${currentSinger && currentSinger.gender ? escapeHtml(currentSinger.gender) : ""}" ${currentSinger && !isAdminBool ? 'readonly style="background:#f1f5f9; cursor:not-allowed;"' : ""} />
                 <div id="singerSuggestions" class="bhajan-suggestions" role="listbox" aria-label="Singer suggestions"></div>
               </div>
               <datalist id="singerList"></datalist>
-              ${currentSinger && !isAdminBool ? `<small style="color:#16a34a; font-size:11.5px; margin-top:4px; display:flex; align-items:center; gap:4px;"><span>🔒</span> Verified Devotee: <strong>${escapeHtml(currentSinger.name)}</strong></small>` : ''}
+              ${currentSinger && !isAdminBool ? `<small style="color:#16a34a; font-size:11.5px; margin-top:4px; display:flex; align-items:center; gap:4px;"><span>🔒</span> Verified Devotee: <strong>${escapeHtml(currentSinger.name)}</strong></small>` : ""}
             </div>
             
             <div class="form-group">
@@ -181,13 +179,13 @@ function generateSubmitFormHtml(
 
             <div class="form-group">
               <label>Gender <span class="required">*</span></label>
-              <select name="gender" id="gender" required ${currentSinger && currentSinger.gender && !isAdminBool ? 'style="pointer-events:none; background:#f1f5f9;"' : ''}>
+              <select name="gender" id="gender" required ${currentSinger && currentSinger.gender && !isAdminBool ? 'style="pointer-events:none; background:#f1f5f9;"' : ""}>
                 <option value="">Select</option>
-                <option value="Male" ${currentSinger && currentSinger.gender === 'Male' ? 'selected' : ''}>Male</option>
-                <option value="Female" ${currentSinger && currentSinger.gender === 'Female' ? 'selected' : ''}>Female</option>
-                <option value="Other" ${currentSinger && currentSinger.gender === 'Other' ? 'selected' : ''}>Other</option>
+                <option value="Male" ${currentSinger && currentSinger.gender === "Male" ? "selected" : ""}>Male</option>
+                <option value="Female" ${currentSinger && currentSinger.gender === "Female" ? "selected" : ""}>Female</option>
+                <option value="Other" ${currentSinger && currentSinger.gender === "Other" ? "selected" : ""}>Other</option>
               </select>
-              <input type="hidden" name="locked_gender" id="lockedGender" value="${currentSinger && currentSinger.gender ? escapeHtml(currentSinger.gender) : ''}" />
+              <input type="hidden" name="locked_gender" id="lockedGender" value="${currentSinger && currentSinger.gender ? escapeHtml(currentSinger.gender) : ""}" />
             </div>
           </div>
         </div>
@@ -222,15 +220,19 @@ function generateSubmitFormHtml(
             <div class="form-group form-group-title">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
                 <label style="margin-bottom:0;">Bhajan Title <span class="required">*</span></label>
-                ${currentSinger ? `
+                ${
+                  currentSinger
+                    ? `
                   <button type="button" id="openSongbookPickerBtn" style="background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe; border-radius:6px; padding:3px 9px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;">
                     <span>📖</span> Pick from My Songbook
                   </button>
-                ` : ''}
+                `
+                    : ""
+                }
               </div>
               <div class="bhajan-autocomplete">
                 <input type="hidden" name="master_bhajan_id" id="selectedMasterBhajanId" />
-                <input type="hidden" id="singerPreferredScale" value="${escapeHtml(currentSinger?.preferred_scale || '')}" />
+                <input type="hidden" id="singerPreferredScale" value="${escapeHtml(currentSinger?.preferred_scale || "")}" />
                 <input name="title" id="bhajanTitleInput" required placeholder="Select Deity to search..." autocomplete="off" aria-autocomplete="list" aria-controls="bhajanSuggestions" aria-expanded="false" />
                 <div id="bhajanSuggestions" class="bhajan-suggestions" role="listbox" aria-label="Bhajan suggestions"></div>
               </div>
@@ -287,14 +289,18 @@ function generateSubmitFormHtml(
             <p>${submissionCount} bhajan${submissionCount === 1 ? "" : "s"} added for this session. Please avoid duplicate titles.</p>
           </div>
         </div>
-        ${submissionCount > 0 ? `
+        ${
+          submissionCount > 0
+            ? `
           <div class="table-container">
             <table>
               <thead><tr><th>#</th><th>Singer</th><th>Deity</th><th>Bhajan</th><th>Speed</th><th>Scale</th></tr></thead>
               <tbody>${submissionRowsHtml}</tbody>
             </table>
           </div>
-        ` : '<p class="submitted-bhajans-empty">No bhajans have been submitted yet.</p>'}
+        `
+            : '<p class="submitted-bhajans-empty">No bhajans have been submitted yet.</p>'
+        }
       </section>
     </div>
   </div>
@@ -400,26 +406,23 @@ function generateSubmitFormHtml(
 </html>`;
 }
 
-function generatePlanViewHtml(
-  sessionDate,
-  rowsHtml,
-  whatsappText,
-  whatsappEncoded,
-  opts
-) {
+function generatePlanViewHtml(sessionDate, rowsHtml, whatsappText, whatsappEncoded, opts) {
   opts = opts || {};
   const {
     sessionDateHuman = sessionDate,
-    timelineCardsHtml = '',
+    timelineCardsHtml = "",
     dateOptionsList = [],
     submissionsCount = 0,
     isUpcoming = false,
     isAdmin = false
   } = opts;
 
-  const dateOptionsHtml = dateOptionsList.map(opt =>
-    `<option value="${opt.date}"${opt.isCurrent ? ' selected' : ''}>${escapeHtml(opt.label)}</option>`
-  ).join('');
+  const dateOptionsHtml = dateOptionsList
+    .map(
+      (opt) =>
+        `<option value="${opt.date}"${opt.isCurrent ? " selected" : ""}>${escapeHtml(opt.label)}</option>`
+    )
+    .join("");
 
   const statusBadge = isUpcoming
     ? `<span class="plan-status-badge">🟢 Upcoming</span>`
@@ -477,7 +480,7 @@ function generatePlanViewHtml(
             <p>
               <span>${escapeHtml(sessionDateHuman)}</span>
               &nbsp;·&nbsp;
-              <strong>${submissionsCount}</strong> bhajan${submissionsCount !== 1 ? 's' : ''}
+              <strong>${submissionsCount}</strong> bhajan${submissionsCount !== 1 ? "s" : ""}
             </p>
           </div>
         </div>
@@ -493,10 +496,14 @@ function generatePlanViewHtml(
         </form>
 
         <div class="plan-actions-bar">
-          ${isAdmin ? `
+          ${
+            isAdmin
+              ? `
           <button id="planShareBtn" type="button" class="plan-btn plan-btn-whatsapp" onclick="sharePlan()" title="Share schedule via WhatsApp or native share">
             <span>📤</span> <span>Share</span>
-          </button>` : ''}
+          </button>`
+              : ""
+          }
           <button type="button" class="plan-btn plan-btn-secondary" onclick="printPlanSchedule()" title="Print as PDF or paper">
             <span>🖨️</span> <span>Print</span>
           </button>
@@ -536,7 +543,9 @@ function generatePlanViewHtml(
       </table>
     </div>
 
-    ${isAdmin ? `
+    ${
+      isAdmin
+        ? `
     <!-- ═══ WHATSAPP SHARE CARD (Admin Only) ═══ -->
     <div class="plan-share-card no-print" id="planShareCard">
       <div class="plan-share-header">
@@ -557,7 +566,9 @@ function generatePlanViewHtml(
         </div>
       </div>
       <textarea id="planShareText" readonly class="plan-share-textarea" aria-label="Schedule text for WhatsApp">${whatsappText}</textarea>
-    </div>` : ''}
+    </div>`
+        : ""
+    }
 
     <!-- ═══ UNIVERSAL SSSO GANDHINAGAR PRINT FOOTER ═══ -->
     <div class="universal-print-footer" aria-hidden="true">
@@ -725,15 +736,7 @@ function generateErrorHtml(deity, existing, session_date) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Slot Taken</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtnHtml}<div class="container" style="text-align:center; padding:32px;"><div class="error-icon">⚠️</div><h2 style="color:#e03131;">Slot Already Taken</h2><p>Sorry, the <strong>${escapeHtml(deity)}</strong> deity slot has already been taken.</p><div class="info-box"><strong>Taken by:</strong> ${escapeHtml(existing.singer_name)}<br><strong>Bhajan:</strong> ${escapeHtml(existing.title)}<br><strong>Time:</strong> ${new Date(existing.created_at).toLocaleTimeString()}</div><a class="button" href="/submit-form?session_date=${safeDate}">← Go Back</a></div><script src="/js/script.js"></script></body></html>`;
 }
 
-function generateSuccessHtml(
-  singer_name,
-  deity,
-  title,
-  speed,
-  scale,
-  session_date,
-  isAdmin,
-) {
+function generateSuccessHtml(singer_name, deity, title, speed, scale, session_date, isAdmin) {
   const safeDate = encodeURIComponent(session_date || "");
   let actionButtons;
   if (isAdmin) {
@@ -776,7 +779,7 @@ function generateAdminSessionViewHtml(date, submissions, isLocked) {
         </div>
       </td>
     </tr>
-  `,
+  `
     )
     .join("");
 
@@ -854,7 +857,7 @@ function generateAdminCalendarHtml(
   eventCounts,
   permissionMap = {},
   descriptionMap = {},
-  missingBhajans = [],
+  missingBhajans = []
 ) {
   const monthNames = [
     "January",
@@ -868,7 +871,7 @@ function generateAdminCalendarHtml(
     "September",
     "October",
     "November",
-    "December",
+    "December"
   ];
   const currentMonthName = monthNames[month - 1];
 
@@ -885,8 +888,7 @@ function generateAdminCalendarHtml(
 
   // Days
   const today = new Date();
-  const isCurrentMonth =
-    today.getFullYear() === year && today.getMonth() + 1 === month;
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === month;
 
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -982,19 +984,20 @@ function generateAdminCalendarHtml(
       <h2 style="color: #d9480f; margin-bottom: 15px;">🚨 Missing Bhajan Catcher</h2>
       <p style="font-size:14px; margin-bottom:15px; color:#555;">The following bhajans have been sung in sessions but are missing from the Master Database.</p>
       <ul style="list-style:none; padding:0; display:flex; flex-direction:column; gap:10px;">
-        ${missingBhajans.length === 0
-      ? '<li style="color:#2b8a3e; font-weight:bold;">✅ All sung bhajans are safely in the Master Database!</li>'
-      : missingBhajans
-        .map(
-          (b) => `
+        ${
+          missingBhajans.length === 0
+            ? '<li style="color:#2b8a3e; font-weight:bold;">✅ All sung bhajans are safely in the Master Database!</li>'
+            : missingBhajans
+                .map(
+                  (b) => `
           <li style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:10px 15px; border-radius:8px; border:1px solid #ffd43b;">
             <strong>${b}</strong>
             <button class="button" style="padding:6px 12px; font-size:12px; background:#4dabf7; border:none;" onclick="openMissingBhajanModal('${b.replace(/'/g, "\\'")}')">➕ Add to Master</button>
           </li>
-        `,
-        )
-        .join("")
-    }
+        `
+                )
+                .join("")
+        }
       </ul>
     </div>
 
@@ -1098,8 +1101,7 @@ function generateEditFormHtml(s) {
 }
 
 function generateAdminRulesHtml(rules, date) {
-  const title =
-    date === "default" ? "⚙️ Default Deity Rules" : `⚙️ Rules for ${date}`;
+  const title = date === "default" ? "⚙️ Default Deity Rules" : `⚙️ Rules for ${date}`;
   const subtitle =
     date === "default"
       ? "Set base limits for all future sessions"
@@ -1116,7 +1118,7 @@ function generateAdminRulesHtml(rules, date) {
       <td><input type="number" class="rule-min filter-input" value="${r.min_required}" min="0" max="9" style="width:80px; text-align:center;"></td>
       <td><input type="number" class="rule-max filter-input" value="${r.max_allowed}" min="0" max="99" style="width:80px; text-align:center;"></td>
     </tr>
-  `,
+  `
     )
     .join("");
 
@@ -1246,6 +1248,5 @@ module.exports = {
   generateAdminCalendarHtml,
   generateAdminSessionViewHtml,
   generateAdminRulesHtml,
-  generateAdminImportSessionsHtml,
+  generateAdminImportSessionsHtml
 };
-

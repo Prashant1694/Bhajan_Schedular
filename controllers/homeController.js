@@ -1,48 +1,53 @@
 const { getLatestBulletins, CATEGORY_INFO } = require("./bulletinController");
 const BhajanSubmission = require("../models/BhajanSubmission");
 const SessionPermission = require("../models/SessionPermission");
-const { getThursdaySubmissionStatus, getLocalDateStr, isSessionActiveOrUpcoming } = require("../services/helpers");
+const {
+  getThursdaySubmissionStatus,
+  getLocalDateStr,
+  isSessionActiveOrUpcoming
+} = require("../services/helpers");
 const { Sequelize } = require("sequelize");
 
 exports.home = async (req, res) => {
-  const isIframe = req.query._embed === "1" || 
-                   req.query.embed === "1" || 
-                   req.headers["sec-fetch-dest"] === "iframe" ||
-                   (Boolean(req.headers["referer"]) && req.headers["referer"].includes("_embed=1"));
+  const isIframe =
+    req.query._embed === "1" ||
+    req.query.embed === "1" ||
+    req.headers["sec-fetch-dest"] === "iframe" ||
+    (Boolean(req.headers["referer"]) && req.headers["referer"].includes("_embed=1"));
 
   // If not embed mode and not standalone, serve the Native App Shell with persistent tabs
   if (!isIframe && req.query.standalone !== "1") {
     const isAuthAdmin = Boolean(req.session && (req.session.admin || req.session.adminUserId));
-    let initialRoute = (req.query.route || req.query.url || '').trim();
-    let initialTab = (req.query.tab || '').trim();
+    let initialRoute = (req.query.route || req.query.url || "").trim();
+    let initialTab = (req.query.tab || "").trim();
 
     if (initialRoute) {
-      if (!initialRoute.startsWith('/')) initialRoute = '/' + initialRoute;
+      if (!initialRoute.startsWith("/")) initialRoute = "/" + initialRoute;
       const lower = initialRoute.toLowerCase();
-      if (lower.startsWith('/admin-login') || lower.startsWith('/forgot-password')) {
+      if (lower.startsWith("/admin-login") || lower.startsWith("/forgot-password")) {
         return res.redirect(initialRoute);
-      } else if (lower.startsWith('/submit-form')) {
-        initialTab = 'singer';
-      } else if (lower.startsWith('/master-bank') || lower.startsWith('/bhajan/')) {
-        initialTab = 'bank';
-      } else if (lower.startsWith('/plan-view')) {
-        initialTab = 'plan';
-      } else if (lower.startsWith('/my-hub') || lower.startsWith('/singer/')) {
-        initialTab = 'hub';
-      } else if (lower.startsWith('/admin')) {
+      } else if (lower.startsWith("/submit-form")) {
+        initialTab = "singer";
+      } else if (lower.startsWith("/master-bank") || lower.startsWith("/bhajan/")) {
+        initialTab = "bank";
+      } else if (lower.startsWith("/plan-view")) {
+        initialTab = "plan";
+      } else if (lower.startsWith("/my-hub") || lower.startsWith("/singer/")) {
+        initialTab = "hub";
+      } else if (lower.startsWith("/admin")) {
         if (!isAuthAdmin) {
-          return res.redirect('/admin-login');
+          return res.redirect("/admin-login");
         }
-        initialTab = 'admin';
+        initialTab = "admin";
       } else {
-        initialTab = 'home';
+        initialTab = "home";
       }
     } else if (!initialTab) {
-      initialTab = 'home';
+      initialTab = "home";
     }
 
-    if (initialTab === 'admin' && !isAuthAdmin) {
-      return res.redirect('/admin-login');
+    if (initialTab === "admin" && !isAuthAdmin) {
+      return res.redirect("/admin-login");
     }
 
     return res.render("app-shell", {
@@ -79,7 +84,7 @@ exports.home = async (req, res) => {
     // Add active / upcoming special sessions
     for (const sp of specialSessions) {
       if (isSessionActiveOrUpcoming(sp.date, sp.description)) {
-        const isToday = (sp.date === todayStr);
+        const isToday = sp.date === todayStr;
         sessionDatesMap.set(sp.date, {
           date: sp.date,
           type: sp.type || "special",
@@ -127,7 +132,9 @@ exports.home = async (req, res) => {
     }
 
     // 3. For each session in map, format date and fetch submission counts
-    const sortedEntries = Array.from(sessionDatesMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    const sortedEntries = Array.from(sessionDatesMap.values()).sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
 
     for (const s of sortedEntries) {
       const count = await BhajanSubmission.count({
@@ -138,7 +145,11 @@ exports.home = async (req, res) => {
       try {
         const [y, m, d] = s.date.split("-").map(Number);
         const dObj = new Date(y, m - 1, d);
-        formattedDate = dObj.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+        formattedDate = dObj.toLocaleDateString("en-GB", {
+          weekday: "short",
+          day: "numeric",
+          month: "short"
+        });
       } catch (_) {}
 
       upcomingSessions.push({

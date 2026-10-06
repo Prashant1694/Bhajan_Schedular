@@ -16,6 +16,10 @@ router.get("/admin/bulletins/:id/edit", requireLogin, bulletinController.adminEd
 router.post("/admin/bulletins/:id", requireLogin, bulletinController.adminUpdateBulletin);
 router.post("/admin/bulletins/:id/delete", requireLogin, bulletinController.adminDeleteBulletin);
 router.post("/admin/bulletins/:id/toggle-pin", requireApiLogin, bulletinController.togglePin);
-router.post("/admin/bulletins/:id/toggle-publish", requireApiLogin, bulletinController.togglePublish);
+router.post(
+  "/admin/bulletins/:id/toggle-publish",
+  requireApiLogin,
+  bulletinController.togglePublish
+);
 
 module.exports = router;

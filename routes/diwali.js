@@ -2,7 +2,12 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const diwaliController = require("../controllers/diwaliController");
-const { requireLogin, requireSuperAdmin, requireApiLogin, requireApiSuperAdmin } = require("../middleware/auth");
+const {
+  requireLogin,
+  requireSuperAdmin,
+  requireApiLogin,
+  requireApiSuperAdmin
+} = require("../middleware/auth");
 
 const path = require("path");
 const upload = multer({
@@ -30,8 +35,16 @@ router.post("/admin/diwali/entry", requireLogin, diwaliController.createParticip
 
 // Participant Edit & Delete
 router.get("/admin/diwali/participant/:id", requireLogin, diwaliController.getParticipantJson);
-router.post("/admin/diwali/participant/update/:id", requireLogin, diwaliController.updateParticipant);
-router.post("/admin/diwali/participant/delete/:id", requireLogin, diwaliController.deleteParticipant);
+router.post(
+  "/admin/diwali/participant/update/:id",
+  requireLogin,
+  diwaliController.updateParticipant
+);
+router.post(
+  "/admin/diwali/participant/delete/:id",
+  requireLogin,
+  diwaliController.deleteParticipant
+);
 router.post("/admin/diwali/bhajan/delete/:id", requireLogin, diwaliController.deleteBhajan);
 
 // Event Management
@@ -39,7 +52,12 @@ router.post("/admin/diwali/event/create", requireLogin, diwaliController.createE
 
 // Import Workflow
 router.get("/admin/diwali/import", requireLogin, diwaliController.showImport);
-router.post("/admin/diwali/import/preview", requireLogin, upload.single("file"), diwaliController.previewImport);
+router.post(
+  "/admin/diwali/import/preview",
+  requireLogin,
+  upload.single("file"),
+  diwaliController.previewImport
+);
 router.post("/admin/diwali/import/confirm", requireLogin, diwaliController.confirmImport);
 
 // Yearly Data Export (Independent of sequence generation)

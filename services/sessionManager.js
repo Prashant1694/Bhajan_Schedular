@@ -35,7 +35,9 @@ async function destroyAdminSessions(adminId) {
     }
 
     if (sidsToDelete.length > 0) {
-      console.log(`[SessionManager] Revoked ${sidsToDelete.length} active session(s) for admin ID ${adminId}`);
+      console.log(
+        `[SessionManager] Revoked ${sidsToDelete.length} active session(s) for admin ID ${adminId}`
+      );
     }
   } catch (err) {
     console.error("[SessionManager] Error destroying admin sessions:", err.message);

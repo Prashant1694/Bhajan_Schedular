@@ -5,14 +5,14 @@
 
 :root {
   --lyrics-font-size: 20px;
-  --lyrics-line-height: 2.0;
+  --lyrics-line-height: 2;
   --lyrics-alignment: center;
 }
 
 /* Page Wrapper with Generous Breathing Room */
 .bhajan-detail-page {
   background-color: var(--paper, #fdfbf7);
-  background-image: 
+  background-image:
     radial-gradient(circle at 12% 18%, rgba(217, 138, 43, 0.05) 0%, transparent 45%),
     radial-gradient(circle at 88% 82%, rgba(125, 47, 69, 0.04) 0%, transparent 45%);
   background-attachment: fixed;
@@ -20,7 +20,13 @@
   padding: 56px 0 140px;
   padding-top: max(56px, calc(env(safe-area-inset-top, 0px) + 24px));
   color: var(--ink, #1f2937);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -165,7 +171,7 @@
 }
 
 .detail-bhajan-title {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: clamp(24px, 4.5vw, 34px);
   font-weight: 700;
   color: var(--ink, #1f2937);
@@ -424,20 +430,20 @@
   /* Royal Gold Double-Hairline Border */
   border: 2px solid #d4af37;
   border-radius: 16px;
-  box-shadow: 
+  box-shadow:
     inset 0 0 0 5px #fffdfa,
     inset 0 0 0 6.5px rgba(212, 175, 55, 0.45),
     0 10px 36px rgba(212, 175, 55, 0.09);
-  
+
   /* Warm Rosy-Ivory Parchment with Ambient Floral Texture */
   background-color: #fffdfa;
-  background-image: 
-    radial-gradient(circle at center, rgba(255, 253, 249, 0.96) 28%, rgba(254, 247, 242, 0.90) 100%),
-    url('/images/lyrics-floral-frame.png');
+  background-image:
+    radial-gradient(circle at center, rgba(255, 253, 249, 0.96) 28%, rgba(254, 247, 242, 0.9) 100%),
+    url("/images/lyrics-floral-frame.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  
+
   /* Generous breathing room so lyrics never collide with golden corner blossoms */
   padding: 48px 40px 44px;
 }
@@ -445,7 +451,7 @@
 @media (max-width: 600px) {
   .lyrics-parchment.floral-frame-active {
     padding: 34px 18px 28px;
-    box-shadow: 
+    box-shadow:
       inset 0 0 0 3px #fffdfa,
       inset 0 0 0 4.5px rgba(212, 175, 55, 0.4),
       0 6px 20px rgba(212, 175, 55, 0.08);
@@ -504,7 +510,7 @@
   height: 280px;
   max-width: 80%;
   max-height: 80%;
-  background: url('/images/devotional-watermark.svg') center/contain no-repeat;
+  background: url("/images/devotional-watermark.svg") center/contain no-repeat;
   opacity: 0.65;
   pointer-events: none;
   user-select: none;
@@ -515,7 +521,7 @@
   position: relative;
   z-index: 2;
   font-size: var(--lyrics-font-size, 20px);
-  line-height: var(--lyrics-line-height, 2.0);
+  line-height: var(--lyrics-line-height, 2);
   color: var(--ink, #1f2937);
   text-align: center;
   transition: font-size 0.15s ease-out;
@@ -536,7 +542,9 @@
   border: 1px solid rgba(212, 175, 55, 0.22);
   backdrop-filter: blur(1.5px);
   -webkit-backdrop-filter: blur(1.5px);
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .lyrics-stanza:hover {
@@ -551,7 +559,7 @@
 }
 
 .lyrics-line {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-weight: 500;
   letter-spacing: 0.2px;
   padding: 3px 0;
@@ -585,7 +593,7 @@
 }
 
 .lyrics-empty-state h3 {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 20px;
   color: var(--ink, #1f2937);
   margin: 0 0 6px;
@@ -632,7 +640,7 @@
 }
 
 .meta-section-title {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 20px;
   font-weight: 700;
   color: var(--ink, #1f2937);
@@ -666,7 +674,10 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .spec-tile:hover {
@@ -704,7 +715,7 @@
 }
 
 .spec-value.highlight-val {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   color: var(--saffron-dk, #b26a1b);
   font-size: 17px;
 }
@@ -715,7 +726,10 @@
 }
 
 .spec-raga-notes-text {
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    sans-serif;
   font-size: 13.5px;
   line-height: 1.6;
   color: var(--ink, #1f2937);
@@ -856,7 +870,7 @@
    -------------------------------------------------------------------------- */
 [data-theme="dark"] .bhajan-detail-page {
   background-color: #0f121a;
-  background-image: 
+  background-image:
     radial-gradient(circle at 12% 18%, rgba(245, 158, 11, 0.05) 0%, transparent 45%),
     radial-gradient(circle at 88% 82%, rgba(125, 47, 69, 0.04) 0%, transparent 45%);
   color: #f8fafc;
@@ -934,14 +948,14 @@
 
 [data-theme="dark"] .lyrics-parchment.floral-frame-active {
   border-color: #e5c058;
-  box-shadow: 
-    inset 0 0 0 5px #151824, 
-    inset 0 0 0 6.5px rgba(229, 192, 88, 0.35), 
+  box-shadow:
+    inset 0 0 0 5px #151824,
+    inset 0 0 0 6.5px rgba(229, 192, 88, 0.35),
     0 10px 36px rgba(0, 0, 0, 0.55);
   background-color: #151824;
-  background-image: 
-    radial-gradient(circle at center, rgba(21, 24, 36, 0.96) 25%, rgba(28, 22, 30, 0.90) 100%), 
-    url('/images/lyrics-floral-frame.png');
+  background-image:
+    radial-gradient(circle at center, rgba(21, 24, 36, 0.96) 25%, rgba(28, 22, 30, 0.9) 100%),
+    url("/images/lyrics-floral-frame.png");
 }
 
 [data-theme="dark"] .floral-frame-active .lyrics-stanza {
@@ -1012,21 +1026,24 @@
     margin: 12mm 16mm 12mm 16mm;
   }
 
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     box-shadow: none !important;
     text-shadow: none !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  html, body {
+  html,
+  body {
     width: 100% !important;
     height: 100% !important;
     background: #ffffff !important;
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
-    font-family: 'Fraunces', Georgia, serif !important;
+    font-family: "Fraunces", Georgia, serif !important;
   }
 
   /* Completely Suppress Non-Print Elements & Floating Buttons */
@@ -1111,7 +1128,7 @@
   }
 
   .detail-bhajan-title {
-    font-family: 'Fraunces', Georgia, serif !important;
+    font-family: "Fraunces", Georgia, serif !important;
     font-size: 24pt !important;
     font-weight: 700 !important;
     color: #000000 !important;
@@ -1134,7 +1151,7 @@
     background: #fbf8f2 !important;
     border: 1pt solid #444444 !important;
     color: #111111 !important;
-    font-family: 'Inter', sans-serif !important;
+    font-family: "Inter", sans-serif !important;
     font-size: 9.5pt !important;
     font-weight: 700 !important;
     padding: 3pt 10pt !important;
@@ -1161,9 +1178,13 @@
     padding: 24pt 20pt !important;
     position: relative !important;
     background-color: #fffdfa !important;
-    background-image: 
-      radial-gradient(circle at center, rgba(255, 253, 249, 0.96) 28%, rgba(254, 247, 242, 0.88) 100%), 
-      url('/images/lyrics-floral-frame.png') !important;
+    background-image:
+      radial-gradient(
+        circle at center,
+        rgba(255, 253, 249, 0.96) 28%,
+        rgba(254, 247, 242, 0.88) 100%
+      ),
+      url("/images/lyrics-floral-frame.png") !important;
     background-size: cover !important;
     background-position: center !important;
     box-sizing: border-box !important;
@@ -1208,7 +1229,7 @@
   }
 
   .lyrics-line {
-    font-family: 'Fraunces', Georgia, serif !important;
+    font-family: "Fraunces", Georgia, serif !important;
     font-weight: 500 !important;
     color: #000000 !important;
     text-align: center !important;
@@ -1289,7 +1310,7 @@
   }
 
   .meta-section-title {
-    font-family: 'Inter', sans-serif !important;
+    font-family: "Inter", sans-serif !important;
     font-size: 9.5pt !important;
     font-weight: 800 !important;
     text-transform: uppercase !important;
@@ -1335,7 +1356,7 @@
   }
 
   .spec-label {
-    font-family: 'Inter', sans-serif !important;
+    font-family: "Inter", sans-serif !important;
     font-size: 6.8pt !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
@@ -1344,14 +1365,14 @@
   }
 
   .spec-value {
-    font-family: 'Inter', sans-serif !important;
+    font-family: "Inter", sans-serif !important;
     font-size: 9.5pt !important;
     font-weight: 700 !important;
     color: #000000 !important;
   }
 
   .spec-value.highlight-val {
-    font-family: 'Fraunces', Georgia, serif !important;
+    font-family: "Fraunces", Georgia, serif !important;
     color: #000000 !important;
     font-size: 10.5pt !important;
   }

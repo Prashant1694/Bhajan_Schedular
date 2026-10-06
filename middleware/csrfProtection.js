@@ -2,13 +2,13 @@ const { doubleCsrf } = require("csrf-csrf");
 
 const CSRF_COOKIE_NAME = "ps_csrf";
 
-const {
-  doubleCsrfProtection,
-  generateCsrfToken,
-  invalidCsrfTokenError
-} = doubleCsrf({
+const { doubleCsrfProtection, generateCsrfToken, invalidCsrfTokenError } = doubleCsrf({
   getSecret: () => {
-    return process.env.CSRF_SECRET || process.env.SESSION_SECRET || "development-fallback-csrf-secret-minimum-32-characters-required";
+    return (
+      process.env.CSRF_SECRET ||
+      process.env.SESSION_SECRET ||
+      "development-fallback-csrf-secret-minimum-32-characters-required"
+    );
   },
   getSessionIdentifier: (req) => {
     return (req.session && req.session.id) || req.ip || "anonymous-session";

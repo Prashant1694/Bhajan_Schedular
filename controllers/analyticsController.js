@@ -15,9 +15,9 @@ exports.showDatabase = async (req, res) => {
         session_date: { [Sequelize.Op.lte]: todayStr }
       },
       order: [
-        ['session_date', 'DESC'],
-        ['list_order', 'ASC'],
-        ['created_at', 'ASC']
+        ["session_date", "DESC"],
+        ["list_order", "ASC"],
+        ["created_at", "ASC"]
       ],
       raw: true
     });
@@ -25,15 +25,17 @@ exports.showDatabase = async (req, res) => {
     // Fetch active master bhajans to link details and music sheets in History
     const masterBhajans = await MasterBhajan.findAll({
       where: { is_active: true },
-      attributes: ['id', 'title', 'sheet_filename']
+      attributes: ["id", "title", "sheet_filename"]
     });
 
-    const { cleanAndStemBhajanTitle } = require('../services/fuzzyMatcher');
+    const { cleanAndStemBhajanTitle } = require("../services/fuzzyMatcher");
     const exactMap = new Map();
     const stemmedMap = new Map();
 
-    masterBhajans.forEach(mb => {
-      const lower = String(mb.title || '').trim().toLowerCase();
+    masterBhajans.forEach((mb) => {
+      const lower = String(mb.title || "")
+        .trim()
+        .toLowerCase();
       if (!exactMap.has(lower)) exactMap.set(lower, mb);
       const stemmed = cleanAndStemBhajanTitle(mb.title);
       if (!stemmedMap.has(stemmed)) stemmedMap.set(stemmed, mb);
@@ -49,13 +51,13 @@ exports.showDatabase = async (req, res) => {
     };
 
     // Group submissions by session_date
-    const { deityOrderKey, SPEED_ORDER } = require('../services/helpers');
+    const { deityOrderKey, SPEED_ORDER } = require("../services/helpers");
     const sessionsMap = new Map();
 
-    rawSubmissions.forEach(s => {
+    rawSubmissions.forEach((s) => {
       const match = findMaster(s.title);
       s.master_id = match ? match.id : null;
-      s.sheet_filename = match ? (match.sheet_filename || null) : null;
+      s.sheet_filename = match ? match.sheet_filename || null : null;
 
       if (!sessionsMap.has(s.session_date)) {
         sessionsMap.set(s.session_date, []);
@@ -64,7 +66,15 @@ exports.showDatabase = async (req, res) => {
     });
 
     // Build sessions array with heading and sorted bhajans
-    const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const DAY_NAMES = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ];
     const sessions = [];
 
     for (const [dateStr, bhajans] of sessionsMap) {
@@ -77,17 +87,20 @@ exports.showDatabase = async (req, res) => {
         }
         const deityCompare = deityOrderKey(a.deity) - deityOrderKey(b.deity);
         if (deityCompare !== 0) return deityCompare;
-        const speedCompare = (SPEED_ORDER[(a.speed || '').toLowerCase()] || 1) -
-                             (SPEED_ORDER[(b.speed || '').toLowerCase()] || 1);
+        const speedCompare =
+          (SPEED_ORDER[(a.speed || "").toLowerCase()] || 1) -
+          (SPEED_ORDER[(b.speed || "").toLowerCase()] || 1);
         if (speedCompare !== 0) return speedCompare;
-        return (a.singer_name || '').toLowerCase().localeCompare((b.singer_name || '').toLowerCase());
+        return (a.singer_name || "")
+          .toLowerCase()
+          .localeCompare((b.singer_name || "").toLowerCase());
       });
 
       // Heading: DD-MM-YYYY - DayName
-      const [y, m, d] = dateStr.split('-').map(Number);
+      const [y, m, d] = dateStr.split("-").map(Number);
       const dateObj = new Date(y, m - 1, d);
       const dayName = DAY_NAMES[dateObj.getDay()];
-      const heading = `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y} - ${dayName}`;
+      const heading = `${String(d).padStart(2, "0")}-${String(m).padStart(2, "0")}-${y} - ${dayName}`;
 
       sessions.push({ date: dateStr, heading, bhajans });
     }
@@ -96,12 +109,12 @@ exports.showDatabase = async (req, res) => {
     const initialDate = (req.query.date || "").trim();
     const totalBhajans = rawSubmissions.length;
 
-    res.render('database', { 
+    res.render("database", {
       sessions,
       initialSearch,
       initialDate,
       totalBhajans,
-      pageTitle: 'Bhajan Archives'
+      pageTitle: "Bhajan Archives"
     });
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
@@ -111,9 +124,20 @@ exports.showDatabase = async (req, res) => {
 exports.showAnalytics = async (req, res) => {
   try {
     const DEITY_ICONS = {
-      ganesha: '🐘', guru: '🙏', mata: '🌸', devi: '🌸', sarvadharma: '🕉️',
-      sai: '🪔', shiva: '🔱', krishna: '🦚', rama: '🏹', narayana: '☀️',
-      vitthala: '🪘', vithala: '🪘', hanuman: '🐵', anjaneya: '🐵'
+      ganesha: "🐘",
+      guru: "🙏",
+      mata: "🌸",
+      devi: "🌸",
+      sarvadharma: "🕉️",
+      sai: "🪔",
+      shiva: "🔱",
+      krishna: "🦚",
+      rama: "🏹",
+      narayana: "☀️",
+      vitthala: "🪘",
+      vithala: "🪘",
+      hanuman: "🐵",
+      anjaneya: "🐵"
     };
 
     // 1. Top 15 Most Sung Bhajans
@@ -134,42 +158,36 @@ exports.showAnalytics = async (req, res) => {
     const totalSung = await BhajanSubmission.count();
     const uniqueSongsCount = await BhajanSubmission.count({
       distinct: true,
-      col: 'title'
+      col: "title"
     });
     const totalSessions = await BhajanSubmission.count({
       distinct: true,
-      col: 'session_date'
+      col: "session_date"
     });
     const uniqueSingers = await BhajanSubmission.count({
       distinct: true,
-      col: 'singer_name'
+      col: "singer_name"
     });
 
     // 3. Deity Breakdown
     const rawDeities = await BhajanSubmission.findAll({
-      attributes: [
-        "deity",
-        [Sequelize.fn("COUNT", Sequelize.col("id")), "count"]
-      ],
+      attributes: ["deity", [Sequelize.fn("COUNT", Sequelize.col("id")), "count"]],
       group: ["deity"],
       order: [[Sequelize.fn("COUNT", Sequelize.col("id")), "DESC"]],
       raw: true
     });
 
-    const deityStats = rawDeities.map(d => {
-      const name = d.deity || 'Unknown';
+    const deityStats = rawDeities.map((d) => {
+      const name = d.deity || "Unknown";
       const count = parseInt(d.count, 10) || 0;
       const pct = totalSung > 0 ? Math.round((count / totalSung) * 100) : 0;
-      const icon = DEITY_ICONS[name.toLowerCase().trim()] || '🕉️';
+      const icon = DEITY_ICONS[name.toLowerCase().trim()] || "🕉️";
       return { name, count, pct, icon };
     });
 
     // 4. Tempo Breakdown
     const rawSpeeds = await BhajanSubmission.findAll({
-      attributes: [
-        "speed",
-        [Sequelize.fn("COUNT", Sequelize.col("id")), "count"]
-      ],
+      attributes: ["speed", [Sequelize.fn("COUNT", Sequelize.col("id")), "count"]],
       group: ["speed"],
       raw: true
     });
@@ -179,11 +197,11 @@ exports.showAnalytics = async (req, res) => {
       medium: 0,
       fast: 0
     };
-    rawSpeeds.forEach(s => {
-      const sp = (s.speed || '').toLowerCase().trim();
+    rawSpeeds.forEach((s) => {
+      const sp = (s.speed || "").toLowerCase().trim();
       const count = parseInt(s.count, 10) || 0;
-      if (sp === 'slow') tempoStats.slow += count;
-      else if (sp === 'fast') tempoStats.fast += count;
+      if (sp === "slow") tempoStats.slow += count;
+      else if (sp === "fast") tempoStats.fast += count;
       else tempoStats.medium += count;
     });
 
@@ -211,7 +229,7 @@ exports.showAnalytics = async (req, res) => {
         uniqueSongsCount,
         totalSessions,
         uniqueSingers,
-        avgPerSession: totalSessions > 0 ? (totalSung / totalSessions).toFixed(1) : '0'
+        avgPerSession: totalSessions > 0 ? (totalSung / totalSessions).toFixed(1) : "0"
       },
       deityStats,
       tempoStats: {
@@ -226,7 +244,6 @@ exports.showAnalytics = async (req, res) => {
       pageCSS: "admin.css",
       page: "analytics"
     });
-
   } catch (error) {
     res.status(500).send(`<h1>Analytics Error</h1><p>${error.message}</p>`);
   }

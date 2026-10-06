@@ -87,14 +87,30 @@ async function runDiwaliMigration() {
     `);
 
     // 6. Explicit Indexes
-    await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_diwali_participants_event_id ON diwali_participants(event_id);`);
-    await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_diwali_participants_gender ON diwali_participants(gender);`);
-    await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_diwali_bhajans_participant_id ON diwali_participant_bhajans(participant_id);`);
-    await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_diwali_bhajans_event_id ON diwali_participant_bhajans(event_id);`);
-    await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_diwali_bhajans_master_id ON diwali_participant_bhajans(master_bhajan_id);`);
-    await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_diwali_sequences_event_id ON diwali_sequences(event_id);`);
-    await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_diwali_seq_entries_seq_id ON diwali_sequence_entries(sequence_id);`);
-    await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_diwali_seq_entries_bhajan_id ON diwali_sequence_entries(participant_bhajan_id);`);
+    await sequelize.query(
+      `CREATE INDEX IF NOT EXISTS idx_diwali_participants_event_id ON diwali_participants(event_id);`
+    );
+    await sequelize.query(
+      `CREATE INDEX IF NOT EXISTS idx_diwali_participants_gender ON diwali_participants(gender);`
+    );
+    await sequelize.query(
+      `CREATE INDEX IF NOT EXISTS idx_diwali_bhajans_participant_id ON diwali_participant_bhajans(participant_id);`
+    );
+    await sequelize.query(
+      `CREATE INDEX IF NOT EXISTS idx_diwali_bhajans_event_id ON diwali_participant_bhajans(event_id);`
+    );
+    await sequelize.query(
+      `CREATE INDEX IF NOT EXISTS idx_diwali_bhajans_master_id ON diwali_participant_bhajans(master_bhajan_id);`
+    );
+    await sequelize.query(
+      `CREATE INDEX IF NOT EXISTS idx_diwali_sequences_event_id ON diwali_sequences(event_id);`
+    );
+    await sequelize.query(
+      `CREATE INDEX IF NOT EXISTS idx_diwali_seq_entries_seq_id ON diwali_sequence_entries(sequence_id);`
+    );
+    await sequelize.query(
+      `CREATE INDEX IF NOT EXISTS idx_diwali_seq_entries_bhajan_id ON diwali_sequence_entries(participant_bhajan_id);`
+    );
 
     console.log("✅ Diwali tables & indexes created successfully.");
   } catch (error) {

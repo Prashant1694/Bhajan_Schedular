@@ -388,7 +388,9 @@ body #notifBellBtn:not(.native-action-btn) {
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .native-bottom-nav .tab-icon {
@@ -403,7 +405,9 @@ body #notifBellBtn:not(.native-action-btn) {
   line-height: 1.25;
   letter-spacing: 0.15px;
   color: var(--muted, #64748b);
-  transition: color 0.18s ease, font-weight 0.18s ease;
+  transition:
+    color 0.18s ease,
+    font-weight 0.18s ease;
   text-align: center !important;
   display: block !important;
   width: 100% !important;
@@ -987,7 +991,8 @@ body.in-admin-tab .shell-notif-btn {
   overflow-y: auto !important;
   overflow-x: hidden !important;
   -webkit-overflow-scrolling: touch;
-  padding: max(18px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding: max(18px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
   box-sizing: border-box;
 }
 

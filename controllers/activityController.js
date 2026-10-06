@@ -7,7 +7,11 @@ const { Sequelize, Op } = require("sequelize");
 exports.showActivityLogs = async (req, res) => {
   try {
     if (!req.session.admin) {
-      return res.status(403).send("<h1>403 Forbidden</h1><p>You must be an administrator to view the Activity Monitor.</p>");
+      return res
+        .status(403)
+        .send(
+          "<h1>403 Forbidden</h1><p>You must be an administrator to view the Activity Monitor.</p>"
+        );
     }
 
     // 1. Fetch Presence List & evaluate online status (45 seconds threshold)
@@ -27,23 +31,19 @@ exports.showActivityLogs = async (req, res) => {
     });
 
     // Online counts
-    const onlinePresence = presenceList.filter(p => p.isOnline);
+    const onlinePresence = presenceList.filter((p) => p.isOnline);
     const uniqueOnlineAdmins = new Set(
       onlinePresence
-        .filter(p => p.user_type !== 'singer' && p.user_type !== 'guest' && p.admin_id !== null)
-        .map(p => p.admin_id ? `admin_${p.admin_id}` : p.username)
+        .filter((p) => p.user_type !== "singer" && p.user_type !== "guest" && p.admin_id !== null)
+        .map((p) => (p.admin_id ? `admin_${p.admin_id}` : p.username))
     ).size;
 
     const uniqueOnlineSingers = new Set(
-      onlinePresence
-        .filter(p => p.user_type === 'singer')
-        .map(p => p.username)
+      onlinePresence.filter((p) => p.user_type === "singer").map((p) => p.username)
     ).size;
 
     const uniqueOnlineGuests = new Set(
-      onlinePresence
-        .filter(p => p.user_type === 'guest')
-        .map(p => p.session_id)
+      onlinePresence.filter((p) => p.user_type === "guest").map((p) => p.session_id)
     ).size;
 
     // 2. User Summaries (Grouped activities per user account)
@@ -90,10 +90,7 @@ exports.showActivityLogs = async (req, res) => {
 
     // 5. Section stats
     const sectionStats = await ActivityLog.findAll({
-      attributes: [
-        "section",
-        [Sequelize.fn("COUNT", Sequelize.col("id")), "visit_count"]
-      ],
+      attributes: ["section", [Sequelize.fn("COUNT", Sequelize.col("id")), "visit_count"]],
       group: ["section"],
       order: [[Sequelize.fn("COUNT", Sequelize.col("id")), "DESC"]],
       limit: 10,
@@ -121,7 +118,7 @@ exports.showActivityLogs = async (req, res) => {
       totalPages: Math.max(1, Math.ceil(count / limit)),
       currentAdmin: req.session.admin,
       isAdminPage: true,
-      pageCSS: 'admin.css',
+      pageCSS: "admin.css",
       page: "activity"
     });
   } catch (error) {
@@ -131,7 +128,10 @@ exports.showActivityLogs = async (req, res) => {
 
 exports.purgeOldLogs = async (req, res) => {
   try {
-    if (!req.session.admin || (req.session.admin.role !== "super_admin" && req.session.admin.role !== "SUPER_ADMIN")) {
+    if (
+      !req.session.admin ||
+      (req.session.admin.role !== "super_admin" && req.session.admin.role !== "SUPER_ADMIN")
+    ) {
       return res.status(403).json({ error: "Unauthorized. Super Admin only." });
     }
 
@@ -197,7 +197,11 @@ exports.showMyActivity = async (req, res) => {
   try {
     const currentSinger = req.session.singer || res.locals.currentSinger;
     const currentAdmin = req.session.admin;
-    const username = currentSinger ? currentSinger.name : (currentAdmin ? (currentAdmin.display_name || currentAdmin.username) : null);
+    const username = currentSinger
+      ? currentSinger.name
+      : currentAdmin
+        ? currentAdmin.display_name || currentAdmin.username
+        : null;
 
     if (!username) {
       return res.redirect("/singer/login?redirect=/my-activity");

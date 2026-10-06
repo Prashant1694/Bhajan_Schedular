@@ -13,7 +13,9 @@ exports.getNotifications = async (req, res) => {
     const singerId = req.session?.singer?.id || (sub ? sub.singer_id : null);
 
     const notifications = await notificationService.getNotificationsForDevice(
-      deviceId, singerId, 30
+      deviceId,
+      singerId,
+      30
     );
     res.json({ notifications });
   } catch (error) {
@@ -103,7 +105,8 @@ exports.subscribe = async (req, res) => {
 
     if (!req.session?.singer || !req.session.singer.id) {
       return res.status(401).json({
-        error: "Active singer session required to register for notifications. Please sign in via Singer Hub."
+        error:
+          "Active singer session required to register for notifications. Please sign in via Singer Hub."
       });
     }
 
@@ -125,10 +128,7 @@ exports.subscribe = async (req, res) => {
     // Check if subscription for this device or endpoint already exists
     const existing = await PushSubscription.findOne({
       where: {
-        [Sequelize.Op.or]: [
-          { endpoint },
-          { device_id }
-        ]
+        [Sequelize.Op.or]: [{ endpoint }, { device_id }]
       }
     });
 
@@ -213,8 +213,8 @@ exports.adminNotifications = async (req, res) => {
 
     // Get all singers for dropdown and for singerMap
     const allSingers = await Singer.findAll({
-      attributes: ['id', 'name'],
-      order: [['name', 'ASC']]
+      attributes: ["id", "name"],
+      order: [["name", "ASC"]]
     });
 
     const singerMap = {};

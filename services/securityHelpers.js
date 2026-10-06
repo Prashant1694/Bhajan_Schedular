@@ -44,7 +44,9 @@ function safeJsonStringify(obj) {
  */
 function validatePasswordPolicy(password, username = "") {
   const cleanPass = String(password || "").trim();
-  const cleanUser = String(username || "").trim().toLowerCase();
+  const cleanUser = String(username || "")
+    .trim()
+    .toLowerCase();
 
   if (cleanPass.length < 10) {
     return {

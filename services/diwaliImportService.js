@@ -1,6 +1,10 @@
 const ExcelJS = require("exceljs");
 const sequelize = require("../config/database");
-const { DiwaliParticipant, DiwaliParticipantBhajan, MasterBhajan } = require("../models/diwaliModels");
+const {
+  DiwaliParticipant,
+  DiwaliParticipantBhajan,
+  MasterBhajan
+} = require("../models/diwaliModels");
 
 /**
  * Normalizes header keys
@@ -34,7 +38,14 @@ function detectColumns(headers) {
       map.sr = idx;
     } else if (nh === "partner" || nh === "partnername" || nh === "colead" || nh === "secondlead") {
       map.partner_name = idx;
-    } else if (nh === "lead" || nh === "leadsinger" || nh === "leadname" || nh === "name" || nh === "singer" || nh === "singername") {
+    } else if (
+      nh === "lead" ||
+      nh === "leadsinger" ||
+      nh === "leadname" ||
+      nh === "name" ||
+      nh === "singer" ||
+      nh === "singername"
+    ) {
       if (map.lead_name === -1 || nh.includes("lead")) {
         map.lead_name = idx;
       }
@@ -69,9 +80,10 @@ function validateUploadBuffer(buffer) {
     throw new Error("File exceeds maximum allowed size of 5MB.");
   }
   // Magic bytes check for ZIP (XLSX)
-  const isZip = buffer.length >= 4 &&
+  const isZip =
+    buffer.length >= 4 &&
     buffer[0] === 0x50 &&
-    buffer[1] === 0x4B &&
+    buffer[1] === 0x4b &&
     buffer[2] === 0x03 &&
     buffer[3] === 0x04;
 
@@ -94,7 +106,7 @@ async function parseExcelBuffer(buffer) {
   });
 
   const masterLookup = new Map();
-  allMasterBhajans.forEach(m => {
+  allMasterBhajans.forEach((m) => {
     masterLookup.set((m.title || "").toLowerCase().trim(), m);
   });
 
@@ -113,7 +125,7 @@ async function parseExcelBuffer(buffer) {
 
     worksheet.eachRow({ includeEmpty: false }, (row) => {
       const rowVals = Array.isArray(row.values) ? row.values.slice(1) : [];
-      const cells = rowVals.map(cell => {
+      const cells = rowVals.map((cell) => {
         if (cell === null || cell === undefined) return "";
         if (typeof cell === "object") {
           if (cell.text) return String(cell.text).trim();
@@ -128,7 +140,11 @@ async function parseExcelBuffer(buffer) {
 
     const lowerSheet = sheetName.toLowerCase();
     let defaultGender = "Gents";
-    if (lowerSheet.includes("lad") || lowerSheet.includes("female") || lowerSheet.includes("women")) {
+    if (
+      lowerSheet.includes("lad") ||
+      lowerSheet.includes("female") ||
+      lowerSheet.includes("women")
+    ) {
       defaultGender = "Ladies";
     }
 
@@ -136,7 +152,7 @@ async function parseExcelBuffer(buffer) {
     let headerRowIdx = -1;
     for (let r = 0; r < Math.min(10, rawRows.length); r++) {
       const row = rawRows[r];
-      if (row.some(c => c.length > 0)) {
+      if (row.some((c) => c.length > 0)) {
         headerRowIdx = r;
         break;
       }
@@ -153,7 +169,7 @@ async function parseExcelBuffer(buffer) {
 
     for (let r = headerRowIdx + 1; r < rawRows.length; r++) {
       const row = rawRows[r];
-      if (row.every(c => c.length === 0)) continue;
+      if (row.every((c) => c.length === 0)) continue;
 
       totalRows++;
       if (totalRows > 5000) {
@@ -161,8 +177,10 @@ async function parseExcelBuffer(buffer) {
       }
 
       let rawLead = colMap.lead_name !== -1 ? String(row[colMap.lead_name] || "").trim() : "";
-      let rawPartner = colMap.partner_name !== -1 ? String(row[colMap.partner_name] || "").trim() : "";
-      const rawBhajan = colMap.bhajan_title !== -1 ? String(row[colMap.bhajan_title] || "").trim() : "";
+      let rawPartner =
+        colMap.partner_name !== -1 ? String(row[colMap.partner_name] || "").trim() : "";
+      const rawBhajan =
+        colMap.bhajan_title !== -1 ? String(row[colMap.bhajan_title] || "").trim() : "";
       const scale = colMap.scale !== -1 ? String(row[colMap.scale] || "").trim() : "";
       const tabla = colMap.tabla !== -1 ? String(row[colMap.tabla] || "").trim() : "";
       const shruti = colMap.shruti !== -1 ? String(row[colMap.shruti] || "").trim() : "";
@@ -224,10 +242,10 @@ async function parseExcelBuffer(buffer) {
         currentParticipantGroup.bhajans.push({
           tempId: `b_${totalRows}`,
           bhajan_title: rawBhajan,
-          scale: scale || (matchedMaster?.shruti || ""),
+          scale: scale || matchedMaster?.shruti || "",
           tabla: tabla,
-          shruti: shruti || (matchedMaster?.shruti || ""),
-          deity: deity || (matchedMaster?.deity || ""),
+          shruti: shruti || matchedMaster?.shruti || "",
+          deity: deity || matchedMaster?.deity || "",
           remarks: remarks,
           master_bhajan_id: matchedMaster ? matchedMaster.id : null,
           matchedTitle: matchedMaster ? matchedMaster.title : null,
@@ -259,7 +277,11 @@ async function parseExcelBuffer(buffer) {
  * Commits verified import payload to database
  */
 async function commitImport(eventId, confirmedParticipants) {
-  if (!confirmedParticipants || !Array.isArray(confirmedParticipants) || confirmedParticipants.length === 0) {
+  if (
+    !confirmedParticipants ||
+    !Array.isArray(confirmedParticipants) ||
+    confirmedParticipants.length === 0
+  ) {
     throw new Error("No participant data provided for import.");
   }
 
@@ -283,7 +305,9 @@ async function commitImport(eventId, confirmedParticipants) {
         throw new Error(`Invalid gender '${cleanGender}' for participant ${cleanLead}.`);
       }
 
-      const validBhajans = (p.bhajans || []).filter(b => (b.bhajan_title || "").trim().length > 0);
+      const validBhajans = (p.bhajans || []).filter(
+        (b) => (b.bhajan_title || "").trim().length > 0
+      );
       if (validBhajans.length === 0) {
         continue;
       }

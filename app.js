@@ -4,39 +4,49 @@
 // Native App Shell & Persistent Tabs v3.5
 // ============================================================
 
-require('dotenv').config();
-process.env.TZ = process.env.TZ || 'Asia/Kolkata';
+require("dotenv").config();
+process.env.TZ = process.env.TZ || "Asia/Kolkata";
 
-if (process.env.NODE_ENV === "production" && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)) {
-  console.error("FATAL: In production, SESSION_SECRET environment variable must be set with at least 32 characters.");
+if (
+  process.env.NODE_ENV === "production" &&
+  (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)
+) {
+  console.error(
+    "FATAL: In production, SESSION_SECRET environment variable must be set with at least 32 characters."
+  );
   process.exit(1);
 }
 
-const express = require('express');
+const express = require("express");
 const expressLayouts = require("express-ejs-layouts");
-const path = require('path');
-const crypto = require('crypto');
-const cookieParser = require('cookie-parser');
-const helmet = require('helmet');
-const compression = require('compression');
-const session = require('express-session');
-const SequelizeStore = require('connect-session-sequelize')(session.Store);
-const sequelize = require('./config/database');
-const logger = require('./services/logger');
+const path = require("path");
+const crypto = require("crypto");
+const cookieParser = require("cookie-parser");
+const helmet = require("helmet");
+const compression = require("compression");
+const session = require("express-session");
+const SequelizeStore = require("connect-session-sequelize")(session.Store);
+const sequelize = require("./config/database");
+const logger = require("./services/logger");
 
 const sessionStore = new SequelizeStore({
   db: sequelize,
-  tableName: 'Sessions',
+  tableName: "Sessions",
   checkExpirationInterval: 15 * 60 * 1000, // Automatically prune expired sessions every 15 min
-  expiration: 90 * 24 * 60 * 60 * 1000     // 90 days persistent devotee session duration
+  expiration: 90 * 24 * 60 * 60 * 1000 // 90 days persistent devotee session duration
 });
 
 // Ensure session table exists in SQLite
 sessionStore.sync();
 
-const { securityHeaders, blockCrossSiteWrites, generalWriteLimit, sanitizeInputs } = require("./middleware/security");
+const {
+  securityHeaders,
+  blockCrossSiteWrites,
+  generalWriteLimit,
+  sanitizeInputs
+} = require("./middleware/security");
 const { doubleCsrfProtection, generateToken } = require("./middleware/csrfProtection");
-const {initializeDatabase} = require("./services/databaseInitializer");
+const { initializeDatabase } = require("./services/databaseInitializer");
 
 // ============================================================
 // EXPRESS APP SETUP
@@ -75,7 +85,7 @@ app.get("/healthz", async (req, res) => {
 
 // configure layout
 app.use(expressLayouts);
-app.set("layout", "layouts/main")
+app.set("layout", "layouts/main");
 // Configure EJS Templating Engine
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -93,28 +103,32 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cookieParser(process.env.SESSION_SECRET || "bhajan-planner-session-secret-gandhinagar-2026"));
+app.use(
+  cookieParser(process.env.SESSION_SECRET || "bhajan-planner-session-secret-gandhinagar-2026")
+);
 
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
-      connectSrc: ["'self'", "https://accounts.google.com", "https://oauth2.googleapis.com"],
-      frameSrc: ["'self'", "https://accounts.google.com"],
-      workerSrc: ["'self'"],
-      manifestSrc: ["'self'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-      frameAncestors: ["'self'"]
-    }
-  },
-  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
-  crossOriginResourcePolicy: { policy: "same-origin" }
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
+        connectSrc: ["'self'", "https://accounts.google.com", "https://oauth2.googleapis.com"],
+        frameSrc: ["'self'", "https://accounts.google.com"],
+        workerSrc: ["'self'"],
+        manifestSrc: ["'self'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"]
+      }
+    },
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+    crossOriginResourcePolicy: { policy: "same-origin" }
+  })
+);
 
 app.use(securityHeaders);
 // Reject oversized payloads before they can consume server resources.
@@ -124,7 +138,8 @@ app.use(sanitizeInputs);
 app.use(blockCrossSiteWrites);
 app.use((req, res, next) => {
   if (req.path.startsWith("/api/activity/")) return next();
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return generalWriteLimit(req, res, next);
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method))
+    return generalWriteLimit(req, res, next);
   next();
 });
 
@@ -144,18 +159,20 @@ app.use((req, res, next) => {
 });
 
 // Session Setup with persistent SQLite storage (no MemoryStore leak)
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'bhajan-planner-session-secret-gandhinagar-2026',
-  store: sessionStore,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 90 * 24 * 60 * 60 * 1000 // 90-day persistent session
-  }
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "bhajan-planner-session-secret-gandhinagar-2026",
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 90 * 24 * 60 * 60 * 1000 // 90-day persistent session
+    }
+  })
+);
 
 app.use(doubleCsrfProtection);
 
@@ -165,21 +182,25 @@ app.use(trackActivity);
 const { attachSinger } = require("./middleware/singerAuth");
 app.use(attachSinger);
 
+const { attachAuthLocals } = require("./middleware/authLocals");
+app.use(attachAuthLocals);
+
 const BhajanReport = require("./models/BhajanReport");
 
 const ADMIN_PATH_PREFIXES = [
-  "/admin",           // /admin, /admin/*, /admin/admin-users/*
+  "/admin", // /admin, /admin/*, /admin/admin-users/*
   "/admin-login",
   "/forgot-password", // login-recovery flow shares the admin visual language
   "/master-bank",
-  "/admin/reports",
+  "/admin/reports"
 ];
 
 const { getCachedMissingCount } = require("./services/helpers");
 
 app.use(async (req, res, next) => {
   try {
-    res.locals.csrfToken = typeof req.csrfToken === "function" ? req.csrfToken() : generateToken(req, res);
+    res.locals.csrfToken =
+      typeof req.csrfToken === "function" ? req.csrfToken() : generateToken(req, res);
   } catch (_) {
     res.locals.csrfToken = "";
   }
@@ -190,9 +211,12 @@ app.use(async (req, res, next) => {
   res.locals.pageJS = null;
   res.locals.showLoader = false;
   // Embed mode: page is rendered inside the app shell iframe — suppress chrome
-  res.locals._embed = req.query._embed === '1' || req.query.embed === '1' || req.headers['sec-fetch-dest'] === 'iframe';
-  res.locals.isAdminPage = ADMIN_PATH_PREFIXES.some((prefix) =>
-    req.path === prefix || req.path.startsWith(prefix + "/")
+  res.locals._embed =
+    req.query._embed === "1" ||
+    req.query.embed === "1" ||
+    req.headers["sec-fetch-dest"] === "iframe";
+  res.locals.isAdminPage = ADMIN_PATH_PREFIXES.some(
+    (prefix) => req.path === prefix || req.path.startsWith(prefix + "/")
   );
   if (res.locals.isAdminPage && req.session && req.session.admin) {
     try {
@@ -241,11 +265,18 @@ app.use("/", singerHubRoutes);
 // CSRF token error handler
 app.use((error, req, res, next) => {
   if (error && (error.code === "EBADCSRFTOKEN" || error.message === "invalid csrf token")) {
-    const isJson = req.xhr || (req.headers.accept && req.headers.accept.includes("json")) || req.path.startsWith("/api/");
+    const isJson =
+      req.xhr ||
+      (req.headers.accept && req.headers.accept.includes("json")) ||
+      req.path.startsWith("/api/");
     if (isJson) {
-      return res.status(403).json({ error: "Invalid or missing CSRF token. Please refresh the page and try again." });
+      return res
+        .status(403)
+        .json({ error: "Invalid or missing CSRF token. Please refresh the page and try again." });
     }
-    return res.status(403).send("Security token expired or invalid. Please refresh the page and try again.");
+    return res
+      .status(403)
+      .send("Security token expired or invalid. Please refresh the page and try again.");
   }
   next(error);
 });
@@ -256,7 +287,10 @@ app.use((error, req, res, next) => {
     return res.status(413).send("Request payload is too large.");
   }
   logger.error({ reqId: req.id || "NO-REQ-ID", err: error }, "Unhandled request error");
-  const isJson = req.xhr || (req.headers.accept && req.headers.accept.includes("json")) || req.path.startsWith("/api/");
+  const isJson =
+    req.xhr ||
+    (req.headers.accept && req.headers.accept.includes("json")) ||
+    req.path.startsWith("/api/");
   if (isJson) {
     return res.status(500).json({ error: "Something went wrong. Please try again later." });
   }

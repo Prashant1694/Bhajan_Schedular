@@ -7,14 +7,7 @@ const { invalidateAdminCache } = require("../middleware/auth");
 
 class AdminUserService {
   async validateCreateInput(data) {
-    let {
-      display_name,
-      title,
-      username,
-      password,
-      google_email,
-      role
-    } = data;
+    let { display_name, title, username, password, google_email, role } = data;
 
     display_name = (display_name || "").trim();
     title = (title || "").trim();
@@ -95,13 +88,7 @@ class AdminUserService {
   async updateAdmin(id, data) {
     const admin = await this.findById(id);
 
-    let {
-      display_name,
-      title,
-      username,
-      google_email,
-      role
-    } = data;
+    let { display_name, title, username, google_email, role } = data;
 
     display_name = (display_name || "").trim();
     title = (title || "").trim();

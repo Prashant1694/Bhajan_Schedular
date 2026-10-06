@@ -96,7 +96,7 @@ async function createParticipantWithBhajans({
     throw new Error("At least one bhajan is required.");
   }
 
-  const validBhajans = bhajans.filter(b => (b.bhajan_title || "").trim().length > 0);
+  const validBhajans = bhajans.filter((b) => (b.bhajan_title || "").trim().length > 0);
   if (validBhajans.length === 0) {
     throw new Error("Please enter at least one valid bhajan title.");
   }
@@ -169,13 +169,10 @@ async function getParticipantById(id) {
   });
 }
 
-async function updateParticipantWithBhajans(participantId, {
-  lead_name,
-  partner_name,
-  gender,
-  remarks,
-  bhajans
-}) {
+async function updateParticipantWithBhajans(
+  participantId,
+  { lead_name, partner_name, gender, remarks, bhajans }
+) {
   const cleanLead = (lead_name || "").trim();
   const cleanPartner = (partner_name || "").trim();
   const cleanGender = (gender || "").trim();
@@ -198,7 +195,7 @@ async function updateParticipantWithBhajans(participantId, {
     await participant.save({ transaction: t });
 
     if (bhajans && Array.isArray(bhajans)) {
-      const validBhajans = bhajans.filter(b => (b.bhajan_title || "").trim().length > 0);
+      const validBhajans = bhajans.filter((b) => (b.bhajan_title || "").trim().length > 0);
       if (validBhajans.length === 0) {
         throw new Error("At least one valid bhajan is required.");
       }
@@ -260,7 +257,7 @@ async function deleteParticipant(id) {
 async function deleteBhajan(bhajanId) {
   const bhajan = await DiwaliParticipantBhajan.findByPk(bhajanId);
   if (!bhajan) throw new Error("Bhajan not found.");
-  
+
   // Check if participant has other bhajans
   const count = await DiwaliParticipantBhajan.count({
     where: { participant_id: bhajan.participant_id }
@@ -323,7 +320,7 @@ async function getFlatBhajanRows(eventId, filters = {}) {
 
   if (filters.search) {
     const q = filters.search.toLowerCase().trim();
-    filtered = filtered.filter(b => {
+    filtered = filtered.filter((b) => {
       const p = b.participant;
       return (
         (p?.lead_name && p.lead_name.toLowerCase().includes(q)) ||
@@ -340,12 +337,12 @@ async function getFlatBhajanRows(eventId, filters = {}) {
 
   if (filters.deity) {
     const d = filters.deity.toLowerCase().trim();
-    filtered = filtered.filter(b => (b.deity || "").toLowerCase() === d);
+    filtered = filtered.filter((b) => (b.deity || "").toLowerCase() === d);
   }
 
   if (filters.scale) {
     const s = filters.scale.toLowerCase().trim();
-    filtered = filtered.filter(b => (b.scale || "").toLowerCase() === s);
+    filtered = filtered.filter((b) => (b.scale || "").toLowerCase() === s);
   }
 
   return filtered;
@@ -384,7 +381,7 @@ async function getStats(eventId) {
   const generatedSequences = sequences.length;
   let sequenceStatus = "Not Generated";
   if (generatedSequences > 0) {
-    const isFinalized = sequences.every(s => s.status === "Finalized");
+    const isFinalized = sequences.every((s) => s.status === "Finalized");
     sequenceStatus = isFinalized ? "Finalized" : "Draft";
   }
 
@@ -431,8 +428,8 @@ async function generateFairSequences(eventId, numSequences, options = {}) {
   }
 
   // Split into categories
-  const gentsParticipants = participants.filter(p => p.gender === "Gents");
-  const ladiesParticipants = participants.filter(p => p.gender === "Ladies");
+  const gentsParticipants = participants.filter((p) => p.gender === "Gents");
+  const ladiesParticipants = participants.filter((p) => p.gender === "Ladies");
 
   // Buckets for each sequence: sequenceIndex (0..K-1)
   const sequenceBuckets = Array.from({ length: K }, (_, idx) => ({
@@ -449,7 +446,7 @@ async function generateFairSequences(eventId, numSequences, options = {}) {
   let unavoidableConcentrationCount = 0;
 
   function distributeCategory(participantList, categoryKey) {
-    const activeParticipants = participantList.filter(p => p.bhajans && p.bhajans.length > 0);
+    const activeParticipants = participantList.filter((p) => p.bhajans && p.bhajans.length > 0);
     // Sort pairs by bhajan count descending (pairs with most bhajans placed first)
     activeParticipants.sort((a, b) => b.bhajans.length - a.bhajans.length);
 
@@ -481,8 +478,9 @@ async function generateFairSequences(eventId, numSequences, options = {}) {
         let minDeityOccurrences = Infinity;
 
         // Shuffle indices slightly for symmetry breaking when counts are tied
-        const candidateIndices = Array.from({ length: K }, (_, i) => i)
-          .sort(() => Math.random() - 0.5);
+        const candidateIndices = Array.from({ length: K }, (_, i) => i).sort(
+          () => Math.random() - 0.5
+        );
 
         for (const idx of candidateIndices) {
           const pairOccur = usage.get(idx) || 0;
@@ -493,7 +491,9 @@ async function generateFairSequences(eventId, numSequences, options = {}) {
           if (
             pairOccur < minPairOccurrences ||
             (pairOccur === minPairOccurrences && load < minSeqLoad) ||
-            (pairOccur === minPairOccurrences && load === minSeqLoad && deityOccur < minDeityOccurrences)
+            (pairOccur === minPairOccurrences &&
+              load === minSeqLoad &&
+              deityOccur < minDeityOccurrences)
           ) {
             bestSeqIdx = idx;
             minPairOccurrences = pairOccur;
@@ -550,7 +550,7 @@ async function generateFairSequences(eventId, numSequences, options = {}) {
     while (pool.length > 0) {
       const lastParticipantId = result[result.length - 1].participant_id;
       // Find candidate with different participant_id
-      let candidateIdx = pool.findIndex(b => b.participant_id !== lastParticipantId);
+      let candidateIdx = pool.findIndex((b) => b.participant_id !== lastParticipantId);
       if (candidateIdx === -1) {
         // Unavoidable: all remaining items belong to same participant
         candidateIdx = 0;
@@ -614,7 +614,7 @@ async function generateFairSequences(eventId, numSequences, options = {}) {
       multiBhajanPairs: multiBhajanPairsCount,
       successfullySpread: successfullySpreadCount,
       unavoidableConcentration: unavoidableConcentrationCount,
-      sequences: sequenceBuckets.map(b => ({
+      sequences: sequenceBuckets.map((b) => ({
         sequenceNumber: b.sequenceNumber,
         gentsCount: b.gentsBhajans.length,
         ladiesCount: b.ladiesBhajans.length,
@@ -661,7 +661,7 @@ async function getFullSequences(eventId) {
   });
 
   // Sort entries by sequence_order in JavaScript
-  sequences.forEach(seq => {
+  sequences.forEach((seq) => {
     if (seq.entries) {
       seq.entries.sort((a, b) => a.sequence_order - b.sequence_order);
     }

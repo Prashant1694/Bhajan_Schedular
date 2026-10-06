@@ -21,24 +21,61 @@ exports.showMasterBank = async (req, res) => {
 
 function normalizeDeityString(str) {
   if (!str) return str;
-  return str.split(',').map(s => {
-    const trimmed = s.trim();
-    const lower = trimmed.toLowerCase();
-    if (lower === 'vittala' || lower === 'vithhala' || lower === 'vithala' || lower === 'vitthala') {
-      return 'Vitthala';
-    }
-    if (lower === 'anjaneya' || lower === 'aanjaneya' || lower === 'hanuman' || lower === 'maruti' || lower === 'maruthi') {
-      return 'Hanuman';
-    }
-    return trimmed;
-  }).join(', ');
+  return str
+    .split(",")
+    .map((s) => {
+      const trimmed = s.trim();
+      const lower = trimmed.toLowerCase();
+      if (
+        lower === "vittala" ||
+        lower === "vithhala" ||
+        lower === "vithala" ||
+        lower === "vitthala"
+      ) {
+        return "Vitthala";
+      }
+      if (
+        lower === "anjaneya" ||
+        lower === "aanjaneya" ||
+        lower === "hanuman" ||
+        lower === "maruti" ||
+        lower === "maruthi"
+      ) {
+        return "Hanuman";
+      }
+      return trimmed;
+    })
+    .join(", ");
 }
 
 exports.addMasterBhajan = async (req, res) => {
   try {
-    const { title, deity, raga, raga_notes, tempo, level, shruti, shruti_female, lyrics, sheet_filename } = req.body;
+    const {
+      title,
+      deity,
+      raga,
+      raga_notes,
+      tempo,
+      level,
+      shruti,
+      shruti_female,
+      lyrics,
+      sheet_filename
+    } = req.body;
     const cleanDeity = normalizeDeityString(deity);
-    await MasterBhajan.create({ title, deity: cleanDeity, raga, raga_notes, tempo, level, shruti, shruti_female, lyrics, sheet_filename, is_active: true });
+    await MasterBhajan.create({
+      title,
+      deity: cleanDeity,
+      raga,
+      raga_notes,
+      tempo,
+      level,
+      shruti,
+      shruti_female,
+      lyrics,
+      sheet_filename,
+      is_active: true
+    });
     invalidateMissingCount();
     res.json({ success: true });
   } catch (error) {
@@ -49,17 +86,37 @@ exports.addMasterBhajan = async (req, res) => {
 
 exports.updateMasterBhajan = async (req, res) => {
   try {
-    const { title, deity, level, tempo, raga, raga_notes, shruti, shruti_female, language, lyrics, sheet_filename } = req.body;
+    const {
+      title,
+      deity,
+      level,
+      tempo,
+      raga,
+      raga_notes,
+      shruti,
+      shruti_female,
+      language,
+      lyrics,
+      sheet_filename
+    } = req.body;
 
-    const updateFields = { title, deity: normalizeDeityString(deity), level, tempo, raga, raga_notes, shruti, shruti_female, language, lyrics };
+    const updateFields = {
+      title,
+      deity: normalizeDeityString(deity),
+      level,
+      tempo,
+      raga,
+      raga_notes,
+      shruti,
+      shruti_female,
+      language,
+      lyrics
+    };
     if (sheet_filename !== undefined) {
       updateFields.sheet_filename = sheet_filename || null;
     }
 
-    await MasterBhajan.update(
-      updateFields,
-      { where: { id: req.params.id } }
-    );
+    await MasterBhajan.update(updateFields, { where: { id: req.params.id } });
 
     res.json({ success: true, message: "Bhajan updated successfully!" });
   } catch (error) {
@@ -90,13 +147,38 @@ exports.exportMaster = async (req, res) => {
     if (format === "excel" || format === "xlsx") {
       const workbook = new ExcelJS.Workbook();
       const sheet = workbook.addWorksheet("Master Bhajans");
-      sheet.addRow(["ID", "Title", "Deity", "Tempo", "Raag", "Raag Notes", "Shruti (Gents)", "Shruti (Ladies)", "Language", "Lyrics"]);
-      allBhajans.forEach(b => {
-        sheet.addRow([b.id, b.title, b.deity, b.tempo, b.raga, b.raga_notes, b.shruti, b.shruti_female, b.language, b.lyrics]);
+      sheet.addRow([
+        "ID",
+        "Title",
+        "Deity",
+        "Tempo",
+        "Raag",
+        "Raag Notes",
+        "Shruti (Gents)",
+        "Shruti (Ladies)",
+        "Language",
+        "Lyrics"
+      ]);
+      allBhajans.forEach((b) => {
+        sheet.addRow([
+          b.id,
+          b.title,
+          b.deity,
+          b.tempo,
+          b.raga,
+          b.raga_notes,
+          b.shruti,
+          b.shruti_female,
+          b.language,
+          b.lyrics
+        ]);
       });
       const buffer = await workbook.xlsx.writeBuffer();
       res.setHeader("Content-Disposition", "attachment; filename=master_bhajans.xlsx");
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
       return res.send(Buffer.from(buffer));
     }
 
@@ -131,9 +213,9 @@ exports.showArchivedMasterBank = async (req, res) => {
       diwaliRefs = [];
     }
     const refMap = new Map();
-    diwaliRefs.forEach(r => refMap.set(Number(r.master_bhajan_id), r.ref_count));
+    diwaliRefs.forEach((r) => refMap.set(Number(r.master_bhajan_id), r.ref_count));
 
-    const bhajansWithRefs = archivedBhajans.map(b => ({
+    const bhajansWithRefs = archivedBhajans.map((b) => ({
       ...b.toJSON(),
       refCount: refMap.get(b.id) || 0
     }));
@@ -172,7 +254,9 @@ exports.reconcileBhajan = async (req, res) => {
         return res.status(400).json({ error: "master_bhajan_id is required for link action." });
       }
 
-      const master = await MasterBhajan.findOne({ where: { id: master_bhajan_id, is_active: true } });
+      const master = await MasterBhajan.findOne({
+        where: { id: master_bhajan_id, is_active: true }
+      });
       if (!master) {
         return res.status(404).json({ error: "Active Master bhajan not found." });
       }
@@ -185,11 +269,11 @@ exports.reconcileBhajan = async (req, res) => {
       });
 
       const toUpdate = allSubmissions.filter(
-        s => normalizeBhajanTitle(s.title) === normSubmitted
+        (s) => normalizeBhajanTitle(s.title) === normSubmitted
       );
 
       if (toUpdate.length > 0) {
-        const ids = toUpdate.map(s => s.id);
+        const ids = toUpdate.map((s) => s.id);
         await BhajanSubmission.update(
           { title: master.title },
           { where: { id: { [Sequelize.Op.in]: ids } } }

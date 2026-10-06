@@ -1,5 +1,6 @@
 const path = require("path");
 const { Sequelize } = require("sequelize");
+const sequelize = require("../config/database");
 
 const BhajanSubmission = require("../models/BhajanSubmission");
 const SessionPermission = require("../models/SessionPermission");
@@ -30,38 +31,15 @@ const {
   escapeHtml
 } = require("../templates");
 
-const normalizeBhajanTitle = (title) =>
-  String(title || "").trim().replace(/\s+/g, " ").toLocaleLowerCase();
-
-// Helper to fetch available dates across planner endpoints
-const getAvailableDates = async () => {
-  const todayStr = getLocalDateStr();
-  const status = getThursdaySubmissionStatus();
-
-  // Include special sessions that are today (if not passed) or upcoming
-  const specialDays = await SessionPermission.findAll({
-    where: { date: { [Sequelize.Op.gte]: todayStr } },
-    order: [['date', 'ASC']]
-  });
-
-  const dates = new Map();
-  if (status.isThursdayLiveActive) {
-    dates.set(status.todayStr, { label: "Today's Thursday Bhajan", desc: 'Active Session (7:30 PM - 8:30 PM)' });
-  }
-  if (status.openThursday) {
-    dates.set(status.openThursday, { label: 'Upcoming Thursday', desc: 'Regular Session' });
-  }
-  specialDays.forEach(p => {
-    if (isSessionActiveOrUpcoming(p.date, p.description)) {
-      const label = p.type === 'festival' ? 'Festival' : 'Special';
-      dates.set(p.date, { label: label, desc: p.description || '' });
-    }
-  });
-  return { dates, status };
-};
+const {
+  normalizeBhajanTitle,
+  getAvailableDates,
+  buildDeityStatus,
+  generateDeityCardsHtml,
+  renderSelectionScreenHtml
+} = require("../services/plannerService");
 
 exports.showSubmitForm = async (req, res) => {
-
   try {
     const isAdmin = Boolean(req.session && req.session.admin);
 
@@ -73,49 +51,41 @@ exports.showSubmitForm = async (req, res) => {
       return res.redirect(`/singer/login?redirect=${returnTo}${embedParam}`);
     }
 
-    const showSuccess = req.query.success === 'true';
+    const showSuccess = req.query.success === "true";
     let sessionDate = req.query.session_date;
 
-    const renderSelectionScreen = async (msg) => {
-      const { dates: availableDates } = await getAvailableDates();
-      const sortedDates = Array.from(availableDates.keys()).sort();
-      let optionsHtml = '';
-      const adminParam = isAdmin ? '&admin=true' : '';
-      sortedDates.forEach(date => {
-        const info = availableDates.get(date);
-        const type = info.label;
-        const descText = info.desc ? ` - ${info.desc}` : '';
-        const displayLabel = `${type} (${date})${descText}`;
-        let btnStyle = 'margin-bottom:10px; width:100%; display:block; text-decoration:none;';
-        if (type === 'Festival') btnStyle += ' background: #ff922b; border:none; color:white;';
-        else if (type === 'Special') btnStyle += ' background: #4dabf7; border:none; color:white;';
-        else btnStyle += ' background: linear-gradient(135deg, #ff9933 0%, #ff7700 100%); color:white;';
-        optionsHtml += `<a href="/submit-form?session_date=${date}${adminParam}" class="button" style="${btnStyle}">${displayLabel}</a>`;
-      });
-      const themeHeadScript = `<script>(function(){try{var t=localStorage.getItem('bp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>`;
-      const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">&#127769;</span><span class="icon-sun">&#9728;&#65039;</span></button>`;
-      return res.send(`<!DOCTYPE html><html><head><title>Select Session</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">📅 Select Session</h2><p style="color:var(--ink-soft); margin-bottom:20px;">${msg}</p><div style="background:var(--surface); padding:20px; border-radius:12px; border:1px solid var(--border);"><div style="display:flex; flex-direction:column; gap:10px;">${optionsHtml}</div></div></div><script src="/js/script.js"></script></body></html>`);
-    };
-
-    // If no date provided, check if we should show selection screen or 8pm notice
     const { dates: availableDates, status: thuStatus } = await getAvailableDates();
 
     if (!sessionDate) {
       if (!isAdmin && thuStatus.opensAt8pmToday) {
         const msg = `Today's Thursday session is locked.<br>Submissions for next Thursday (<strong>${thuStatus.nextThursdayDate}</strong>) will open today at 8:00 PM.`;
         if (availableDates.size > 0) {
-          return renderSelectionScreen(`${msg}<br><br>You can submit for available Special/Festival sessions below:`);
+          return res.send(
+            renderSelectionScreenHtml(
+              `${msg}<br><br>You can submit for available Special/Festival sessions below:`,
+              availableDates,
+              isAdmin
+            )
+          );
         } else {
-          const homeUrl = isAdmin ? '/admin' : '/';
-          const homeText = isAdmin ? '&#127968; Return to Dashboard' : '&#127968; Return Home';
+          const homeUrl = isAdmin ? "/admin" : "/";
+          const homeText = isAdmin ? "🏠 Return to Dashboard" : "🏠 Return Home";
           const themeHeadScript = `<script>(function(){try{var t=localStorage.getItem('bp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>`;
           const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">&#127769;</span><span class="icon-sun">&#9728;&#65039;</span></button>`;
-          return res.send(`<!DOCTYPE html><html><head><title>Submissions Opening at 8:00 PM</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">ðŸ”’ Submissions Opening at 8:00 PM</h2><p style="color:var(--ink-soft); margin-bottom:25px; line-height:1.6;">${msg}</p><div><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`);
+          return res.send(
+            `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Submissions Opening at 8:00 PM</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">🔒 Submissions Opening at 8:00 PM</h2><p style="color:var(--ink-soft); margin-bottom:25px; line-height:1.6;">${msg}</p><div><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`
+          );
         }
       }
 
       if (availableDates.size > 1) {
-        return renderSelectionScreen("Please select a session to submit your bhajan:");
+        return res.send(
+          renderSelectionScreenHtml(
+            "Please select a session to submit your bhajan:",
+            availableDates,
+            isAdmin
+          )
+        );
       }
       sessionDate = thuStatus.openThursday || thuStatus.nextThursdayDate;
     }
@@ -124,118 +94,60 @@ exports.showSubmitForm = async (req, res) => {
     const isPastOrToday = todayStr >= sessionDate;
     const meta = await SessionMeta.findByPk(sessionDate);
     const isManuallyLocked = meta && meta.is_locked;
-    const isNextThuUnopened = !isAdmin && sessionDate === thuStatus.nextThursdayDate && thuStatus.opensAt8pmToday;
+    const isNextThuUnopened =
+      !isAdmin && sessionDate === thuStatus.nextThursdayDate && thuStatus.opensAt8pmToday;
 
     if (!isAdmin && (isManuallyLocked || isPastOrToday)) {
-      // Session has already locked and moved â€” redirect directly to history tab
+      // Session has already locked and moved — redirect directly to history tab
       return res.redirect("/database");
     }
 
     if (!isAdmin && isNextThuUnopened) {
       const reasonMsg = `Submissions for next Thursday (<strong>${sessionDate}</strong>) will open today at 8:00 PM.`;
-      return renderSelectionScreen(`${reasonMsg}<br>Please select an available upcoming session:`);
+      return res.send(
+        renderSelectionScreenHtml(
+          `${reasonMsg}<br>Please select an available upcoming session:`,
+          availableDates,
+          isAdmin
+        )
+      );
     }
 
     // Check Permissions: Allow if Thursday OR Admin OR Explicitly Permitted
-    const [sYear, sMonth, sDay] = sessionDate.split('-').map(Number);
+    const [sYear, sMonth, sDay] = sessionDate.split("-").map(Number);
     const dayOfWeek = new Date(sYear, sMonth - 1, sDay).getDay();
     const isThursday = dayOfWeek === 4;
     const permission = await SessionPermission.findByPk(sessionDate);
 
     if (!isAdmin && !isThursday && !permission) {
-      return renderSelectionScreen(`Bhajan submission for <strong>${sessionDate}</strong> is not enabled.<br>Please select an available session:`);
+      return res.send(
+        renderSelectionScreenHtml(
+          `Bhajan submission for <strong>${sessionDate}</strong> is not enabled.<br>Please select an available session:`,
+          availableDates,
+          isAdmin
+        )
+      );
     }
-
-    const isSpecialOrFestival = !!permission;
 
     // Load rules specifically for this session
     let rules = await DeityRule.findAll({ where: { session_date: sessionDate } });
-    if (rules.length === 0) rules = await DeityRule.findAll({ where: { session_date: 'default' } });
+    if (rules.length === 0) rules = await DeityRule.findAll({ where: { session_date: "default" } });
 
     // Fetch existing submissions
     const results = await BhajanSubmission.findAll({
       where: { session_date: sessionDate }
     });
 
-    // Build base deityStatus dynamically
-    const deityStatus = {};
-    const ALL_DEITIES = ["Ganesha", "Guru", "Mata", "SarvaDharma", "Sai", "Shiva", "Krishna", "Rama", "Narayana", "Vitthala", "Hanuman"];
-    ALL_DEITIES.forEach(d => {
-      const rule = rules.find(r => r.deity_name === d) || { min_required: 0, max_allowed: 2 };
-      deityStatus[d] = {
-        taken: false, count: 0, by: "", bhajan: "", scale: "", speed: "",
-        mandatory: rule.min_required > 0, minReq: rule.min_required, maxAllowed: rule.max_allowed
-      };
-    });
+    const { deityStatus, mandatoryFilled, totalMandatory, optionalFilled, totalOptional } =
+      buildDeityStatus(rules, results);
 
-    results.forEach(bhajan => {
-      if (deityStatus[bhajan.deity]) {
-        deityStatus[bhajan.deity].taken = true;
-        deityStatus[bhajan.deity].by = bhajan.singer_name;
-        deityStatus[bhajan.deity].bhajan = bhajan.title;
-        deityStatus[bhajan.deity].scale = bhajan.scale || "Not specified";
-        deityStatus[bhajan.deity].speed = bhajan.speed;
-        deityStatus[bhajan.deity].count += 1;
-      }
-    });
-
-    const mandatoryFilled = Object.values(deityStatus).filter(d => d.mandatory && d.count >= 1).length;
-    const totalMandatory = Object.values(deityStatus).filter(d => d.mandatory).length;
-
-    const optionalFilled = Object.values(deityStatus).filter(d => !d.mandatory && d.count >= 1).length;
-    const totalOptional = Object.values(deityStatus).filter(d => !d.mandatory && d.maxAllowed > 0).length;
-
-    // Generate deity cards HTML
-    const generateCardHtml = (deity) => {
-      const status = deityStatus[deity];
-      let cardClass, statusBadge, onclick;
-      const countClass = `count-${Math.min(status.count, 3)}`;
-
-      if (status.maxAllowed === 0) {
-        return `<div class="deity-card disabled ${countClass}" style="opacity:0.4; pointer-events:none;"><div class="deity-name">${deity}</div><span class="badge badge-taken" style="background:#e03131;">Blocked</span></div>`;
-      }
-
-      const isFull = status.count >= status.maxAllowed;
-      const bhajanText = `${status.count} Bhajan${status.count === 1 ? '' : 's'}`;
-
-      if (isFull) {
-        cardClass = `deity-card taken ${countClass}`;
-        statusBadge = `<span class="badge badge-taken">&#10003; ${status.count} Taken</span>`;
-        onclick = `onclick="showDetails('${deity}', '${status.by.replace(/'/g, "\\'")}', '${status.bhajan.replace(/'/g, "\\'")}', '${status.scale}', '${status.speed}')" style="cursor:pointer;"`;
-      } else {
-        cardClass = `deity-card available ${countClass}`;
-        statusBadge = `<span class="badge badge-available">${bhajanText}</span>`;
-        onclick = "";
-      }
-
-      let mandatoryLabel = "";
-      if (status.mandatory) {
-        if (status.count >= status.minReq) {
-          mandatoryLabel = `<div class="rule-warning rule-fulfilled"><span class="req-star" aria-hidden="true">&#11088;</span> Required (${status.minReq}) &#10003;</div>`;
-        } else {
-          mandatoryLabel = `<div class="rule-warning"><span class="req-star" aria-hidden="true">&#11088;</span> Required (${status.minReq})</div>`;
-        }
-      }
-
-      return `
-        <div class="${cardClass}" data-deity="${deity}" ${onclick}>
-          <div class="deity-name">${deity}</div>
-          ${statusBadge}
-          ${mandatoryLabel}
-        </div>
-      `;
-    };
-
-    const ganeshaCardHtml = generateCardHtml("Ganesha");
-    const otherDeities = ["Guru", "Mata", "SarvaDharma", "Sai", "Shiva", "Krishna", "Rama", "Narayana", "Vitthala"];
-    let otherDeitiesHtml = "";
-    otherDeities.forEach(d => otherDeitiesHtml += generateCardHtml(d));
-    let hanumanCard = generateCardHtml("Hanuman").replace('deity-card', 'deity-card hanuman-card');
+    const { ganeshaCardHtml, otherDeitiesHtml, hanumanCard } = generateDeityCardsHtml(deityStatus);
 
     // Send HTML response
     const submissionRowsHtml = results
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-      .map((submission, index) => `
+      .map(
+        (submission, index) => `
         <tr>
           <td>${index + 1}</td>
           <td>${escapeHtml(submission.singer_name)}</td>
@@ -244,56 +156,129 @@ exports.showSubmitForm = async (req, res) => {
           <td>${escapeHtml(submission.speed || "Not specified")}</td>
           <td>${escapeHtml(submission.scale || "Not specified")}</td>
         </tr>
-      `)
+      `
+      )
       .join("");
 
-    res.send(generateSubmitFormHtml(sessionDate, mandatoryFilled, totalMandatory, optionalFilled, totalOptional, ganeshaCardHtml, otherDeitiesHtml, hanumanCard, isAdmin, showSuccess, submissionRowsHtml, results.length, req.session?.singer));
-
+    res.send(
+      generateSubmitFormHtml(
+        sessionDate,
+        mandatoryFilled,
+        totalMandatory,
+        optionalFilled,
+        totalOptional,
+        ganeshaCardHtml,
+        otherDeitiesHtml,
+        hanumanCard,
+        isAdmin,
+        showSuccess,
+        submissionRowsHtml,
+        results.length,
+        req.session?.singer
+      )
+    );
   } catch (error) {
     console.error(`[Req ${req.id || ""}] showSubmitForm error:`, error);
-    res.status(500).send(`<h1>Error</h1><p>An unexpected error occurred loading the submission form.</p>`);
-  };
+    res
+      .status(500)
+      .send(`<h1>Error</h1><p>An unexpected error occurred loading the submission form.</p>`);
+  }
 };
 
 exports.submitForm = async (req, res) => {
+  const isAdmin = Boolean(req.session && req.session.admin);
   try {
-    const { session_date, singer_name, gender, locked_gender, partner_name, deity, title, speed, scale, raga, level, language, admin, master_bhajan_id } = req.body;
-    const isAdmin = Boolean(req.session && req.session.admin);
+    const {
+      session_date,
+      singer_name,
+      gender,
+      locked_gender,
+      partner_name,
+      deity,
+      title,
+      speed,
+      scale,
+      raga,
+      level,
+      language,
+      admin,
+      master_bhajan_id
+    } = req.body;
 
     if (!isAdmin && (!req.session || !req.session.singer)) {
       return res.redirect(`/singer/login?redirect=${encodeURIComponent("/submit-form")}`);
     }
 
     // For devotees, strictly enforce their verified singer name; non-admins can never set a different name
-    const effectiveSingerName = (!isAdmin && req.session?.singer) ? req.session.singer.name.trim() : (singer_name || "").trim();
-    const effectiveGender = (!isAdmin && req.session?.singer && req.session.singer.gender) ? req.session.singer.gender : (locked_gender || gender);
+    const effectiveSingerName =
+      !isAdmin && req.session?.singer ? req.session.singer.name.trim() : (singer_name || "").trim();
+    const effectiveGender =
+      !isAdmin && req.session?.singer && req.session.singer.gender
+        ? req.session.singer.gender
+        : locked_gender || gender;
 
     if (!session_date || !effectiveSingerName || !deity || !title) {
-      return res.status(400).send('<h1>Error</h1><p>Missing required fields.</p><a class="button" href="javascript:history.back()">Go Back</a>');
+      return res
+        .status(400)
+        .send(
+          '<h1>Error</h1><p>Missing required fields.</p><a class="button" href="javascript:history.back()">Go Back</a>'
+        );
     }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(session_date)) {
-      return res.status(400).send('<h1>Error</h1><p>Invalid session date format.</p><a class="button" href="javascript:history.back()">Go Back</a>');
+      return res
+        .status(400)
+        .send(
+          '<h1>Error</h1><p>Invalid session date format.</p><a class="button" href="javascript:history.back()">Go Back</a>'
+        );
     }
 
-    const VALID_DEITIES = ["Ganesha", "Guru", "Mata", "SarvaDharma", "Sai", "Shiva", "Krishna", "Rama", "Narayana", "Vitthala", "Hanuman"];
+    const VALID_DEITIES = [
+      "Ganesha",
+      "Guru",
+      "Mata",
+      "SarvaDharma",
+      "Sai",
+      "Shiva",
+      "Krishna",
+      "Rama",
+      "Narayana",
+      "Vitthala",
+      "Hanuman"
+    ];
     if (!VALID_DEITIES.includes(deity)) {
-      return res.status(400).send('<h1>Error</h1><p>Invalid deity category.</p><a class="button" href="javascript:history.back()">Go Back</a>');
+      return res
+        .status(400)
+        .send(
+          '<h1>Error</h1><p>Invalid deity category.</p><a class="button" href="javascript:history.back()">Go Back</a>'
+        );
     }
 
     // Dropdown selection enforcement: Must be selected from the master bhajan database
     if (!master_bhajan_id) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Cannot submit bhajan without selecting from dropdown</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Selection Required</h2><p>Cannot submit bhajan without selecting from dropdown. Manual entry without selecting a suggested bhajan is not allowed.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res
+        .status(400)
+        .send(
+          `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Cannot submit bhajan without selecting from dropdown</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Selection Required</h2><p>Cannot submit bhajan without selecting from dropdown. Manual entry without selecting a suggested bhajan is not allowed.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`
+        );
     }
 
     const masterBhajan = await MasterBhajan.findByPk(master_bhajan_id);
     if (!masterBhajan || !masterBhajan.is_active) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan was not found in the active master list.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res
+        .status(400)
+        .send(
+          `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan was not found in the active master list.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`
+        );
     }
 
     // Verify title matches canonical master bhajan title
     if (normalizeBhajanTitle(masterBhajan.title) !== normalizeBhajanTitle(title)) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. Title does not match the selected suggestion.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res
+        .status(400)
+        .send(
+          `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. Title does not match the selected suggestion.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`
+        );
     }
 
     const DEITY_ALIASES = {
@@ -316,20 +301,26 @@ exports.submitForm = async (req, res) => {
       Hanuman: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i,
       Anjaneya: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i
     };
-    const aliases = (DEITY_ALIASES[deity] || [deity]).map(a => a.toLowerCase().trim());
+    const aliases = (DEITY_ALIASES[deity] || [deity]).map((a) => a.toLowerCase().trim());
     const titleMatcher = DEITY_TITLE_MATCHERS[deity];
 
     const bhajanDeities = (masterBhajan.deity || "")
       .split(",")
-      .map(d => d.toLowerCase().trim())
+      .map((d) => d.toLowerCase().trim())
       .filter(Boolean);
 
-    const deityMatches = aliases.some(alias =>
-      bhajanDeities.some(bd => bd === alias || bd.includes(alias) || alias.includes(bd))
-    ) || (titleMatcher && titleMatcher.test(masterBhajan.title));
+    const deityMatches =
+      aliases.some((alias) =>
+        bhajanDeities.some((bd) => bd === alias || bd.includes(alias) || alias.includes(bd))
+      ) ||
+      (titleMatcher && titleMatcher.test(masterBhajan.title));
 
     if (!deityMatches) {
-      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan does not belong to ${escapeHtml(deity)}.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`);
+      return res
+        .status(400)
+        .send(
+          `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Invalid Bhajan Selection</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>⚠️ Invalid Bhajan</h2><p>Cannot submit bhajan without selecting from dropdown. The selected bhajan does not belong to ${escapeHtml(deity)}.</p><a class="button secondary" href="javascript:history.back()">Go Back</a></div></body></html>`
+        );
     }
 
     const todayStr = getLocalDateStr();
@@ -337,7 +328,8 @@ exports.submitForm = async (req, res) => {
     const isPastOrToday = todayStr >= session_date;
     const meta = await SessionMeta.findByPk(session_date);
     const isManuallyLocked = meta && meta.is_locked;
-    const isNextThuUnopened = !isAdmin && session_date === thuStatus.nextThursdayDate && thuStatus.opensAt8pmToday;
+    const isNextThuUnopened =
+      !isAdmin && session_date === thuStatus.nextThursdayDate && thuStatus.opensAt8pmToday;
 
     if (!isAdmin && (isManuallyLocked || isPastOrToday || isNextThuUnopened)) {
       let reasonMsg = "";
@@ -348,7 +340,11 @@ exports.submitForm = async (req, res) => {
       } else {
         reasonMsg = `Submissions for session (${session_date}) closed on the night before at 11:59 PM. Submissions for this session are now locked.`;
       }
-      return res.status(403).send(`<h1>Locked</h1><p>${reasonMsg}</p><a class="button" href="${isAdmin ? '/admin' : '/'}">${isAdmin ? 'Return to Dashboard' : 'Go Home'}</a>`);
+      return res
+        .status(403)
+        .send(
+          `<h1>Locked</h1><p>${reasonMsg}</p><a class="button" href="${isAdmin ? "/admin" : "/"}">${isAdmin ? "Return to Dashboard" : "Go Home"}</a>`
+        );
     }
 
     let newSubmission = null;
@@ -380,9 +376,10 @@ exports.submitForm = async (req, res) => {
       // 4. Check deity limits strictly inside the transaction
       if (!isAdmin) {
         let rules = await DeityRule.findAll({ where: { session_date }, transaction: t });
-        if (rules.length === 0) rules = await DeityRule.findAll({ where: { session_date: 'default' }, transaction: t });
+        if (rules.length === 0)
+          rules = await DeityRule.findAll({ where: { session_date: "default" }, transaction: t });
 
-        const ruleForDeity = rules.find(r => r.deity_name === deity) || { max_allowed: 2 };
+        const ruleForDeity = rules.find((r) => r.deity_name === deity) || { max_allowed: 2 };
         const maxAllowed = ruleForDeity.max_allowed;
 
         if (maxAllowed === 0) {
@@ -391,7 +388,7 @@ exports.submitForm = async (req, res) => {
           throw err;
         }
 
-        const existingEntries = allSubmissions.filter(s => s.deity === deity);
+        const existingEntries = allSubmissions.filter((s) => s.deity === deity);
         if (existingEntries.length >= maxAllowed) {
           const err = new Error("DEITY_LIMIT_EXCEEDED");
           err.deity = deity;
@@ -404,18 +401,24 @@ exports.submitForm = async (req, res) => {
       const submittedGender = gender || locked_gender;
       const normalizedInputName = normalizeName(effectiveSingerName);
 
-      const allSingers = await Singer.findAll({ attributes: ['id', 'name', 'gender'], transaction: t });
-      let singer = allSingers.find(s => normalizeName(s.name) === normalizedInputName) || null;
+      const allSingers = await Singer.findAll({
+        attributes: ["id", "name", "gender"],
+        transaction: t
+      });
+      let singer = allSingers.find((s) => normalizeName(s.name) === normalizedInputName) || null;
 
       if (!singer) {
         if (!isAdmin) {
           const err = new Error("SINGER_NOT_FOUND");
           throw err;
         }
-        singer = await Singer.create({
-          name: effectiveSingerName,
-          gender: submittedGender || null
-        }, { transaction: t });
+        singer = await Singer.create(
+          {
+            name: effectiveSingerName,
+            gender: submittedGender || null
+          },
+          { transaction: t }
+        );
       } else if (!singer.gender && submittedGender) {
         await singer.update({ gender: submittedGender }, { transaction: t });
         singer.gender = submittedGender;
@@ -423,19 +426,22 @@ exports.submitForm = async (req, res) => {
       const resolvedGender = singer.gender || submittedGender || null;
 
       // 6. Save submission inside transaction
-      newSubmission = await BhajanSubmission.create({
-        session_date,
-        singer_name: effectiveSingerName,
-        gender: resolvedGender,
-        partner_name: partner_name ? partner_name.trim() : null,
-        title,
-        deity,
-        scale: scale || "Not specified",
-        speed,
-        raga,
-        level,
-        language
-      }, { transaction: t });
+      newSubmission = await BhajanSubmission.create(
+        {
+          session_date,
+          singer_name: effectiveSingerName,
+          gender: resolvedGender,
+          partner_name: partner_name ? partner_name.trim() : null,
+          title,
+          deity,
+          scale: scale || "Not specified",
+          speed,
+          raga,
+          level,
+          language
+        },
+        { transaction: t }
+      );
     });
 
     // ── Partner notification ──────────────────────────────────────────
@@ -445,14 +451,14 @@ exports.submitForm = async (req, res) => {
       try {
         const notificationService = require("../services/notificationService");
         const partnerNormalized = normalizeName(partner_name);
-        const allSingers = await Singer.findAll({ attributes: ['id', 'name'] });
-        const partnerSinger = allSingers.find(s => normalizeName(s.name) === partnerNormalized);
+        const allSingers = await Singer.findAll({ attributes: ["id", "name"] });
+        const partnerSinger = allSingers.find((s) => normalizeName(s.name) === partnerNormalized);
 
         if (partnerSinger) {
           // Format day and date for notification (e.g. Thursday, 3 September)
           let dateText = session_date;
           try {
-            const [y, m, d] = session_date.split('-').map(Number);
+            const [y, m, d] = session_date.split("-").map(Number);
             const dateObj = new Date(y, m - 1, d);
             const dayName = dateObj.toLocaleDateString("en-US", { weekday: "long" });
             const dateFormatted = dateObj.toLocaleDateString("en-GB", {
@@ -460,7 +466,7 @@ exports.submitForm = async (req, res) => {
               month: "long"
             });
             dateText = `${dayName}, ${dateFormatted}`;
-          } catch (e) { }
+          } catch (e) {}
 
           await notificationService.createPersonalized({
             type: "partner_bhajan",
@@ -477,35 +483,66 @@ exports.submitForm = async (req, res) => {
     }
 
     // Success response
-    const adminQuery = isAdmin ? '&admin=true' : '';
+    const adminQuery = isAdmin ? "&admin=true" : "";
     res.redirect(`/submit-form?session_date=${session_date}&success=true${adminQuery}`);
-
   } catch (error) {
     if (error.message === "DUPLICATE_BHAJAN" && error.duplicate) {
-      const adminParam = isAdmin ? '&admin=true' : '';
-      return res.status(409).send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Bhajan Already Added</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>Bhajan Already Added</h2><p><strong>${escapeHtml(error.duplicate.title)}</strong> has already been submitted for this session by <strong>${escapeHtml(error.duplicate.singer_name)}</strong>.</p><a class="button secondary" href="/submit-form?session_date=${encodeURIComponent(req.body.session_date)}${adminParam}">Go back to the form</a></div></body></html>`);
+      const adminParam = isAdmin ? "&admin=true" : "";
+      return res
+        .status(409)
+        .send(
+          `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="/css/style.css"><title>Bhajan Already Added</title></head><body><div class="container" style="max-width:560px; padding:32px; text-align:center;"><h2>Bhajan Already Added</h2><p><strong>${escapeHtml(error.duplicate.title)}</strong> has already been submitted for this session by <strong>${escapeHtml(error.duplicate.singer_name)}</strong>.</p><a class="button secondary" href="/submit-form?session_date=${encodeURIComponent(req.body.session_date)}${adminParam}">Go back to the form</a></div></body></html>`
+        );
     }
     if (error.message === "DEITY_BLOCKED") {
-      return res.status(409).send(generateErrorHtml(error.deity, { singer_name: "Admin", title: "Blocked for this session", created_at: new Date() }, req.body.session_date));
+      return res
+        .status(409)
+        .send(
+          generateErrorHtml(
+            error.deity,
+            { singer_name: "Admin", title: "Blocked for this session", created_at: new Date() },
+            req.body.session_date
+          )
+        );
     }
     if (error.message === "DEITY_LIMIT_EXCEEDED" && error.lastEntry) {
-      return res.status(409).send(generateErrorHtml(error.deity, error.lastEntry, req.body.session_date));
+      return res
+        .status(409)
+        .send(generateErrorHtml(error.deity, error.lastEntry, req.body.session_date));
     }
     if (error.message === "LOCKED") {
-      return res.status(403).send(`<h1>Locked</h1><p>${error.reason}</p><a class="button" href="${isAdmin ? '/admin' : '/'}">${isAdmin ? 'Return to Dashboard' : 'Go Home'}</a>`);
+      return res
+        .status(403)
+        .send(
+          `<h1>Locked</h1><p>${error.reason}</p><a class="button" href="${isAdmin ? "/admin" : "/"}">${isAdmin ? "Return to Dashboard" : "Go Home"}</a>`
+        );
     }
     if (error.message === "SINGER_NOT_FOUND") {
-      return res.status(400).send('<h1>Error</h1><p>Singer profile not found in directory. Please sign in through Singer Hub.</p><a class="button" href="/singer/login">Login</a>');
+      return res
+        .status(400)
+        .send(
+          '<h1>Error</h1><p>Singer profile not found in directory. Please sign in through Singer Hub.</p><a class="button" href="/singer/login">Login</a>'
+        );
     }
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(409).send(generateErrorHtml(req.body.deity, {
-        singer_name: "Another devotee",
-        title: req.body.title || "Selected Bhajan",
-        created_at: new Date()
-      }, req.body.session_date));
+    if (error.name === "SequelizeUniqueConstraintError") {
+      return res.status(409).send(
+        generateErrorHtml(
+          req.body.deity,
+          {
+            singer_name: "Another devotee",
+            title: req.body.title || "Selected Bhajan",
+            created_at: new Date()
+          },
+          req.body.session_date
+        )
+      );
     }
     console.error(`[Req ${req.id || ""}] submitForm error:`, error);
-    res.status(500).send("<h1>Error</h1><p>An unexpected error occurred while processing your bhajan submission.</p>");
+    res
+      .status(500)
+      .send(
+        "<h1>Error</h1><p>An unexpected error occurred while processing your bhajan submission.</p>"
+      );
   }
 };
 
@@ -517,13 +554,13 @@ exports.planView = async (req, res) => {
 
     // Query past session dates that have bhajans submitted
     const pastSessions = await BhajanSubmission.findAll({
-      attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('session_date')), 'session_date']],
-      order: [['session_date', 'DESC']],
+      attributes: [[Sequelize.fn("DISTINCT", Sequelize.col("session_date")), "session_date"]],
+      order: [["session_date", "DESC"]],
       limit: 20,
       raw: true
     });
 
-    const pastDateSet = new Set(pastSessions.map(p => p.session_date));
+    const pastDateSet = new Set(pastSessions.map((p) => p.session_date));
 
     // Build dropdown list of all known dates
     const dateOptionsList = [];
@@ -532,23 +569,35 @@ exports.planView = async (req, res) => {
     // If today's Thursday session is active (before 8:30 PM), show it first in dropdown
     if (status.isThursdayLiveActive) {
       seenDates.add(status.todayStr);
-      dateOptionsList.push({ date: status.todayStr, label: `🔴 ${status.todayStr} (Today's Live Session — 7:30 PM to 8:30 PM)`, isCurrent: false });
+      dateOptionsList.push({
+        date: status.todayStr,
+        label: `🔴 ${status.todayStr} (Today's Live Session — 7:30 PM to 8:30 PM)`,
+        isCurrent: false
+      });
     }
 
     const upcomingThursday = status.openThursday || status.nextThursdayDate;
     if (upcomingThursday && !seenDates.has(upcomingThursday)) {
       seenDates.add(upcomingThursday);
-      dateOptionsList.push({ date: upcomingThursday, label: `📅 ${upcomingThursday} (Upcoming Thursday)`, isCurrent: false });
+      dateOptionsList.push({
+        date: upcomingThursday,
+        label: `📅 ${upcomingThursday} (Upcoming Thursday)`,
+        isCurrent: false
+      });
     }
 
     availableDatesMap.forEach((meta, d) => {
       if (!seenDates.has(d)) {
         seenDates.add(d);
-        dateOptionsList.push({ date: d, label: `✨ ${d} (${meta.label}${meta.desc ? ' - ' + meta.desc : ''})`, isCurrent: false });
+        dateOptionsList.push({
+          date: d,
+          label: `✨ ${d} (${meta.label}${meta.desc ? " - " + meta.desc : ""})`,
+          isCurrent: false
+        });
       }
     });
 
-    pastSessions.forEach(p => {
+    pastSessions.forEach((p) => {
       const d = p.session_date;
       if (!seenDates.has(d)) {
         seenDates.add(d);
@@ -576,7 +625,9 @@ exports.planView = async (req, res) => {
       }
     }
 
-    dateOptionsList.forEach(opt => { opt.isCurrent = (opt.date === sessionDate); });
+    dateOptionsList.forEach((opt) => {
+      opt.isCurrent = opt.date === sessionDate;
+    });
     if (!seenDates.has(sessionDate)) {
       dateOptionsList.unshift({ date: sessionDate, label: `📅 ${sessionDate}`, isCurrent: true });
     }
@@ -586,10 +637,22 @@ exports.planView = async (req, res) => {
 
     const masterBhajans = await MasterBhajan.findAll({
       where: { is_active: true },
-      attributes: ['id', 'title', 'sheet_filename', 'lyrics', 'deity', 'raga', 'tempo', 'shruti', 'shruti_female']
+      attributes: [
+        "id",
+        "title",
+        "sheet_filename",
+        "lyrics",
+        "deity",
+        "raga",
+        "tempo",
+        "shruti",
+        "shruti_female"
+      ]
     });
     const masterMap = new Map();
-    masterBhajans.forEach(mb => { masterMap.set(normalizeBhajanTitle(mb.title), mb); });
+    masterBhajans.forEach((mb) => {
+      masterMap.set(normalizeBhajanTitle(mb.title), mb);
+    });
 
     const sorted = results.sort((a, b) => {
       if (a.list_order > 0 || b.list_order > 0) {
@@ -599,18 +662,20 @@ exports.planView = async (req, res) => {
       }
       const deityCompare = deityOrderKey(a.deity) - deityOrderKey(b.deity);
       if (deityCompare !== 0) return deityCompare;
-      const speedCompare = (SPEED_ORDER[(a.speed || '').toLowerCase()] || 1) -
-        (SPEED_ORDER[(b.speed || '').toLowerCase()] || 1);
+      const speedCompare =
+        (SPEED_ORDER[(a.speed || "").toLowerCase()] || 1) -
+        (SPEED_ORDER[(b.speed || "").toLowerCase()] || 1);
       if (speedCompare !== 0) return speedCompare;
       return a.singer_name.toLowerCase().localeCompare(b.singer_name.toLowerCase());
     });
 
-    let rowsHtml = '';
-    let timelineCardsHtml = '';
+    let rowsHtml = "";
+    let timelineCardsHtml = "";
     let whatsappItems = [];
 
     if (sorted.length === 0) {
-      rowsHtml = '<tr><td colspan="6" style="text-align:center; padding:36px; color:var(--ink-soft);">No bhajans scheduled for this date yet.</td></tr>';
+      rowsHtml =
+        '<tr><td colspan="6" style="text-align:center; padding:36px; color:var(--ink-soft);">No bhajans scheduled for this date yet.</td></tr>';
       timelineCardsHtml = `<div class="plan-empty-state">
         <div class="plan-empty-icon">🪔</div>
         <h3 style="margin:0 0 6px 0; font-size:17px; font-weight:700;">No Bhajans Scheduled Yet</h3>
@@ -628,23 +693,26 @@ exports.planView = async (req, res) => {
 
         const sheetBtnHtml = sheetFilename
           ? `<a href="/sheets/${encodeURIComponent(sheetFilename)}" target="_blank" rel="noopener noreferrer" class="sheet-link-pill no-print" title="Open official reference sheet music (PDF)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Sheet</a>`
-          : '';
+          : "";
         const lyricsBtnHtml = matchedMaster
           ? `<button type="button" class="btn-quick-lyrics no-print" onclick="openPlanLyrics(${matchedMaster.id})" title="Read full lyrics"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg> Lyrics</button>`
-          : '';
+          : "";
         const lyricsLinkHtml = matchedMaster
           ? `<a href="/bhajan/${matchedMaster.id}" style="color:inherit; text-decoration:none;" title="View lyrics & details">${escapeHtml(item.title)}</a>`
           : escapeHtml(item.title);
 
-        const nameParts = (item.singer_name || '').trim().split(/\s+/);
-        const initials = nameParts.length > 1
-          ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
-          : (nameParts[0] ? nameParts[0].substring(0, 2).toUpperCase() : 'SB');
+        const nameParts = (item.singer_name || "").trim().split(/\s+/);
+        const initials =
+          nameParts.length > 1
+            ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+            : nameParts[0]
+              ? nameParts[0].substring(0, 2).toUpperCase()
+              : "SB";
 
-        const speedStr = (item.speed || 'Medium').toLowerCase();
-        let speedIcon = '🎵';
-        if (speedStr.includes('fast')) speedIcon = '⚡';
-        if (speedStr.includes('slow')) speedIcon = '🕊️';
+        const speedStr = (item.speed || "Medium").toLowerCase();
+        let speedIcon = "🎵";
+        if (speedStr.includes("fast")) speedIcon = "⚡";
+        if (speedStr.includes("slow")) speedIcon = "🕊️";
 
         rowsHtml += `
           <tr>
@@ -654,7 +722,7 @@ exports.planView = async (req, res) => {
                 <span class="timeline-avatar no-print" style="width:26px; height:26px; font-size:11px;">${initials}</span>
                 <div>
                   <strong>${escapeHtml(item.singer_name)}</strong>
-                  ${item.partner_name ? `<br><small style="color:var(--ink-soft); font-weight:500;">w/ ${escapeHtml(item.partner_name)}</small>` : ''}
+                  ${item.partner_name ? `<br><small style="color:var(--ink-soft); font-weight:500;">w/ ${escapeHtml(item.partner_name)}</small>` : ""}
                 </div>
               </div>
             </td>
@@ -670,8 +738,8 @@ exports.planView = async (req, res) => {
               </span>
             </td>
             <td data-label="Pitch / Scale">
-              <strong>${escapeHtml(item.scale || '-')}</strong>
-              ${westernKey !== '-' ? `<span class="acc-key-tag">${westernKey}</span>` : ''}
+              <strong>${escapeHtml(item.scale || "-")}</strong>
+              ${westernKey !== "-" ? `<span class="acc-key-tag">${westernKey}</span>` : ""}
             </td>
             <td data-label="Tempo"><span class="speed-pill">${speedIcon} ${escapeHtml(item.speed)}</span></td>
           </tr>`;
@@ -698,7 +766,7 @@ exports.planView = async (req, res) => {
                 <span class="timeline-avatar">${initials}</span>
                 <div class="timeline-singer-info">
                   <span class="timeline-singer-name">${escapeHtml(item.singer_name)}</span>
-                  ${item.partner_name ? `<span class="timeline-partner-tag">👥 with ${escapeHtml(item.partner_name)}</span>` : ''}
+                  ${item.partner_name ? `<span class="timeline-partner-tag">👥 with ${escapeHtml(item.partner_name)}</span>` : ""}
                 </div>
               </div>
               <div class="timeline-accompanist-strip">
@@ -707,8 +775,8 @@ exports.planView = async (req, res) => {
                   <div class="acc-tile-text">
                     <span class="acc-label">Pitch / Scale</span>
                     <span class="acc-value">
-                      ${escapeHtml(item.scale || 'N/A')}
-                      ${westernKey !== '-' ? `<span class="acc-key-tag">${westernKey}</span>` : ''}
+                      ${escapeHtml(item.scale || "N/A")}
+                      ${westernKey !== "-" ? `<span class="acc-key-tag">${westernKey}</span>` : ""}
                     </span>
                   </div>
                 </div>
@@ -725,24 +793,32 @@ exports.planView = async (req, res) => {
 
         let waItem = `${numEmoji} *${item.deity}* ${deityIcon}\n🎵 *${item.title}*\n👤 ${item.singer_name}`;
         if (item.partner_name) waItem += ` (with ${item.partner_name})`;
-        waItem += `\n🎹 Pitch: ${item.scale || 'N/A'}${westernKey !== '-' ? ` (${westernKey})` : ''} | 🥁 Tempo: ${item.speed ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1) : 'Medium'}`;
+        waItem += `\n🎹 Pitch: ${item.scale || "N/A"}${westernKey !== "-" ? ` (${westernKey})` : ""} | 🥁 Tempo: ${item.speed ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1) : "Medium"}`;
         whatsappItems.push(waItem);
       });
     }
 
     let sessionDateHuman = sessionDate;
     try {
-      const [y, m, d] = sessionDate.split('-').map(Number);
+      const [y, m, d] = sessionDate.split("-").map(Number);
       const dateObj = new Date(y, m - 1, d);
-      sessionDateHuman = dateObj.toLocaleDateString('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
-    } catch(e) {}
+      sessionDateHuman = dateObj.toLocaleDateString("en-US", {
+        weekday: "long",
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+    } catch (e) {}
 
-    const protocol = req.protocol || 'http';
-    const host = req.get('host') || 'localhost:8000';
+    const protocol = req.protocol || "http";
+    const host = req.get("host") || "localhost:8000";
     const livePlanUrl = `${protocol}://${host}/plan-view?session_date=${sessionDate}`;
 
     let whatsappText = `🕉️ *SRI SATHYA SAI SEVA ORGANISATION*\n📅 *LIVE BHAJAN PLAN – ${sessionDateHuman}*\nTotal Bhajans: ${sorted.length}\n──────────────────────────────\n\n`;
-    whatsappText += whatsappItems.length > 0 ? whatsappItems.join('\n\n') + '\n\n' : 'No bhajans scheduled for this date yet.\n\n';
+    whatsappText +=
+      whatsappItems.length > 0
+        ? whatsappItems.join("\n\n") + "\n\n"
+        : "No bhajans scheduled for this date yet.\n\n";
     whatsappText += `──────────────────────────────\n🙏 *Sai Ram to all Accompanists & Devotees*\n🌐 *Live Plan:* ${livePlanUrl}`;
     const whatsappEncoded = encodeURIComponent(whatsappText);
 
@@ -767,21 +843,26 @@ exports.submitApi = async (req, res) => {
   try {
     const { session_date, singer_name, partner_name, bhajans } = req.body;
     if (!session_date || !singer_name || !Array.isArray(bhajans) || bhajans.length === 0) {
-      return res.status(400).json({ error: "Validation failed: session_date, singer_name, and bhajans array are required." });
+      return res.status(400).json({
+        error: "Validation failed: session_date, singer_name, and bhajans array are required."
+      });
     }
 
     await sequelize.transaction(async (t) => {
       for (const bhajan of bhajans) {
         if (!bhajan.title || !bhajan.deity) continue;
-        await BhajanSubmission.create({
-          session_date,
-          singer_name,
-          partner_name: partner_name ? partner_name.trim() : null,
-          title: bhajan.title.trim(),
-          deity: bhajan.deity.trim(),
-          scale: bhajan.scale || null,
-          speed: bhajan.speed || null
-        }, { transaction: t });
+        await BhajanSubmission.create(
+          {
+            session_date,
+            singer_name,
+            partner_name: partner_name ? partner_name.trim() : null,
+            title: bhajan.title.trim(),
+            deity: bhajan.deity.trim(),
+            scale: bhajan.scale || null,
+            speed: bhajan.speed || null
+          },
+          { transaction: t }
+        );
       }
     });
 
@@ -815,8 +896,9 @@ exports.getPlan = async (req, res) => {
       const deityCompare = deityOrderKey(a.deity) - deityOrderKey(b.deity);
       if (deityCompare !== 0) return deityCompare;
 
-      const speedCompare = (SPEED_ORDER[(a.speed || '').toLowerCase()] || 1) -
-        (SPEED_ORDER[(b.speed || '').toLowerCase()] || 1);
+      const speedCompare =
+        (SPEED_ORDER[(a.speed || "").toLowerCase()] || 1) -
+        (SPEED_ORDER[(b.speed || "").toLowerCase()] || 1);
       if (speedCompare !== 0) return speedCompare;
 
       return a.singer_name.toLowerCase().localeCompare(b.singer_name.toLowerCase());
@@ -840,7 +922,7 @@ exports.getPlan = async (req, res) => {
   }
 };
 
-// â”€â”€ Smart session redirection (routes to submit-form if open, history if moved/closed) â”€â”€
+// ── Smart session redirection (routes to submit-form if open, history if moved/closed) ──
 exports.sessionLink = async (req, res) => {
   try {
     const { getLocalDateStr } = require("../services/helpers");
@@ -863,10 +945,11 @@ exports.sessionLink = async (req, res) => {
     const isPastOrToday = todayStr >= sessionDate;
     const meta = await SessionMeta.findByPk(sessionDate);
     const isManuallyLocked = meta && meta.is_locked;
-    const isNextThuUnopened = sessionDate === thuStatus.nextThursdayDate && thuStatus.opensAt8pmToday;
+    const isNextThuUnopened =
+      sessionDate === thuStatus.nextThursdayDate && thuStatus.opensAt8pmToday;
 
     // Check if date is a Thursday or has explicit admin permission
-    const [sYear, sMonth, sDay] = sessionDate.split('-').map(Number);
+    const [sYear, sMonth, sDay] = sessionDate.split("-").map(Number);
     const dayOfWeek = new Date(sYear, sMonth - 1, sDay).getDay();
     const isThursday = dayOfWeek === 4;
     const permission = await SessionPermission.findByPk(sessionDate);
@@ -876,7 +959,7 @@ exports.sessionLink = async (req, res) => {
       return res.redirect("/database");
     }
 
-    // Submissions are open â€” direct to submit-form for this session
+    // Submissions are open — direct to submit-form for this session
     return res.redirect(`/submit-form?session_date=${sessionDate}`);
   } catch (error) {
     console.error("sessionLink error:", error);

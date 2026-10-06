@@ -46,19 +46,18 @@ exports.getMasterBhajans = async (req, res) => {
     const titleSearchTerms = DEITY_TITLE_SEARCH_TERMS[deity] || [];
 
     // Match exact deity or multi-deity substring (e.g. "Devi, Guru")
-    const deityLikeConditions = aliases.map(a => ({
+    const deityLikeConditions = aliases.map((a) => ({
       deity: { [Sequelize.Op.like]: `%${a}%` }
     }));
 
-    const orConditions = [
-      { deity: { [Sequelize.Op.in]: aliases } },
-      ...deityLikeConditions
-    ];
+    const orConditions = [{ deity: { [Sequelize.Op.in]: aliases } }, ...deityLikeConditions];
 
     if (titleMatcher && titleSearchTerms.length > 0) {
-      orConditions.push(...titleSearchTerms.map(term => ({
-        title: { [Sequelize.Op.like]: `%${term}%` }
-      })));
+      orConditions.push(
+        ...titleSearchTerms.map((term) => ({
+          title: { [Sequelize.Op.like]: `%${term}%` }
+        }))
+      );
     }
 
     const bhajans = await MasterBhajan.findAll({
@@ -69,13 +68,13 @@ exports.getMasterBhajans = async (req, res) => {
     });
 
     // Deduplicate by ID and verify deity match or title match before returning to UI
-    const lowerAliases = aliases.map(a => a.toLowerCase());
+    const lowerAliases = aliases.map((a) => a.toLowerCase());
     const seenIds = new Set();
     const relevantBhajans = bhajans
       .filter((bhajan) => {
         if (!bhajan.deity) return false;
-        const bDeityTokens = bhajan.deity.split(',').map(s => s.trim().toLowerCase());
-        const hasDeity = bDeityTokens.some(d => lowerAliases.includes(d));
+        const bDeityTokens = bhajan.deity.split(",").map((s) => s.trim().toLowerCase());
+        const hasDeity = bDeityTokens.some((d) => lowerAliases.includes(d));
         return hasDeity || (titleMatcher && titleMatcher.test(bhajan.title));
       })
       .filter((bhajan) => {
@@ -95,18 +94,18 @@ exports.checkCooldown = async (req, res) => {
   try {
     const { title } = req.query;
     if (!title) return res.json(null);
-    
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
+
     const recentSubmission = await BhajanSubmission.findOne({
       where: {
         title: { [Sequelize.Op.like]: title },
-        session_date: { [Sequelize.Op.gte]: thirtyDaysAgo.toISOString().split('T')[0] }
+        session_date: { [Sequelize.Op.gte]: thirtyDaysAgo.toISOString().split("T")[0] }
       },
-      order: [['session_date', 'DESC']]
+      order: [["session_date", "DESC"]]
     });
-    
+
     res.json(recentSubmission);
   } catch (error) {
     console.error(`[Req ${req.id || ""}] Failed to check cooldown:`, error);
@@ -140,7 +139,11 @@ exports.getScaleSuggestions = async (req, res) => {
             ]
           }
         },
-        order: [["created_at", "DESC"], ["session_date", "DESC"], ["id", "DESC"]]
+        order: [
+          ["created_at", "DESC"],
+          ["session_date", "DESC"],
+          ["id", "DESC"]
+        ]
       });
 
       if (prevSubmission && prevSubmission.scale) {
@@ -165,7 +168,7 @@ exports.getScaleSuggestions = async (req, res) => {
         attributes: ["name"],
         raw: true
       });
-      const singerNamesList = sameGenderSingers.map(s => s.name);
+      const singerNamesList = sameGenderSingers.map((s) => s.name);
 
       const genderSubmissions = await BhajanSubmission.findAll({
         where: {
@@ -235,10 +238,10 @@ exports.getSingers = async (req, res) => {
 
 exports.getDeityRules = async (req, res) => {
   try {
-    const date = req.query.date || 'default';
+    const date = req.query.date || "default";
     let rules = await DeityRule.findAll({ where: { session_date: date } });
-    if (rules.length === 0 && date !== 'default') {
-      rules = await DeityRule.findAll({ where: { session_date: 'default' } });
+    if (rules.length === 0 && date !== "default") {
+      rules = await DeityRule.findAll({ where: { session_date: "default" } });
     }
     res.json(rules);
   } catch (error) {
@@ -259,7 +262,9 @@ exports.recordHeartbeat = async (req, res) => {
     const admin = req.session.admin || null;
     const userType = admin ? (admin.role === "super_admin" ? "super_admin" : "admin") : "user";
     const adminId = admin ? admin.id : null;
-    const adminName = admin ? (admin.display_name || admin.displayName || admin.username || "Admin") : "Guest User";
+    const adminName = admin
+      ? admin.display_name || admin.displayName || admin.username || "Admin"
+      : "Guest User";
     const adminTitleStr = admin && admin.title ? ` (${admin.title})` : "";
     const username = admin ? `${adminName}${adminTitleStr}` : "Guest User";
     const pageUrl = req.body.page || "/";

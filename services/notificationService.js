@@ -19,7 +19,15 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
 }
 
 // ── Create a notification (idempotent via event_key) ─────────
-async function createNotification({ type, title, body, link, eventKey, targetSingerId = null, metadata = null }) {
+async function createNotification({
+  type,
+  title,
+  body,
+  link,
+  eventKey,
+  targetSingerId = null,
+  metadata = null
+}) {
   try {
     const [notification, created] = await Notification.findOrCreate({
       where: { event_key: eventKey },
@@ -56,9 +64,7 @@ async function sendPushToAll(notification) {
     badge: "/images/icons/icon-192x192.png"
   });
 
-  const results = await Promise.allSettled(
-    subscriptions.map((sub) => sendPush(sub, payload))
-  );
+  const results = await Promise.allSettled(subscriptions.map((sub) => sendPush(sub, payload)));
 
   return results;
 }
@@ -81,16 +87,14 @@ async function sendPushToSinger(singerId, notification) {
     badge: "/images/icons/icon-192x192.png"
   });
 
-  const results = await Promise.allSettled(
-    subscriptions.map((sub) => sendPush(sub, payload))
-  );
+  const results = await Promise.allSettled(subscriptions.map((sub) => sendPush(sub, payload)));
 
   return results;
 }
 
 // ── Internal: send push to a single subscription ─────────────
 async function sendPush(sub, payload) {
-  if (!sub.endpoint || sub.endpoint.startsWith('in_app_') || !sub.p256dh || !sub.auth) {
+  if (!sub.endpoint || sub.endpoint.startsWith("in_app_") || !sub.p256dh || !sub.auth) {
     return;
   }
   try {
@@ -117,10 +121,7 @@ async function sendPush(sub, payload) {
 async function getNotificationsForDevice(deviceId, singerId = null, limit = 30) {
   const whereClause = singerId
     ? {
-        [Sequelize.Op.or]: [
-          { target_singer_id: null },
-          { target_singer_id: singerId }
-        ]
+        [Sequelize.Op.or]: [{ target_singer_id: null }, { target_singer_id: singerId }]
       }
     : { target_singer_id: null };
 
@@ -156,14 +157,9 @@ async function getNotificationsForDevice(deviceId, singerId = null, limit = 30) 
 async function getUnreadCount(deviceId, singerId = null) {
   const whereClause = singerId
     ? {
-        [Sequelize.Op.or]: [
-          { target_singer_id: null },
-          { target_singer_id: singerId }
-        ]
+        [Sequelize.Op.or]: [{ target_singer_id: null }, { target_singer_id: singerId }]
       }
     : { target_singer_id: null };
-
-
 
   // Since include with count can be tricky with SQLite, use a simpler approach
   const allNotifications = await Notification.findAll({
@@ -202,10 +198,7 @@ async function markRead(notificationId, deviceId) {
 async function markAllRead(deviceId, singerId = null) {
   const whereClause = singerId
     ? {
-        [Sequelize.Op.or]: [
-          { target_singer_id: null },
-          { target_singer_id: singerId }
-        ]
+        [Sequelize.Op.or]: [{ target_singer_id: null }, { target_singer_id: singerId }]
       }
     : { target_singer_id: null };
 
@@ -228,7 +221,13 @@ async function markAllRead(deviceId, singerId = null) {
 // ── Create and broadcast a notification ──────────────────────
 async function createAndBroadcast({ type, title, body, link, eventKey, metadata = null }) {
   const { notification, created } = await createNotification({
-    type, title, body, link, eventKey, targetSingerId: null, metadata
+    type,
+    title,
+    body,
+    link,
+    eventKey,
+    targetSingerId: null,
+    metadata
   });
   if (created) {
     await sendPushToAll(notification);
@@ -237,9 +236,23 @@ async function createAndBroadcast({ type, title, body, link, eventKey, metadata 
 }
 
 // ── Create a personalized notification ───────────────────────
-async function createPersonalized({ type, title, body, link, eventKey, singerId, metadata = null }) {
+async function createPersonalized({
+  type,
+  title,
+  body,
+  link,
+  eventKey,
+  singerId,
+  metadata = null
+}) {
   const { notification, created } = await createNotification({
-    type, title, body, link, eventKey, targetSingerId: singerId, metadata
+    type,
+    title,
+    body,
+    link,
+    eventKey,
+    targetSingerId: singerId,
+    metadata
   });
   if (created) {
     await sendPushToSinger(singerId, notification);

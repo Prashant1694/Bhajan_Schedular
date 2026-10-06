@@ -3,7 +3,12 @@ const router = express.Router();
 
 const adminController = require("../controllers/adminController");
 const activityController = require("../controllers/activityController");
-const { requireLogin, requireApiLogin, requireSuperAdmin, requireApiSuperAdmin } = require("../middleware/auth");
+const {
+  requireLogin,
+  requireApiLogin,
+  requireSuperAdmin,
+  requireApiSuperAdmin
+} = require("../middleware/auth");
 
 router.get("/admin", requireLogin, adminController.dashboard);
 router.get("/admin/missing-bhajans", requireLogin, adminController.showMissingBhajans);
@@ -16,30 +21,18 @@ router.post("/admin/edit/:id", requireLogin, adminController.updateSubmission);
 router.post("/admin/delete/:id", requireLogin, adminController.deleteSubmission);
 router.get("/admin/rules", requireLogin, adminController.showRules);
 router.post("/admin/update-rules", requireLogin, adminController.updateRules);
-router.post(
-  "/admin/permission",
-  requireApiLogin,
-  adminController.updatePermission
-);
-router.post(
-  "/api/admin/toggle-lock",
-  requireApiLogin,
-  adminController.toggleLock,
-);
-router.post(
-  "/api/admin/reorder",
-  requireApiLogin,
-  adminController.reorderBhajans,
-);
+router.post("/admin/permission", requireApiLogin, adminController.updatePermission);
+router.post("/api/admin/toggle-lock", requireApiLogin, adminController.toggleLock);
+router.post("/api/admin/reorder", requireApiLogin, adminController.reorderBhajans);
 router.get("/admin/import-sessions", requireLogin, adminController.showImportSessions);
 router.post("/admin/import-sessions", requireLogin, adminController.processImportSessions);
 router.post("/admin/copy-session", requireLogin, adminController.copySession);
-router.get("/admin/danger-reset-history", requireSuperAdmin, adminController.showDangerResetHistory);
-router.post(
+router.get(
   "/admin/danger-reset-history",
   requireSuperAdmin,
-  adminController.dangerResetHistory,
+  adminController.showDangerResetHistory
 );
+router.post("/admin/danger-reset-history", requireSuperAdmin, adminController.dangerResetHistory);
 router.get("/admin/download-backup", requireSuperAdmin, adminController.downloadBackup);
 
 module.exports = router;

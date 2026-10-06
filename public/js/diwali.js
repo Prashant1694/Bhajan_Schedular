@@ -6,7 +6,9 @@
 // SCALE & GENDER CALCULATION HELPERS
 // ============================================================
 function femaleFallbackShruti(maleShruti) {
-  const match = String(maleShruti || "").trim().match(/^(1|1\.5|2|2\.5|3|4|4\.5|5|5\.5|6|6\.5|7)\s*([pPmM])?$/i);
+  const match = String(maleShruti || "")
+    .trim()
+    .match(/^(1|1\.5|2|2\.5|3|4|4\.5|5|5\.5|6|6\.5|7)\s*([pPmM])?$/i);
   if (!match) return maleShruti || "";
   const values = ["1", "1.5", "2", "2.5", "3", "4", "4.5", "5", "5.5", "6", "6.5", "7"];
   let pitch = values.indexOf(match[1]);
@@ -19,11 +21,11 @@ function femaleFallbackShruti(maleShruti) {
 
 function getScaleForGender(bhajan, gender) {
   if (!bhajan) return "";
-  const isFemale = (gender === "Ladies" || gender === "Female");
+  const isFemale = gender === "Ladies" || gender === "Female";
   const rawFemale = String(bhajan.shruti_female || "").trim();
   const rawMale = String(bhajan.shruti || "").trim();
-  const cleanFemale = (rawFemale === "#N/A" || !rawFemale) ? "" : rawFemale;
-  const cleanMale = (rawMale === "#N/A" || !rawMale) ? "" : rawMale;
+  const cleanFemale = rawFemale === "#N/A" || !rawFemale ? "" : rawFemale;
+  const cleanMale = rawMale === "#N/A" || !rawMale ? "" : rawMale;
 
   if (isFemale) {
     if (cleanFemale) return cleanFemale;
@@ -65,13 +67,13 @@ if (document.readyState === "loading") {
 // ============================================================
 function initTabs() {
   const tabs = document.querySelectorAll(".diwali-tab");
-  tabs.forEach(tab => {
+  tabs.forEach((tab) => {
     tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("active"));
+      tabs.forEach((t) => t.classList.remove("active"));
       tab.classList.add("active");
 
       const target = tab.dataset.tab;
-      document.querySelectorAll(".diwali-tab-content").forEach(c => {
+      document.querySelectorAll(".diwali-tab-content").forEach((c) => {
         c.style.display = c.id === `tab-${target}` ? "block" : "none";
       });
     });
@@ -93,13 +95,14 @@ function initTableFilters() {
     const selectedDeity = (deityFilter?.value || "").toLowerCase().trim();
     const selectedScale = (scaleFilter?.value || "").toLowerCase().trim();
 
-    const activeTable = document.querySelector(".diwali-tab-content[style*='block'] .diwali-table tbody")
-      || document.querySelector(".diwali-table tbody");
+    const activeTable =
+      document.querySelector(".diwali-tab-content[style*='block'] .diwali-table tbody") ||
+      document.querySelector(".diwali-table tbody");
 
     if (!activeTable) return;
 
     const rows = activeTable.querySelectorAll("tr");
-    rows.forEach(row => {
+    rows.forEach((row) => {
       const text = row.textContent.toLowerCase();
       const deityAttr = (row.dataset.deity || "").toLowerCase();
       const scaleAttr = (row.dataset.scale || "").toLowerCase();
@@ -122,7 +125,7 @@ function initTableFilters() {
 // ============================================================
 function initAutocomplete(scopeElement = document) {
   const inputs = scopeElement.querySelectorAll(".bhajan-autocomplete-input");
-  inputs.forEach(input => {
+  inputs.forEach((input) => {
     if (input.dataset.autocompleteInitialized) return;
     input.dataset.autocompleteInitialized = "true";
 
@@ -144,7 +147,9 @@ function initAutocomplete(scopeElement = document) {
       debounceTimer = setTimeout(async () => {
         try {
           const currentGender = getCurrentGender(input);
-          const res = await fetch(`/admin/diwali/api/search-master?q=${encodeURIComponent(q)}&gender=${encodeURIComponent(currentGender)}`);
+          const res = await fetch(
+            `/admin/diwali/api/search-master?q=${encodeURIComponent(q)}&gender=${encodeURIComponent(currentGender)}`
+          );
           const data = await res.json();
           renderSuggestions(data, input, dropdown, currentGender);
         } catch (err) {
@@ -158,16 +163,21 @@ function initAutocomplete(scopeElement = document) {
       const title = input.value.trim();
       const card = input.closest(".bhajan-item-card") || input.closest(".modal-bhajan-item");
       if (!card || !title) return;
-      if (card._selectedMasterBhajan && card._selectedMasterBhajan.title.toLowerCase() === title.toLowerCase()) {
+      if (
+        card._selectedMasterBhajan &&
+        card._selectedMasterBhajan.title.toLowerCase() === title.toLowerCase()
+      ) {
         return;
       }
 
       try {
         const currentGender = getCurrentGender(input);
-        const res = await fetch(`/admin/diwali/api/search-master?q=${encodeURIComponent(title)}&gender=${encodeURIComponent(currentGender)}`);
+        const res = await fetch(
+          `/admin/diwali/api/search-master?q=${encodeURIComponent(title)}&gender=${encodeURIComponent(currentGender)}`
+        );
         const data = await res.json();
         if (data && data.length > 0) {
-          const exact = data.find(x => x.title.toLowerCase() === title.toLowerCase()) || data[0];
+          const exact = data.find((x) => x.title.toLowerCase() === title.toLowerCase()) || data[0];
           if (exact) {
             card._selectedMasterBhajan = exact;
             const masterIdInput = card.querySelector(".bhajan-master-id, .edit-master-id");
@@ -177,11 +187,14 @@ function initAutocomplete(scopeElement = document) {
             if (masterIdInput) masterIdInput.value = exact.id;
             if (deityInput && !deityInput.value) deityInput.value = exact.deity || "";
 
-            const finalScale = exact.genderScale || getScaleForGender(exact, currentGender) || exact.shruti || "";
+            const finalScale =
+              exact.genderScale || getScaleForGender(exact, currentGender) || exact.shruti || "";
             if (scaleInput && !scaleInput.value) {
               scaleInput.value = finalScale;
               scaleInput.style.borderColor = "var(--diwali-gold)";
-              setTimeout(() => { scaleInput.style.borderColor = ""; }, 1500);
+              setTimeout(() => {
+                scaleInput.style.borderColor = "";
+              }, 1500);
             }
           }
         }
@@ -207,12 +220,14 @@ function renderSuggestions(bhajans, input, dropdown, currentGender) {
   }
 
   dropdown.innerHTML = "";
-  bhajans.forEach(b => {
+  bhajans.forEach((b) => {
     const item = document.createElement("div");
     item.className = "autocomplete-item";
 
     const resolvedScale = b.genderScale || getScaleForGender(b, currentGender) || b.shruti || "";
-    const scaleHint = resolvedScale ? ` &bull; Scale: <strong>${escapeHtml(resolvedScale)}</strong>` : "";
+    const scaleHint = resolvedScale
+      ? ` &bull; Scale: <strong>${escapeHtml(resolvedScale)}</strong>`
+      : "";
 
     item.innerHTML = `
       <div>
@@ -245,7 +260,9 @@ function renderSuggestions(bhajans, input, dropdown, currentGender) {
           scaleInput.value = finalScale;
           // Visual highlight
           scaleInput.style.borderColor = "var(--diwali-gold)";
-          setTimeout(() => { scaleInput.style.borderColor = ""; }, 1500);
+          setTimeout(() => {
+            scaleInput.style.borderColor = "";
+          }, 1500);
         }
       }
     });
@@ -259,7 +276,7 @@ function renderSuggestions(bhajans, input, dropdown, currentGender) {
 // Re-evaluate scale when gender changes
 function initGenderChangeListeners() {
   const genderRadios = document.querySelectorAll('input[name="gender"]');
-  genderRadios.forEach(r => {
+  genderRadios.forEach((r) => {
     r.addEventListener("change", () => {
       const newGender = r.value;
       updateAllCardScales(newGender);
@@ -277,7 +294,7 @@ function initGenderChangeListeners() {
 
 function updateAllCardScales(newGender, scope = document) {
   const cards = scope.querySelectorAll(".bhajan-item-card, .modal-bhajan-item");
-  cards.forEach(card => {
+  cards.forEach((card) => {
     if (card._selectedMasterBhajan) {
       const newScale = getScaleForGender(card._selectedMasterBhajan, newGender);
       const scaleInput = card.querySelector(".bhajan-scale-input, .edit-bhajan-scale");
@@ -286,7 +303,9 @@ function updateAllCardScales(newGender, scope = document) {
       if (newScale && scaleInput) {
         scaleInput.value = newScale;
         scaleInput.style.borderColor = "var(--diwali-gold)";
-        setTimeout(() => { scaleInput.style.borderColor = ""; }, 1500);
+        setTimeout(() => {
+          scaleInput.style.borderColor = "";
+        }, 1500);
       }
     }
   });
@@ -387,14 +406,14 @@ function diwaliCloseModal(modalId) {
     }
   }
   // If no specific modal given, close all diwali modals
-  document.querySelectorAll(".diwali-modal-overlay").forEach(overlay => {
+  document.querySelectorAll(".diwali-modal-overlay").forEach((overlay) => {
     overlay.style.display = "none";
   });
 }
 
 function initModals() {
   // Close modals on clicking backdrop
-  document.querySelectorAll(".diwali-modal-overlay").forEach(overlay => {
+  document.querySelectorAll(".diwali-modal-overlay").forEach((overlay) => {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) {
         overlay.style.display = "none";
@@ -465,7 +484,10 @@ async function triggerGenerateSequences() {
     const data = await res.json();
     if (!data.success) {
       alert("Error generating sequences: " + data.error);
-      if (btn) { btn.disabled = false; btn.textContent = "Generate Sequences"; }
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Generate Sequences";
+      }
       return;
     }
 
@@ -473,7 +495,10 @@ async function triggerGenerateSequences() {
     showFairnessSummary(data.fairnessSummary);
   } catch (err) {
     alert("Network error: " + err.message);
-    if (btn) { btn.disabled = false; btn.textContent = "Generate Sequences"; }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Generate Sequences";
+    }
   }
 }
 
@@ -485,7 +510,7 @@ function showFairnessSummary(summary) {
   }
 
   let seqRowsHtml = "";
-  (summary.sequences || []).forEach(s => {
+  (summary.sequences || []).forEach((s) => {
     seqRowsHtml += `
       <tr>
         <td><strong>Sequence ${s.sequenceNumber}</strong></td>
@@ -505,7 +530,7 @@ function showFairnessSummary(summary) {
         <div>Pairs with Multiple Bhajans: <strong>${summary.multiBhajanPairs}</strong></div>
         <div>Successfully Spread Across Sequences: <strong style="color:var(--success, #4f7a5b);">${summary.successfullySpread}</strong></div>
       </div>
-      ${summary.unavoidableConcentration > 0 ? `<p style="margin:8px 0 0 0; font-size:12px; color:var(--text-light);">Unavoidable concentrations (pairs with more bhajans than total sequences): ${summary.unavoidableConcentration}</p>` : ''}
+      ${summary.unavoidableConcentration > 0 ? `<p style="margin:8px 0 0 0; font-size:12px; color:var(--text-light);">Unavoidable concentrations (pairs with more bhajans than total sequences): ${summary.unavoidableConcentration}</p>` : ""}
     </div>
 
     <table class="diwali-table" style="font-size:13px; margin-bottom:16px;">
@@ -529,7 +554,8 @@ function showFairnessSummary(summary) {
 // Export Sequence modal action
 function triggerSequenceExport() {
   const format = document.querySelector("input[name='seqExportFormat']:checked")?.value || "excel";
-  const category = document.querySelector("input[name='seqExportCategory']:checked")?.value || "Both";
+  const category =
+    document.querySelector("input[name='seqExportCategory']:checked")?.value || "Both";
 
   diwaliCloseModal("modalExportSequence");
 
@@ -582,28 +608,28 @@ function renderEditBhajanCard(b = {}, idx = 0) {
       <div class="diwali-field-group bhajan-field-title">
         <label class="diwali-field-label">Bhajan Title <span class="req-star">*</span></label>
         <div class="autocomplete-container">
-          <input type="text" class="diwali-input-text bhajan-autocomplete-input edit-bhajan-title" value="${escapeHtml(b.bhajan_title || '')}" placeholder="Search Master Bhajan bank or type title..." required autocomplete="off">
-          <input type="hidden" class="bhajan-master-id edit-master-id" value="${b.master_bhajan_id || ''}">
+          <input type="text" class="diwali-input-text bhajan-autocomplete-input edit-bhajan-title" value="${escapeHtml(b.bhajan_title || "")}" placeholder="Search Master Bhajan bank or type title..." required autocomplete="off">
+          <input type="hidden" class="bhajan-master-id edit-master-id" value="${b.master_bhajan_id || ""}">
           <div class="autocomplete-dropdown"></div>
         </div>
       </div>
       <div class="bhajan-meta-grid">
         <div class="diwali-field-group">
           <label class="diwali-field-label">Deity</label>
-          <input type="text" class="diwali-input-text bhajan-deity-input edit-bhajan-deity" value="${escapeHtml(b.deity || '')}" placeholder="e.g. Ganesha, Krishna...">
+          <input type="text" class="diwali-input-text bhajan-deity-input edit-bhajan-deity" value="${escapeHtml(b.deity || "")}" placeholder="e.g. Ganesha, Krishna...">
         </div>
         <div class="diwali-field-group">
           <label class="diwali-field-label">Scale <span class="field-hint-tag">Auto-filled</span></label>
-          <input type="text" class="diwali-input-text bhajan-scale-input edit-bhajan-scale" value="${escapeHtml(b.scale || '')}" placeholder="e.g. C#">
+          <input type="text" class="diwali-input-text bhajan-scale-input edit-bhajan-scale" value="${escapeHtml(b.scale || "")}" placeholder="e.g. C#">
         </div>
         <div class="diwali-field-group">
           <label class="diwali-field-label">Tabla Shruti</label>
-          <input type="text" class="diwali-input-text bhajan-tabla-input edit-bhajan-tabla" value="${escapeHtml(b.tabla || '')}" placeholder="e.g. 1.5, 2...">
+          <input type="text" class="diwali-input-text bhajan-tabla-input edit-bhajan-tabla" value="${escapeHtml(b.tabla || "")}" placeholder="e.g. 1.5, 2...">
         </div>
       </div>
       <div class="diwali-field-group bhajan-field-remarks">
         <label class="diwali-field-label">Remarks</label>
-        <input type="text" class="diwali-input-text edit-bhajan-remarks" value="${escapeHtml(b.remarks || '')}" placeholder="Audition comments or notes...">
+        <input type="text" class="diwali-input-text edit-bhajan-remarks" value="${escapeHtml(b.remarks || "")}" placeholder="Audition comments or notes...">
       </div>
     </div>
   `;
@@ -654,7 +680,7 @@ async function saveParticipantEdits() {
 
   const bhajanCards = document.querySelectorAll("#editBhajansContainer .modal-bhajan-item");
   const bhajans = [];
-  bhajanCards.forEach(c => {
+  bhajanCards.forEach((c) => {
     const title = c.querySelector(".edit-bhajan-title")?.value.trim();
     if (title) {
       bhajans.push({

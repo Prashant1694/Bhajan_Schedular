@@ -10,10 +10,7 @@ const { Sequelize } = require("sequelize");
 const BhajanSubmission = require("../models/BhajanSubmission");
 const SessionPermission = require("../models/SessionPermission");
 const SessionMeta = require("../models/SessionMeta");
-const {
-  getThursdaySubmissionStatus,
-  getLocalDateStr
-} = require("./helpers");
+const { getThursdaySubmissionStatus, getLocalDateStr } = require("./helpers");
 const notificationService = require("./notificationService");
 
 const CHECK_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
@@ -25,14 +22,10 @@ let schedulerTimer = null;
 function startSessionScheduler() {
   console.log("[Scheduler] Session lifecycle scheduler started (interval: 15 min)");
   // Run immediately on startup to catch anything missed during downtime
-  runSchedulerCheck().catch((err) =>
-    console.error("[Scheduler] Initial check failed:", err)
-  );
+  runSchedulerCheck().catch((err) => console.error("[Scheduler] Initial check failed:", err));
   // Then run periodically
   schedulerTimer = setInterval(() => {
-    runSchedulerCheck().catch((err) =>
-      console.error("[Scheduler] Periodic check failed:", err)
-    );
+    runSchedulerCheck().catch((err) => console.error("[Scheduler] Periodic check failed:", err));
   }, CHECK_INTERVAL_MS);
 }
 
@@ -128,9 +121,7 @@ async function checkSchedulePublished() {
 
   // Find session dates that have submissions and are past
   const sessions = await BhajanSubmission.findAll({
-    attributes: [
-      [Sequelize.fn("DISTINCT", Sequelize.col("session_date")), "session_date"]
-    ],
+    attributes: [[Sequelize.fn("DISTINCT", Sequelize.col("session_date")), "session_date"]],
     where: {
       session_date: {
         [Sequelize.Op.between]: [sevenDaysAgoStr, todayStr]

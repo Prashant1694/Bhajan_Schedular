@@ -28,7 +28,7 @@ exports.showLoginPage = async (req, res) => {
 
     res.render("singer-login", {
       pageTitle: "Singer Verification | Bhajan Planner",
-      singers: singers.map(s => ({
+      singers: singers.map((s) => ({
         id: s.id,
         name: s.name,
         gender: s.gender,
@@ -88,7 +88,9 @@ exports.login = async (req, res) => {
 
     const cleanPin = (pin || "").toString().trim();
     if (!/^\d{4}$/.test(cleanPin)) {
-      return res.status(400).json({ error: "Please enter a valid 4-digit numeric PIN (e.g. 1234)." });
+      return res
+        .status(400)
+        .json({ error: "Please enter a valid 4-digit numeric PIN (e.g. 1234)." });
     }
 
     // Query singer with secrets for authentication
@@ -103,7 +105,8 @@ exports.login = async (req, res) => {
       // Coordinator-set first-time claim policy:
       // Devotees cannot self-claim names with arbitrary PINs; a coordinator or admin must issue the initial PIN.
       return res.status(403).json({
-        error: "This singer profile has not been assigned a PIN yet. Please contact a coordinator or admin to issue your initial PIN."
+        error:
+          "This singer profile has not been assigned a PIN yet. Please contact a coordinator or admin to issue your initial PIN."
       });
     }
 
@@ -113,7 +116,7 @@ exports.login = async (req, res) => {
       const remainingSec = Math.ceil((new Date(singer.locked_until).getTime() - now) / 1000);
       const mins = Math.ceil(remainingSec / 60);
       return res.status(429).json({
-        error: `Account is temporarily locked due to 5 consecutive incorrect PIN attempts. Please wait ${mins} minute${mins === 1 ? '' : 's'} or contact a coordinator.`
+        error: `Account is temporarily locked due to 5 consecutive incorrect PIN attempts. Please wait ${mins} minute${mins === 1 ? "" : "s"} or contact a coordinator.`
       });
     }
 
@@ -127,14 +130,15 @@ exports.login = async (req, res) => {
           locked_until: new Date(Date.now() + SINGER_LOCKOUT_MS)
         });
         return res.status(429).json({
-          error: "Account is now temporarily locked for 15 minutes due to 5 consecutive incorrect PIN attempts. Please contact a coordinator if you forgot your PIN."
+          error:
+            "Account is now temporarily locked for 15 minutes due to 5 consecutive incorrect PIN attempts. Please contact a coordinator if you forgot your PIN."
         });
       }
 
       await singer.update({ failed_attempts: nextFailures });
       const remaining = MAX_SINGER_PIN_FAILURES - nextFailures;
       return res.status(403).json({
-        error: `Incorrect 4-digit PIN for ${singer.name}. (${remaining} attempt${remaining === 1 ? '' : 's'} remaining before temporary lock)`
+        error: `Incorrect 4-digit PIN for ${singer.name}. (${remaining} attempt${remaining === 1 ? "" : "s"} remaining before temporary lock)`
       });
     }
 
@@ -170,7 +174,9 @@ exports.login = async (req, res) => {
       };
 
       if (existingAdminUserId) {
-        AdminUser.update({ singer_id: singer.id }, { where: { id: existingAdminUserId } }).catch(() => {});
+        AdminUser.update({ singer_id: singer.id }, { where: { id: existingAdminUserId } }).catch(
+          () => {}
+        );
       }
 
       req.session.save(() => {
@@ -232,22 +238,19 @@ exports.showHubPage = async (req, res) => {
     const upcomingSubmissions = await BhajanSubmission.findAll({
       where: {
         session_date: { [Op.gte]: todayStr },
-        [Op.or]: [
-          { singer_name: singer.name },
-          { partner_name: singer.name }
-        ]
+        [Op.or]: [{ singer_name: singer.name }, { partner_name: singer.name }]
       },
-      order: [["session_date", "ASC"], ["created_at", "ASC"]],
+      order: [
+        ["session_date", "ASC"],
+        ["created_at", "ASC"]
+      ],
       limit: 10
     });
 
     const pastSubmissions = await BhajanSubmission.findAll({
       where: {
         session_date: { [Op.lt]: todayStr },
-        [Op.or]: [
-          { singer_name: singer.name },
-          { partner_name: singer.name }
-        ]
+        [Op.or]: [{ singer_name: singer.name }, { partner_name: singer.name }]
       },
       order: [["session_date", "DESC"]],
       limit: 30

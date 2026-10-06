@@ -74,7 +74,7 @@
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
 }
 
 /* Stats Cards */
@@ -90,15 +90,17 @@
   border: 1px solid var(--diwali-border);
   border-radius: 12px;
   padding: 16px 20px;
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .diwali-stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow, 0 8px 24px rgba(0,0,0,0.08));
+  box-shadow: var(--shadow, 0 8px 24px rgba(0, 0, 0, 0.08));
 }
 
 .diwali-stat-card::before {
@@ -278,7 +280,7 @@
   border-radius: 12px;
   border: 1px solid var(--diwali-border);
   overflow: hidden;
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
 }
 
 .diwali-table {
@@ -365,7 +367,7 @@
   border: 1px solid var(--diwali-border);
   border-radius: 14px;
   padding: 28px;
-  box-shadow: var(--shadow, 0 8px 24px rgba(0,0,0,0.08));
+  box-shadow: var(--shadow, 0 8px 24px rgba(0, 0, 0, 0.08));
   margin-bottom: 24px;
 }
 
@@ -421,7 +423,9 @@
   border-radius: 8px;
   background: var(--bg, #fbf8f2);
   color: var(--text, #221e2a);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .diwali-input-text:focus {
@@ -585,7 +589,7 @@
   max-height: 220px;
   overflow-y: auto;
   z-index: 1000;
-  box-shadow: var(--shadow-lg, 0 20px 48px rgba(0,0,0,0.12));
+  box-shadow: var(--shadow-lg, 0 20px 48px rgba(0, 0, 0, 0.12));
   display: none;
 }
 
@@ -599,7 +603,8 @@
   font-size: 13.5px;
 }
 
-.autocomplete-item:hover, .autocomplete-item.active {
+.autocomplete-item:hover,
+.autocomplete-item.active {
   background: var(--diwali-gold-light);
 }
 
@@ -627,7 +632,7 @@
   border: 1px solid var(--diwali-border);
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06));
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
 }
 
 .sequence-col-header {
@@ -735,14 +740,20 @@
   border: 1px solid var(--diwali-border);
   width: 100%;
   max-width: 520px;
-  box-shadow: var(--shadow-lg, 0 20px 48px rgba(0,0,0,0.12));
+  box-shadow: var(--shadow-lg, 0 20px 48px rgba(0, 0, 0, 0.12));
   overflow: hidden;
   animation: modalScaleIn 0.2s ease;
 }
 
 @keyframes modalScaleIn {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .diwali-modal-header {

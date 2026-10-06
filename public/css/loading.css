@@ -41,7 +41,9 @@
   height: 100%;
   width: 0%;
   background: linear-gradient(90deg, #d98a2b 0%, #ea580c 50%, #f59e0b 100%);
-  box-shadow: 0 0 10px rgba(217, 138, 43, 0.8), 0 0 4px rgba(234, 88, 12, 0.6);
+  box-shadow:
+    0 0 10px rgba(217, 138, 43, 0.8),
+    0 0 4px rgba(234, 88, 12, 0.6);
   transition: width 0.2s ease-out;
 }
 
@@ -53,7 +55,9 @@
   width: 16px;
   border-radius: 50%;
   background: #ffffff;
-  box-shadow: 0 0 8px #ffffff, 0 0 14px #fbbf24;
+  box-shadow:
+    0 0 8px #ffffff,
+    0 0 14px #fbbf24;
 }
 
 /* ==========================================================================
@@ -65,7 +69,12 @@
   width: 100vw;
   height: 100vh;
   z-index: 999999;
-  background: radial-gradient(circle at 50% 32%, var(--loader-bg-light) 0%, var(--loader-bg-mid) 48%, var(--loader-bg-soft) 100%);
+  background: radial-gradient(
+    circle at 50% 32%,
+    var(--loader-bg-light) 0%,
+    var(--loader-bg-mid) 48%,
+    var(--loader-bg-soft) 100%
+  );
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   display: flex;
@@ -75,10 +84,11 @@
   user-select: none;
   opacity: 1;
   visibility: visible;
-  transition: opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1),
-              backdrop-filter 0.65s ease,
-              -webkit-backdrop-filter 0.65s ease,
-              transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.65s cubic-bezier(0.4, 0, 0.2, 1),
+    backdrop-filter 0.65s ease,
+    -webkit-backdrop-filter 0.65s ease,
+    transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Soft preliminary fade-out as loading approaches 100% */
@@ -206,8 +216,12 @@ body.loading-lock {
 }
 
 @keyframes dawnRaysRotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Divine Sun Glow Behind Stage */
@@ -219,7 +233,12 @@ body.loading-lock {
   width: min(580px, 85vw);
   height: min(580px, 85vw);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(251, 191, 36, 0.32) 0%, rgba(217, 138, 43, 0.12) 45%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(251, 191, 36, 0.32) 0%,
+    rgba(217, 138, 43, 0.12) 45%,
+    transparent 70%
+  );
   filter: blur(36px);
   pointer-events: none;
   z-index: 2;
@@ -227,8 +246,14 @@ body.loading-lock {
 }
 
 @keyframes sunGlowPulse {
-  0% { transform: translate(-50%, -50%) scale(0.92); opacity: 0.7; }
-  100% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.95; }
+  0% {
+    transform: translate(-50%, -50%) scale(0.92);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.08);
+    opacity: 0.95;
+  }
 }
 
 /* ==========================================================================
@@ -277,8 +302,14 @@ body.loading-lock {
 }
 
 @keyframes emblemPulse {
-  0% { transform: scale(0.95); opacity: 0.6; }
-  100% { transform: scale(1.12); opacity: 1; }
+  0% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
 }
 
 .sarva-dharma-logo {
@@ -292,8 +323,12 @@ body.loading-lock {
 }
 
 @keyframes logoFloat {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-3px); }
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-3px);
+  }
 }
 
 .loader-title-block {
@@ -343,7 +378,12 @@ body.loading-lock {
   width: 90%;
   height: 90%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(251, 191, 36, 0.28) 0%, rgba(217, 138, 43, 0.1) 55%, transparent 75%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(251, 191, 36, 0.28) 0%,
+    rgba(217, 138, 43, 0.1) 55%,
+    transparent 75%
+  );
   filter: blur(28px);
   pointer-events: none;
 }
@@ -356,9 +396,10 @@ body.loading-lock {
   opacity: 0;
   transform: scale(0.96);
   filter: drop-shadow(0 12px 28px rgba(125, 47, 69, 0.12))
-          drop-shadow(0 4px 12px rgba(217, 138, 43, 0.15));
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 2.4s cubic-bezier(0.25, 1, 0.5, 1);
+    drop-shadow(0 4px 12px rgba(217, 138, 43, 0.15));
+  transition:
+    opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 2.4s cubic-bezier(0.25, 1, 0.5, 1);
   will-change: opacity, transform;
 }
 
@@ -414,8 +455,15 @@ body.loading-lock {
 }
 
 @keyframes dotPulse {
-  0% { transform: scale(0.85); opacity: 0.7; }
-  100% { transform: scale(1.25); opacity: 1; box-shadow: 0 0 10px #ea580c; }
+  0% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 1;
+    box-shadow: 0 0 10px #ea580c;
+  }
 }
 
 .mandir-status-text {
@@ -471,7 +519,9 @@ body.loading-lock {
   width: 12px;
   border-radius: 50%;
   background: #ffffff;
-  box-shadow: 0 0 8px #ffffff, 0 0 14px #d98a2b;
+  box-shadow:
+    0 0 8px #ffffff,
+    0 0 14px #d98a2b;
 }
 
 /* ==========================================================================
@@ -485,9 +535,10 @@ body.loading-lock {
   border: 1px solid rgba(217, 138, 43, 0.28);
   border-radius: 16px;
   padding: 12px 18px;
-  box-shadow: 0 8px 24px rgba(125, 47, 69, 0.06),
-              0 2px 6px rgba(217, 138, 43, 0.05),
-              inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 8px 24px rgba(125, 47, 69, 0.06),
+    0 2px 6px rgba(217, 138, 43, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -519,7 +570,9 @@ body.loading-lock {
   letter-spacing: 0.3px;
   opacity: 1;
   transform: translateY(0);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
   line-height: 1.4;
 }
 

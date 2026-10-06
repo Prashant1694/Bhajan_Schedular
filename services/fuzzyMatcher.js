@@ -10,37 +10,65 @@
  */
 
 function cleanAndStemBhajanTitle(title) {
-  let str = String(title || '').trim();
+  let str = String(title || "").trim();
 
   // 1. Remove parenthetical repetitions: (2), (3), (x2), [2], etc.
-  str = str.replace(/[\(\[\{]\s*(?:x?\d+|\d+x?)\s*[\)\]\}]/gi, '');
+  str = str.replace(/[\(\[\{]\s*(?:x?\d+|\d+x?)\s*[\)\]\}]/gi, "");
 
   // 2. Remove trailing ellipsis and scale/raga metadata like "... G#m Darbari", "... D Bilawal"
-  str = str.replace(/\s*\.{2,}.*$/gi, '');
+  str = str.replace(/\s*\.{2,}.*$/gi, "");
 
   // 3. Lowercase & strip punctuation
-  str = str.toLowerCase().replace(/[''`".,;:!?()\[\]{}\/\\-]/g, ' ').replace(/\s+/g, ' ').trim();
+  str = str
+    .toLowerCase()
+    .replace(/[''`".,;:!?()\[\]{}\/\\-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
   const stemMap = {
-    jaye: 'jai', jaya: 'jai', jay: 'jai',
-    rama: 'ram', raam: 'ram',
-    ishwara: 'ishwar', eeshwara: 'ishwar', isvara: 'ishwar',
-    durge: 'durga',
-    naama: 'naam', nam: 'naam',
-    bhajomana: 'bhajo', bhajoman: 'bhajo', bhajorey: 'bhajo', bhajore: 'bhajo', bhajare: 'bhajo', bhajarey: 'bhajo',
-    gowri: 'gauri',
-    shankari: 'shankar', shankara: 'shankar',
-    patey: 'pati', pate: 'pati',
-    pahimam: 'pahi', paahi: 'pahi',
-    sumbramnya: 'subramanya', subramnya: 'subramanya', subramanyam: 'subramanya',
-    swaroopini: 'swarup', swarupini: 'swarup', swaroopa: 'swarup', swarupa: 'swarup',
-    shreeman: 'shriman', shree: 'shri',
-    gajanana: 'gajanan',
-    sita: 'seetha', sitha: 'seetha'
+    jaye: "jai",
+    jaya: "jai",
+    jay: "jai",
+    rama: "ram",
+    raam: "ram",
+    ishwara: "ishwar",
+    eeshwara: "ishwar",
+    isvara: "ishwar",
+    durge: "durga",
+    naama: "naam",
+    nam: "naam",
+    bhajomana: "bhajo",
+    bhajoman: "bhajo",
+    bhajorey: "bhajo",
+    bhajore: "bhajo",
+    bhajare: "bhajo",
+    bhajarey: "bhajo",
+    gowri: "gauri",
+    shankari: "shankar",
+    shankara: "shankar",
+    patey: "pati",
+    pate: "pati",
+    pahimam: "pahi",
+    paahi: "pahi",
+    sumbramnya: "subramanya",
+    subramnya: "subramanya",
+    subramanyam: "subramanya",
+    swaroopini: "swarup",
+    swarupini: "swarup",
+    swaroopa: "swarup",
+    swarupa: "swarup",
+    shreeman: "shriman",
+    shree: "shri",
+    gajanana: "gajanan",
+    sita: "seetha",
+    sitha: "seetha"
   };
 
-  const words = str.split(' ').filter(Boolean).map(w => stemMap[w] || w);
-  return words.join(' ');
+  const words = str
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => stemMap[w] || w);
+  return words.join(" ");
 }
 
 function normalizeBhajanTitle(title) {
@@ -74,15 +102,15 @@ function diceSimilarity(a, b) {
 }
 
 function tokenMultisetScore(a, b) {
-  const tokA = cleanAndStemBhajanTitle(a).split(' ').filter(Boolean);
-  const tokB = cleanAndStemBhajanTitle(b).split(' ').filter(Boolean);
+  const tokA = cleanAndStemBhajanTitle(a).split(" ").filter(Boolean);
+  const tokB = cleanAndStemBhajanTitle(b).split(" ").filter(Boolean);
   if (!tokA.length || !tokB.length) return 0;
 
   const countsB = {};
-  tokB.forEach(t => countsB[t] = (countsB[t] || 0) + 1);
+  tokB.forEach((t) => (countsB[t] = (countsB[t] || 0) + 1));
 
   let matches = 0;
-  tokA.forEach(t => {
+  tokA.forEach((t) => {
     if (countsB[t] && countsB[t] > 0) {
       matches++;
       countsB[t]--;
@@ -102,7 +130,7 @@ function combinedScore(a, b) {
   return dice * 0.5 + token * 0.5;
 }
 
-function findSimilarBhajans(submittedTitle, masterBhajans, threshold = 0.50, topN = 4) {
+function findSimilarBhajans(submittedTitle, masterBhajans, threshold = 0.5, topN = 4) {
   const stemSub = cleanAndStemBhajanTitle(submittedTitle);
   if (!stemSub || stemSub.length < 3) return [];
 
@@ -111,7 +139,8 @@ function findSimilarBhajans(submittedTitle, masterBhajans, threshold = 0.50, top
     const master = masterBhajans[i];
     const stemMas = cleanAndStemBhajanTitle(master.title);
 
-    const lenRatio = Math.min(stemSub.length, stemMas.length) / Math.max(stemSub.length, stemMas.length);
+    const lenRatio =
+      Math.min(stemSub.length, stemMas.length) / Math.max(stemSub.length, stemMas.length);
     if (lenRatio < 0.35 && Math.abs(stemSub.length - stemMas.length) > 15) continue;
 
     const score = combinedScore(submittedTitle, master.title);
@@ -124,11 +153,11 @@ function findSimilarBhajans(submittedTitle, masterBhajans, threshold = 0.50, top
 }
 
 function buildMasterIndex(masterBhajans) {
-  return masterBhajans.map(m => {
+  return masterBhajans.map((m) => {
     const stem = cleanAndStemBhajanTitle(m.title);
-    const tokens = stem.split(' ').filter(Boolean);
+    const tokens = stem.split(" ").filter(Boolean);
     const tokenCounts = {};
-    tokens.forEach(t => tokenCounts[t] = (tokenCounts[t] || 0) + 1);
+    tokens.forEach((t) => (tokenCounts[t] = (tokenCounts[t] || 0) + 1));
     const bigrams = new Set();
     for (let i = 0; i < stem.length - 1; i++) bigrams.add(stem.slice(i, i + 2));
     return { master: m, stem, tokens, tokenCounts, bigrams };
@@ -139,7 +168,7 @@ function matchWithIndex(submittedTitle, masterIndex, threshold = 0.45, topN = 4)
   const stemSub = cleanAndStemBhajanTitle(submittedTitle);
   if (!stemSub || stemSub.length < 3) return [];
 
-  const tokSub = stemSub.split(' ').filter(Boolean);
+  const tokSub = stemSub.split(" ").filter(Boolean);
   const bgSub = new Set();
   for (let i = 0; i < stemSub.length - 1; i++) bgSub.add(stemSub.slice(i, i + 2));
 
@@ -156,13 +185,17 @@ function matchWithIndex(submittedTitle, masterIndex, threshold = 0.45, topN = 4)
     for (const bg of bgSub) {
       if (pm.bigrams.has(bg)) intersection++;
     }
-    const dice = (bgSub.size + pm.bigrams.size === 0) ? 0 : (2 * intersection) / (bgSub.size + pm.bigrams.size);
+    const dice =
+      bgSub.size + pm.bigrams.size === 0 ? 0 : (2 * intersection) / (bgSub.size + pm.bigrams.size);
 
     let tokenMatches = 0;
     for (let k = 0; k < tokSub.length; k++) {
       if (pm.tokenCounts[tokSub[k]]) tokenMatches++;
     }
-    const tokenScore = (tokSub.length + pm.tokens.length === 0) ? 0 : (2 * tokenMatches) / (tokSub.length + pm.tokens.length);
+    const tokenScore =
+      tokSub.length + pm.tokens.length === 0
+        ? 0
+        : (2 * tokenMatches) / (tokSub.length + pm.tokens.length);
 
     const score = dice * 0.5 + tokenScore * 0.5;
     if (score >= threshold) matches.push({ master: pm.master, score });

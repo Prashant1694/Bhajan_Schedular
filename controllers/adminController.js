@@ -15,10 +15,7 @@ const {
   validateReorder,
   validateToggleLock
 } = require("../services/validators");
-const {
-  createBackup,
-  getOrGenerateBackup
-} = require("../services/backupService");
+const { createBackup, getOrGenerateBackup } = require("../services/backupService");
 
 const {
   getNextThursday,
@@ -30,10 +27,14 @@ const {
   DEITY_ORDER,
   getWesternScale,
   getDeityIcon,
-  getNumberEmoji,
+  getNumberEmoji
 } = require("../services/helpers");
 
-const { findSimilarBhajans, buildMasterIndex, matchWithIndex } = require("../services/fuzzyMatcher");
+const {
+  findSimilarBhajans,
+  buildMasterIndex,
+  matchWithIndex
+} = require("../services/fuzzyMatcher");
 
 const {
   generateAdminCalendarHtml,
@@ -43,7 +44,7 @@ const {
   generateSuccessHtml,
   generateErrorHtml,
   generateAdminImportSessionsHtml,
-  escapeHtml,
+  escapeHtml
 } = require("../templates");
 const { parseBatchSessions } = require("../scripts/import_sessions");
 const requireLogin = require("../middleware/auth");
@@ -62,18 +63,18 @@ exports.dashboard = async (req, res) => {
     const submissions = await BhajanSubmission.findAll({
       where: {
         session_date: {
-          [Sequelize.Op.between]: [startDateStr, endDateStr],
-        },
-      },
+          [Sequelize.Op.between]: [startDateStr, endDateStr]
+        }
+      }
     });
 
     // Fetch permissions
     const permissions = await SessionPermission.findAll({
       where: {
         date: {
-          [Sequelize.Op.between]: [startDateStr, endDateStr],
-        },
-      },
+          [Sequelize.Op.between]: [startDateStr, endDateStr]
+        }
+      }
     });
 
     const permissionMap = {};
@@ -92,29 +93,24 @@ exports.dashboard = async (req, res) => {
     });
 
     // Dashboard statistics
-    const [
-      totalSessions,
-      totalBhajans,
-      totalSingers,
-      nextSession,
-      recentActivity,
-    ] = await Promise.all([
-      SessionMeta.count(),
-      MasterBhajan.count({ where: { is_active: true } }),
-      BhajanSubmission.count({
-        distinct: true,
-        col: "singer_name",
-      }),
-      SessionPermission.findOne({
-        where: {
-          date: {
-            [Sequelize.Op.gte]: getLocalDateStr(),
+    const [totalSessions, totalBhajans, totalSingers, nextSession, recentActivity] =
+      await Promise.all([
+        SessionMeta.count(),
+        MasterBhajan.count({ where: { is_active: true } }),
+        BhajanSubmission.count({
+          distinct: true,
+          col: "singer_name"
+        }),
+        SessionPermission.findOne({
+          where: {
+            date: {
+              [Sequelize.Op.gte]: getLocalDateStr()
+            }
           },
-        },
-        order: [["date", "ASC"]],
-      }),
-      activityService.getRecent(10),
-    ]);
+          order: [["date", "ASC"]]
+        }),
+        activityService.getRecent(10)
+      ]);
     const monthNames = [
       "January",
       "February",
@@ -127,7 +123,7 @@ exports.dashboard = async (req, res) => {
       "September",
       "October",
       "November",
-      "December",
+      "December"
     ];
 
     const currentMonthName = monthNames[month - 1];
@@ -148,8 +144,7 @@ exports.dashboard = async (req, res) => {
     }
 
     const todayDate = new Date();
-    const isCurrentMonth =
-      todayDate.getFullYear() === year && todayDate.getMonth() + 1 === month;
+    const isCurrentMonth = todayDate.getFullYear() === year && todayDate.getMonth() + 1 === month;
     const todayStrGlobal = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, "0")}-${String(todayDate.getDate()).padStart(2, "0")}`;
 
     for (let day = 1; day <= daysInMonth; day++) {
@@ -245,9 +240,9 @@ onclick="openAdminDateModal('${dateStr}','${perm || ""}','${desc.replace(/'/g, "
         totalSessions,
         totalBhajans,
         totalSingers,
-        nextSession,
+        nextSession
       },
-      recentActivity,
+      recentActivity
     });
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
@@ -257,7 +252,7 @@ exports.sessionView = async (req, res) => {
   try {
     const { date } = req.params;
     const submissions = await BhajanSubmission.findAll({
-      where: { session_date: date },
+      where: { session_date: date }
     });
 
     const sorted = submissions.sort((a, b) => {
@@ -268,9 +263,7 @@ exports.sessionView = async (req, res) => {
       }
       const deityCompare = deityOrderKey(a.deity) - deityOrderKey(b.deity);
       if (deityCompare !== 0) return deityCompare;
-      return a.singer_name
-        .toLowerCase()
-        .localeCompare(b.singer_name.toLowerCase());
+      return a.singer_name.toLowerCase().localeCompare(b.singer_name.toLowerCase());
     });
 
     const meta = await SessionMeta.findByPk(date);
@@ -282,11 +275,15 @@ exports.sessionView = async (req, res) => {
     // Enrich submissions with MasterBhajan references (sheet_filename, id)
     const masterBhajans = await MasterBhajan.findAll({
       where: { is_active: true },
-      attributes: ['id', 'title', 'sheet_filename']
+      attributes: ["id", "title", "sheet_filename"]
     });
     const masterMap = new Map();
-    const normalizeTitle = (t) => String(t || '').trim().replace(/\s+/g, ' ').toLowerCase();
-    masterBhajans.forEach(mb => {
+    const normalizeTitle = (t) =>
+      String(t || "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toLowerCase();
+    masterBhajans.forEach((mb) => {
       masterMap.set(normalizeTitle(mb.title), mb);
     });
 
@@ -319,24 +316,41 @@ exports.sessionView = async (req, res) => {
     } catch (e) {}
 
     // Analytics & Session Quality
-    const uniqueSingers = new Set(enrichedSubmissions.map(s => String(s.singer_name || '').trim().toLowerCase())).size;
+    const uniqueSingers = new Set(
+      enrichedSubmissions.map((s) =>
+        String(s.singer_name || "")
+          .trim()
+          .toLowerCase()
+      )
+    ).size;
     const deityCounts = {};
     const speedCounts = { slow: 0, medium: 0, fast: 0 };
-    
-    enrichedSubmissions.forEach(s => {
-      const d = s.deity || 'Unknown';
+
+    enrichedSubmissions.forEach((s) => {
+      const d = s.deity || "Unknown";
       deityCounts[d] = (deityCounts[d] || 0) + 1;
-      const sp = (s.speed || 'medium').toLowerCase();
+      const sp = (s.speed || "medium").toLowerCase();
       if (speedCounts[sp] !== undefined) speedCounts[sp]++;
       else speedCounts.medium++;
     });
 
-    const ganeshaOpening = enrichedSubmissions.length > 0 && String(enrichedSubmissions[0].deity || '').toLowerCase().includes('ganesh');
-    const saiIncluded = enrichedSubmissions.some(s => String(s.deity || '').toLowerCase().includes('sai'));
-    
+    const ganeshaOpening =
+      enrichedSubmissions.length > 0 &&
+      String(enrichedSubmissions[0].deity || "")
+        .toLowerCase()
+        .includes("ganesh");
+    const saiIncluded = enrichedSubmissions.some((s) =>
+      String(s.deity || "")
+        .toLowerCase()
+        .includes("sai")
+    );
+
     const consecutiveRepeats = [];
     for (let i = 0; i < enrichedSubmissions.length - 1; i++) {
-      if (String(enrichedSubmissions[i].deity || '').toLowerCase() === String(enrichedSubmissions[i + 1].deity || '').toLowerCase()) {
+      if (
+        String(enrichedSubmissions[i].deity || "").toLowerCase() ===
+        String(enrichedSubmissions[i + 1].deity || "").toLowerCase()
+      ) {
         consecutiveRepeats.push({
           index1: i + 1,
           index2: i + 2,
@@ -348,37 +362,41 @@ exports.sessionView = async (req, res) => {
     }
 
     // WhatsApp Export Pre-generation
-    const protocol = req.protocol || 'http';
-    const host = req.get('host') || 'localhost:8000';
+    const protocol = req.protocol || "http";
+    const host = req.get("host") || "localhost:8000";
     const livePlanUrl = `${protocol}://${host}/plan-view?session_date=${date}`;
 
     const whatsappItems = enrichedSubmissions.map((item, idx) => {
       const numEmoji = getNumberEmoji(idx + 1);
-      const icon = item.deityIcon || '🕉️';
+      const icon = item.deityIcon || "🕉️";
       let wa = `${numEmoji} *${item.deity}* ${icon}\n🎵 *${item.title}*\n👤 ${item.singer_name}`;
       if (item.partner_name) wa += ` (with ${item.partner_name})`;
-      const scaleStr = item.scale ? `${item.scale}${item.westernScale && item.westernScale !== '-' ? ` (${item.westernScale})` : ''}` : 'N/A';
-      const speedStr = item.speed ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1) : 'Medium';
+      const scaleStr = item.scale
+        ? `${item.scale}${item.westernScale && item.westernScale !== "-" ? ` (${item.westernScale})` : ""}`
+        : "N/A";
+      const speedStr = item.speed
+        ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1)
+        : "Medium";
       wa += `\n🎹 Pitch: ${scaleStr} | 🥁 Tempo: ${speedStr}`;
       return wa;
     });
 
     let whatsappText = `🕉️ *SRI SATHYA SAI SEVA ORGANISATION*\n📅 *BHAJAN PROGRAM – ${humanDate}*\nTotal Bhajans: ${enrichedSubmissions.length}\n──────────────────────────────\n\n`;
-    whatsappText += whatsappItems.length > 0 ? whatsappItems.join('\n\n') + '\n\n' : 'No bhajans scheduled for this date yet.\n\n';
+    whatsappText +=
+      whatsappItems.length > 0
+        ? whatsappItems.join("\n\n") + "\n\n"
+        : "No bhajans scheduled for this date yet.\n\n";
     whatsappText += `──────────────────────────────\n🙏 *Sai Ram to all Accompanists & Devotees*\n🌐 *Live Plan:* ${livePlanUrl}`;
     const whatsappEncoded = encodeURIComponent(whatsappText);
 
     // Recent past sessions for quick copy
     const recentSessions = await BhajanSubmission.findAll({
-      attributes: [
-        'session_date',
-        [Sequelize.fn('COUNT', Sequelize.col('id')), 'bhajan_count']
-      ],
+      attributes: ["session_date", [Sequelize.fn("COUNT", Sequelize.col("id")), "bhajan_count"]],
       where: {
         session_date: { [Sequelize.Op.ne]: date }
       },
-      group: ['session_date'],
-      order: [['session_date', 'DESC']],
+      group: ["session_date"],
+      order: [["session_date", "DESC"]],
       limit: 12,
       raw: true
     });
@@ -406,8 +424,8 @@ exports.sessionView = async (req, res) => {
       recentSessions,
       pageTitle: `Session Sequencer - ${date}`,
       isAdminPage: true,
-      pageCSS: 'admin.css',
-      page: 'sessions'
+      pageCSS: "admin.css",
+      page: "sessions"
     });
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
@@ -420,7 +438,7 @@ exports.editSubmissionForm = async (req, res) => {
     if (!submission) return res.status(404).send("Entry not found");
     res.render("admin-edit-submission", {
       s: submission,
-      pageTitle: "Edit Bhajan Entry",
+      pageTitle: "Edit Bhajan Entry"
     });
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
@@ -429,16 +447,7 @@ exports.editSubmissionForm = async (req, res) => {
 
 exports.updateSubmission = async (req, res) => {
   try {
-    const {
-      session_date,
-      singer_name,
-      partner_name,
-      title,
-      deity,
-      scale,
-      speed,
-      raga,
-    } = req.body;
+    const { session_date, singer_name, partner_name, title, deity, scale, speed, raga } = req.body;
     await BhajanSubmission.update(
       {
         session_date,
@@ -448,11 +457,11 @@ exports.updateSubmission = async (req, res) => {
         deity,
         scale,
         speed,
-        raga: raga || null,
+        raga: raga || null
       },
       {
-        where: { id: req.params.id },
-      },
+        where: { id: req.params.id }
+      }
     );
     res.redirect(`/admin/date/${session_date}`);
   } catch (error) {
@@ -479,12 +488,12 @@ exports.showRules = async (req, res) => {
     const date = req.query.date || "default";
     let rules = await DeityRule.findAll({
       where: { session_date: date },
-      order: [["deity_name", "ASC"]],
+      order: [["deity_name", "ASC"]]
     });
     if (rules.length === 0 && date !== "default") {
       rules = await DeityRule.findAll({
         where: { session_date: "default" },
-        order: [["deity_name", "ASC"]],
+        order: [["deity_name", "ASC"]]
       });
     }
     res.render("admin-rules", {
@@ -492,8 +501,8 @@ exports.showRules = async (req, res) => {
       date,
       pageTitle: date === "default" ? "Default Deity Rules" : `Rules for ${date}`,
       isAdminPage: true,
-      pageCSS: 'admin.css',
-      page: 'rules'
+      pageCSS: "admin.css",
+      page: "rules"
     });
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
@@ -506,19 +515,19 @@ exports.updateRules = async (req, res) => {
     const date = req.body.date || "default";
     for (let rule of newRules) {
       const existing = await DeityRule.findOne({
-        where: { session_date: date, deity_name: rule.deity_name },
+        where: { session_date: date, deity_name: rule.deity_name }
       });
       if (existing) {
         await existing.update({
           min_required: rule.min_required,
-          max_allowed: rule.max_allowed,
+          max_allowed: rule.max_allowed
         });
       } else {
         await DeityRule.create({
           session_date: date,
           deity_name: rule.deity_name,
           min_required: rule.min_required,
-          max_allowed: rule.max_allowed,
+          max_allowed: rule.max_allowed
         });
       }
     }
@@ -704,7 +713,7 @@ exports.downloadBackup = async (req, res) => {
 exports.showImportSessions = (req, res) => {
   res.render("admin-import-sessions", {
     resultInfo: null,
-    pageTitle: "Import Past Sessions",
+    pageTitle: "Import Past Sessions"
   });
 };
 
@@ -714,7 +723,7 @@ exports.processImportSessions = async (req, res) => {
     if (!rawText || !rawText.trim()) {
       return res.render("admin-import-sessions", {
         resultInfo: { error: "No text provided. Please paste session data." },
-        pageTitle: "Import Past Sessions",
+        pageTitle: "Import Past Sessions"
       });
     }
 
@@ -723,20 +732,20 @@ exports.processImportSessions = async (req, res) => {
       return res.render("admin-import-sessions", {
         resultInfo: {
           error:
-            "No valid dates found in the text. Make sure dates are formatted as DD/MM/YYYY or 'Bhajan Plan – YYYY-MM-DD'.",
+            "No valid dates found in the text. Make sure dates are formatted as DD/MM/YYYY or 'Bhajan Plan – YYYY-MM-DD'."
         },
-        pageTitle: "Import Past Sessions",
+        pageTitle: "Import Past Sessions"
       });
     }
 
     res.render("admin-import-sessions", {
       resultInfo: result,
-      pageTitle: "Import Past Sessions",
+      pageTitle: "Import Past Sessions"
     });
   } catch (error) {
     res.render("admin-import-sessions", {
       resultInfo: { error: error.message },
-      pageTitle: "Import Past Sessions",
+      pageTitle: "Import Past Sessions"
     });
   }
 };
@@ -745,18 +754,16 @@ exports.showMissingBhajans = async (req, res) => {
   try {
     const submittedTitles = await BhajanSubmission.findAll({
       attributes: [[Sequelize.fn("DISTINCT", Sequelize.col("title")), "title"]],
-      raw: true,
+      raw: true
     });
 
     const masterTitles = await MasterBhajan.findAll({
       where: { is_active: true },
       attributes: [[Sequelize.fn("DISTINCT", Sequelize.col("title")), "title"]],
-      raw: true,
+      raw: true
     });
 
-    const masterSet = new Set(
-      masterTitles.map((m) => (m.title || "").trim().toLowerCase()),
-    );
+    const masterSet = new Set(masterTitles.map((m) => (m.title || "").trim().toLowerCase()));
 
     const rawMissingTitles = submittedTitles
       .map((s) => (s.title || "").trim())
@@ -776,14 +783,14 @@ exports.showMissingBhajans = async (req, res) => {
     if (pageTitles.length > 0) {
       const allMasterBhajans = await MasterBhajan.findAll({
         where: { is_active: true },
-        attributes: ['id', 'title', 'deity', 'raga', 'shruti'],
+        attributes: ["id", "title", "deity", "raga", "shruti"],
         raw: true
       });
 
       const masterIndex = buildMasterIndex(allMasterBhajans);
 
       // Ultra-fast match computation (<200ms) for 50 items against 3,000+ master records
-      missingBhajans = pageTitles.map(submittedTitle => ({
+      missingBhajans = pageTitles.map((submittedTitle) => ({
         submittedTitle,
         candidates: matchWithIndex(submittedTitle, masterIndex, 0.45, 4)
       }));
@@ -807,5 +814,3 @@ exports.showMissingBhajans = async (req, res) => {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
   }
 };
-
-

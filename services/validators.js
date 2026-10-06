@@ -29,6 +29,7 @@ function validateSubmitForm(body) {
     "raag",
     "raga",
     "tempo",
+    "speed",
     "session_date",
     "remarks",
     "lead_singer_id",
@@ -94,7 +95,7 @@ function validateSubmitForm(body) {
       session_date: sessionDate,
       scale: scale || null,
       raag: (body.raag || body.raga || "").toString().trim() || null,
-      tempo: (body.tempo || "").toString().trim() || null,
+      tempo: (body.tempo || body.speed || "").toString().trim() || null,
       remarks: remarks || null,
       lead_singer_id: body.lead_singer_id ? parseInt(body.lead_singer_id, 10) : null,
       partner_singer_id: body.partner_singer_id ? parseInt(body.partner_singer_id, 10) : null,
@@ -218,7 +219,11 @@ function validateToggleLock(body) {
     errors.push("Valid session date (YYYY-MM-DD) is required.");
   }
 
-  const isLocked = body.is_locked === true || body.is_locked === "true" || body.is_locked === 1 || body.is_locked === "1";
+  const isLocked =
+    body.is_locked === true ||
+    body.is_locked === "true" ||
+    body.is_locked === 1 ||
+    body.is_locked === "1";
 
   return {
     valid: errors.length === 0,

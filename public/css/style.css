@@ -68,15 +68,15 @@
   --font-body: "Inter", "Segoe UI", sans-serif;
 
   /* Native Typography Scale (Material 3 / Apple HIG balanced) */
-  --text-2xs: 0.72rem;   /* ~11.5px: dense badge, status tag */
-  --text-xs: 0.78rem;    /* ~12.5px: standard badge, pill, overline */
-  --text-sm: 0.85rem;    /* ~13.5px: secondary text, table headers */
-  --text-base: 0.95rem;  /* ~15px: body, standard cells, controls */
-  --text-md: 1.05rem;    /* ~16.5px: emphasized body, card headers */
-  --text-lg: 1.2rem;     /* ~19px: section subheaders, card titles */
-  --text-xl: 1.45rem;    /* ~23px: section headings */
-  --text-2xl: 1.85rem;   /* ~29.5px: page titles */
-  --text-3xl: 2.35rem;   /* ~37.5px: hero displays */
+  --text-2xs: 0.72rem; /* ~11.5px: dense badge, status tag */
+  --text-xs: 0.78rem; /* ~12.5px: standard badge, pill, overline */
+  --text-sm: 0.85rem; /* ~13.5px: secondary text, table headers */
+  --text-base: 0.95rem; /* ~15px: body, standard cells, controls */
+  --text-md: 1.05rem; /* ~16.5px: emphasized body, card headers */
+  --text-lg: 1.2rem; /* ~19px: section subheaders, card titles */
+  --text-xl: 1.45rem; /* ~23px: section headings */
+  --text-2xl: 1.85rem; /* ~29.5px: page titles */
+  --text-3xl: 2.35rem; /* ~37.5px: hero displays */
 
   --lh-tight: 1.25;
   --lh-snug: 1.375;
@@ -232,7 +232,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {
@@ -379,7 +378,12 @@ h4 {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   text-decoration: none;
-  transition: background 0.2s var(--ease), border-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition:
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    color 0.2s var(--ease),
+    transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
   box-shadow: var(--shadow-sm);
   z-index: 10;
 }
@@ -456,7 +460,9 @@ h4 {
   cursor: pointer;
   border: none;
   background: none;
-  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+  transition:
+    color 0.2s var(--ease),
+    background 0.2s var(--ease);
   position: relative;
 }
 
@@ -558,7 +564,7 @@ h4 {
   margin-bottom: 16px;
 }
 
-.form-row>.form-group {
+.form-row > .form-group {
   flex: 1 1 220px;
   margin-bottom: 0;
 }
@@ -582,7 +588,10 @@ h4 {
   font-size: 16px;
   font-family: var(--font-body);
   color: var(--ink);
-  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease),
+    background 0.2s var(--ease);
 }
 
 .form-group input:focus,
@@ -790,7 +799,11 @@ h4 {
   padding: 16px 12px;
   text-align: center;
   cursor: pointer;
-  transition: transform 0.2s var(--ease), border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+  transition:
+    transform 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease),
+    background 0.2s var(--ease);
   color: var(--ink-soft);
   display: flex;
   flex-direction: column;
@@ -820,14 +833,14 @@ h4 {
 }
 
 .deity-card.count-2 {
-  background: rgba(217, 138, 43, 0.20);
+  background: rgba(217, 138, 43, 0.2);
   border-color: rgba(217, 138, 43, 0.5);
   color: #8b5212;
 }
 
 .deity-card.count-3,
 .deity-card.count-4 {
-  background: rgba(125, 47, 69, 0.20);
+  background: rgba(125, 47, 69, 0.2);
   border-color: rgba(125, 47, 69, 0.5);
   color: #632335;
 }
@@ -842,7 +855,9 @@ h4 {
   color: var(--saffron-dk) !important;
   font-weight: 700;
   transform: translateY(-2px);
-  box-shadow: 0 0 0 3px rgba(217, 138, 43, 0.25), var(--shadow-sm) !important;
+  box-shadow:
+    0 0 0 3px rgba(217, 138, 43, 0.25),
+    var(--shadow-sm) !important;
 }
 
 .hanuman-card.count-0 {
@@ -1076,7 +1091,7 @@ h4 {
     gap: 14px;
   }
 
-  .bhajan-details .form-row>.form-group {
+  .bhajan-details .form-row > .form-group {
     flex: 1 1 100%;
     width: 100%;
     min-width: 0;
@@ -1188,7 +1203,7 @@ h4 {
 }
 
 /* History page: spacing between session sections */
-.history-session+.history-session {
+.history-session + .history-session {
   margin-top: 24px;
 }
 
@@ -1251,7 +1266,10 @@ h4 {
   letter-spacing: 0.3px;
   cursor: pointer;
   margin-top: 22px;
-  transition: background 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition:
+    background 0.2s var(--ease),
+    transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
   box-shadow: var(--shadow-sm);
 }
 
@@ -1341,26 +1359,26 @@ tr:hover td {
 
 /* Ganesha — warm saffron */
 tr[data-deity="ganesha"] .deity-pill {
-  background: #FFF3E0;
-  color: #E65100;
+  background: #fff3e0;
+  color: #e65100;
 }
 
 /* Guru — deep violet */
 tr[data-deity="guru"] .deity-pill {
-  background: #EDE7F6;
-  color: #5E35B1;
+  background: #ede7f6;
+  color: #5e35b1;
 }
 
 /* Mata / Devi — rose pink */
 tr[data-deity="mata"] .deity-pill {
-  background: #FCE4EC;
-  color: #C62828;
+  background: #fce4ec;
+  color: #c62828;
 }
 
 /* SarvaDharma — teal */
 tr[data-deity="sarvadharma"] .deity-pill {
-  background: #E0F2F1;
-  color: #00796B;
+  background: #e0f2f1;
+  color: #00796b;
 }
 
 /* Sai — rich maroon */
@@ -1371,13 +1389,13 @@ tr[data-deity="sai"] .deity-pill {
 
 /* Shiva — cool blue */
 tr[data-deity="shiva"] .deity-pill {
-  background: #E3F2FD;
-  color: #1565C0;
+  background: #e3f2fd;
+  color: #1565c0;
 }
 
 /* Krishna — indigo */
 tr[data-deity="krishna"] .deity-pill {
-  background: #E8EAF6;
+  background: #e8eaf6;
   color: #283593;
 }
 
@@ -1389,14 +1407,14 @@ tr[data-deity="rama"] .deity-pill {
 
 /* Vitthala — earthy amber */
 tr[data-deity="vitthala"] .deity-pill {
-  background: #FFF8E1;
-  color: #F57F17;
+  background: #fff8e1;
+  color: #f57f17;
 }
 
 /* Hanuman — burnt orange */
 tr[data-deity="hanuman"] .deity-pill {
-  background: #FBE9E7;
-  color: #D84315;
+  background: #fbe9e7;
+  color: #d84315;
 }
 
 /* Responsive table → card layout (SCREEN ONLY, NEVER PRINT) */
@@ -1571,13 +1589,17 @@ tr[data-deity="hanuman"] .deity-pill {
     padding: 0;
     border: none;
     border-radius: var(--radius-lg);
-    box-shadow: 0 1px 4px rgba(34, 30, 42, 0.06), 0 0 0 1px var(--border);
+    box-shadow:
+      0 1px 4px rgba(34, 30, 42, 0.06),
+      0 0 0 1px var(--border);
     overflow: hidden;
     transition: box-shadow 0.2s var(--ease);
   }
 
   .bank-table tr:active {
-    box-shadow: 0 2px 8px rgba(34, 30, 42, 0.1), 0 0 0 1px var(--border);
+    box-shadow:
+      0 2px 8px rgba(34, 30, 42, 0.1),
+      0 0 0 1px var(--border);
   }
 
   /* Title cell — becomes the card header */
@@ -1679,22 +1701,22 @@ tr[data-deity="hanuman"] .deity-pill {
   /* ── Deity-specific card accent borders ─────────────────────── */
   .bank-table tr[data-deity="ganesha"] td[data-label="Title"],
   .bank-table tr[data-deity="ganesha"] td[data-label="Deity"] {
-    border-left-color: #E65100;
+    border-left-color: #e65100;
   }
 
   .bank-table tr[data-deity="guru"] td[data-label="Title"],
   .bank-table tr[data-deity="guru"] td[data-label="Deity"] {
-    border-left-color: #5E35B1;
+    border-left-color: #5e35b1;
   }
 
   .bank-table tr[data-deity="mata"] td[data-label="Title"],
   .bank-table tr[data-deity="mata"] td[data-label="Deity"] {
-    border-left-color: #C62828;
+    border-left-color: #c62828;
   }
 
   .bank-table tr[data-deity="sarvadharma"] td[data-label="Title"],
   .bank-table tr[data-deity="sarvadharma"] td[data-label="Deity"] {
-    border-left-color: #00796B;
+    border-left-color: #00796b;
   }
 
   .bank-table tr[data-deity="sai"] td[data-label="Title"],
@@ -1704,7 +1726,7 @@ tr[data-deity="hanuman"] .deity-pill {
 
   .bank-table tr[data-deity="shiva"] td[data-label="Title"],
   .bank-table tr[data-deity="shiva"] td[data-label="Deity"] {
-    border-left-color: #1565C0;
+    border-left-color: #1565c0;
   }
 
   .bank-table tr[data-deity="krishna"] td[data-label="Title"],
@@ -1719,12 +1741,12 @@ tr[data-deity="hanuman"] .deity-pill {
 
   .bank-table tr[data-deity="vitthala"] td[data-label="Title"],
   .bank-table tr[data-deity="vitthala"] td[data-label="Deity"] {
-    border-left-color: #F57F17;
+    border-left-color: #f57f17;
   }
 
   .bank-table tr[data-deity="hanuman"] td[data-label="Title"],
   .bank-table tr[data-deity="hanuman"] td[data-label="Deity"] {
-    border-left-color: #D84315;
+    border-left-color: #d84315;
   }
 }
 
@@ -1767,7 +1789,10 @@ tr[data-deity="hanuman"] .deity-pill {
   font-weight: 700;
   font-size: 14px;
   text-align: center;
-  transition: background 0.2s var(--ease), transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition:
+    background 0.2s var(--ease),
+    transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
   box-shadow: var(--shadow-sm);
   border: none;
   cursor: pointer;
@@ -2015,7 +2040,9 @@ tr[data-deity="hanuman"] .deity-pill {
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   background: var(--paper);
-  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+  transition:
+    background 0.2s var(--ease),
+    color 0.2s var(--ease);
 }
 
 .calendar-nav-btn:hover {
@@ -2114,7 +2141,9 @@ tr[data-deity="hanuman"] .deity-pill {
   min-height: 96px;
   padding: 10px;
   position: relative;
-  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+  transition:
+    transform 0.15s var(--ease),
+    box-shadow 0.15s var(--ease);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -2228,7 +2257,9 @@ tr[data-deity="hanuman"] .deity-pill {
   border-radius: var(--radius-lg);
   text-decoration: none;
   color: #fff;
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition:
+    transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
   box-shadow: var(--shadow-sm);
 }
 
@@ -2272,7 +2303,9 @@ tr[data-deity="hanuman"] .deity-pill {
   font-size: 13px;
   font-family: var(--font-body);
   color: var(--ink);
-  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
 }
 
 .filter-input:focus {
@@ -2283,7 +2316,6 @@ tr[data-deity="hanuman"] .deity-pill {
 }
 
 @media (max-width: 768px) {
-
   .filter-input,
   input.search-box {
     font-size: 16px;
@@ -2353,7 +2385,9 @@ tr[data-deity="hanuman"] .deity-pill {
   font-family: var(--font-body);
   color: var(--ink);
   box-shadow: var(--shadow-sm);
-  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
   -webkit-appearance: none;
   appearance: none;
 }
@@ -2416,7 +2450,9 @@ tr[data-deity="hanuman"] .deity-pill {
   font-family: var(--font-body);
   color: var(--ink-soft);
   cursor: pointer;
-  transition: border-color 0.2s var(--ease), color 0.2s var(--ease);
+  transition:
+    border-color 0.2s var(--ease),
+    color 0.2s var(--ease);
 }
 
 .filter-chip:focus {
@@ -2668,7 +2704,10 @@ tr[data-deity="hanuman"] .deity-pill {
   border-radius: var(--radius);
   padding: 22px 18px;
   text-decoration: none;
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+  transition:
+    transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease),
+    border-color 0.2s var(--ease);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2833,7 +2872,10 @@ tr[data-deity="hanuman"] .deity-pill {
   padding: 20px;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
+  transition:
+    transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease),
+    border-color 0.2s var(--ease);
 }
 
 .admin-control-grid .admin-card:hover {
@@ -2911,7 +2953,9 @@ tr[data-deity="hanuman"] .deity-pill {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px;
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition:
+    transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
 }
 
 .stats-grid .stat-card::before {
@@ -3076,7 +3120,9 @@ input.search-box {
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s var(--ease), border-color 0.2s var(--ease);
+  transition:
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease);
 }
 
 .table-btn:hover {
@@ -3280,8 +3326,11 @@ input.search-box {
   justify-content: center;
   font-size: 20px;
   line-height: 1;
-  transition: background 0.2s var(--ease), border-color 0.2s var(--ease),
-    transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  transition:
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    transform 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   outline: none;
@@ -3455,7 +3504,9 @@ input.search-box {
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s ease, transform 0.1s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.1s ease;
 }
 
 .button-confirm:hover {
@@ -3474,7 +3525,9 @@ input.search-box {
   border-radius: 8px;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);
-  transition: opacity 0.2s ease, transform 0.1s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.1s ease;
 }
 
 .button-select-dropdown:hover {
@@ -3590,7 +3643,9 @@ input.search-box {
   background: #151a28 !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 14px !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(245, 158, 11, 0.1) !important;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(245, 158, 11, 0.1) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
   padding: 4px !important;
@@ -3816,14 +3871,22 @@ input.search-box {
 
 [data-theme="dark"] .deity-card:hover {
   border-color: rgba(245, 158, 11, 0.65);
-  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.18), 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 6px 20px rgba(245, 158, 11, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.4);
   transform: translateY(-2px);
 }
 
 [data-theme="dark"] .deity-card.selected {
-  background: linear-gradient(145deg, rgba(245, 158, 11, 0.18) 0%, rgba(217, 119, 6, 0.1) 100%) !important;
+  background: linear-gradient(
+    145deg,
+    rgba(245, 158, 11, 0.18) 0%,
+    rgba(217, 119, 6, 0.1) 100%
+  ) !important;
   border-color: #f59e0b !important;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3), 0 8px 24px rgba(245, 158, 11, 0.25) !important;
+  box-shadow:
+    0 0 0 3px rgba(245, 158, 11, 0.3),
+    0 8px 24px rgba(245, 158, 11, 0.25) !important;
   color: #fef08a !important;
   transform: translateY(-2px);
 }
@@ -4084,7 +4147,9 @@ input.search-box {
 [data-theme="dark"] .calendar-day.today {
   border-color: var(--saffron);
   border-width: 2px;
-  box-shadow: 0 0 0 2px var(--saffron), 0 0 16px rgba(245, 158, 11, 0.35);
+  box-shadow:
+    0 0 0 2px var(--saffron),
+    0 0 16px rgba(245, 158, 11, 0.35);
 }
 
 [data-theme="dark"] .event-pill {
@@ -4190,7 +4255,9 @@ input.search-box {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: #f8fafc !important;
   border-radius: 20px !important;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(245, 158, 11, 0.1) !important;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(245, 158, 11, 0.1) !important;
 }
 
 [data-theme="dark"] .modal-header {
@@ -4485,7 +4552,9 @@ input.search-box {
   z-index: 0;
   animation: bokeh-drift 14s ease-in-out infinite;
   will-change: transform;
-  transition: opacity 0.6s ease, transform 0.6s ease;
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
 }
 
 /* Reduce motion */
@@ -4524,7 +4593,7 @@ input.search-box {
   height: 240px;
   background: radial-gradient(circle at 50% 50%, #c8a030, transparent 65%);
   filter: blur(55px);
-  opacity: 0.10;
+  opacity: 0.1;
   top: 35%;
   right: 5%;
   animation-duration: 20s;
@@ -4544,7 +4613,6 @@ input.search-box {
 }
 
 @keyframes bokeh-drift {
-
   0%,
   100% {
     transform: translate(0, 0) scale(1);
@@ -4874,7 +4942,9 @@ input.search-box {
 
 .dd-option {
   color: var(--ink-soft);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .dd-option:hover {
@@ -5021,7 +5091,10 @@ input.search-box {
   box-shadow: var(--shadow, 0 10px 30px rgba(0, 0, 0, 0.08));
   overflow: hidden;
   padding: 38px 32px 24px;
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 /* Decorative saffron/maroon accent stripe pinned to the top of the card above all titles */
@@ -5130,7 +5203,8 @@ input.search-box {
   border-radius: 10px;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.22s ease,
     border-color 0.22s ease,
     background-color 0.22s ease;
@@ -5196,7 +5270,9 @@ input.search-box {
   border-radius: 14px;
   padding: 18px;
   text-align: center;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .footer-pwa-badges {
@@ -5237,7 +5313,9 @@ input.search-box {
   justify-content: center;
   gap: 8px;
   box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .footer-btn-install:hover {
@@ -5471,7 +5549,7 @@ input.search-box {
 }
 
 .bank-hero-title {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: clamp(26px, 4vw, 34px);
   font-weight: 700;
   color: var(--ink);
@@ -5715,7 +5793,7 @@ input.search-box {
 }
 
 .bank-card-title {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: clamp(22px, 3.5vw, 28px);
   font-weight: 700;
   color: var(--ink);
@@ -6083,16 +6161,46 @@ input.search-box {
 }
 
 /* Column Width Specifications */
-.master-catalog-table .col-title { width: 30%; text-align: left; }
-.master-catalog-table .col-deity { width: 13%; text-align: left; }
-.master-catalog-table .col-tempo { width: 9%; text-align: center; }
-.master-catalog-table .col-raga  { width: 13%; text-align: left; }
-.master-catalog-table .col-shruti-m { width: 8%; text-align: center; }
-.master-catalog-table .col-west-m { width: 7%; text-align: center; }
-.master-catalog-table .col-shruti-f { width: 8%; text-align: center; }
-.master-catalog-table .col-west-f { width: 7%; text-align: center; }
-.master-catalog-table .col-level { width: 6%; text-align: center; }
-.master-catalog-table .col-actions { width: 9%; text-align: right; }
+.master-catalog-table .col-title {
+  width: 30%;
+  text-align: left;
+}
+.master-catalog-table .col-deity {
+  width: 13%;
+  text-align: left;
+}
+.master-catalog-table .col-tempo {
+  width: 9%;
+  text-align: center;
+}
+.master-catalog-table .col-raga {
+  width: 13%;
+  text-align: left;
+}
+.master-catalog-table .col-shruti-m {
+  width: 8%;
+  text-align: center;
+}
+.master-catalog-table .col-west-m {
+  width: 7%;
+  text-align: center;
+}
+.master-catalog-table .col-shruti-f {
+  width: 8%;
+  text-align: center;
+}
+.master-catalog-table .col-west-f {
+  width: 7%;
+  text-align: center;
+}
+.master-catalog-table .col-level {
+  width: 6%;
+  text-align: center;
+}
+.master-catalog-table .col-actions {
+  width: 9%;
+  text-align: right;
+}
 
 .master-catalog-table thead th {
   background: var(--paper);
@@ -6244,7 +6352,9 @@ input.search-box {
   overflow: hidden;
   word-break: break-word;
   overflow-wrap: break-word;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .bhajan-mobile-card:hover {
@@ -6305,7 +6415,7 @@ input.search-box {
 }
 
 .card-title {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 17px;
   font-weight: 700;
   margin: 0;
@@ -6591,7 +6701,9 @@ input.search-box {
   height: 100%;
   width: 0%;
   background: linear-gradient(90deg, #d98a2b 0%, #ea580c 50%, #f59e0b 100%);
-  box-shadow: 0 0 10px rgba(217, 138, 43, 0.8), 0 0 4px rgba(234, 88, 12, 0.6);
+  box-shadow:
+    0 0 10px rgba(217, 138, 43, 0.8),
+    0 0 4px rgba(234, 88, 12, 0.6);
   transition: width 0.18s ease-out;
 }
 
@@ -6603,7 +6715,9 @@ input.search-box {
   width: 16px;
   border-radius: 50%;
   background: #ffffff;
-  box-shadow: 0 0 8px #ffffff, 0 0 14px #fbbf24;
+  box-shadow:
+    0 0 8px #ffffff,
+    0 0 14px #fbbf24;
 }
 
 /* ==========================================================================
@@ -6714,7 +6828,9 @@ body.modal-open #appBottomNav {
   width: 52px;
   height: 28px;
   border-radius: 14px;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .tab-icon {
@@ -6732,7 +6848,9 @@ body.modal-open #appBottomNav {
   text-align: center;
   display: block;
   width: 100%;
-  transition: color 0.2s ease, font-weight 0.2s ease;
+  transition:
+    color 0.2s ease,
+    font-weight 0.2s ease;
 }
 
 /* Flutter / Material 3 active pill indicator */
@@ -6860,7 +6978,9 @@ body.modal-open #appBottomNav {
   border-radius: 22px;
   padding: 20px 24px;
   margin-bottom: 24px;
-  box-shadow: 0 6px 24px rgba(125, 47, 69, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 6px 24px rgba(125, 47, 69, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.04);
   position: relative;
   overflow: hidden;
 }
@@ -6919,8 +7039,14 @@ body.modal-open #appBottomNav {
 }
 
 @keyframes pulseDotLive {
-  0% { transform: scale(0.8); opacity: 0.6; }
-  100% { transform: scale(1.25); opacity: 1; }
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
 }
 
 .session-date-pill {
@@ -7292,7 +7418,9 @@ body.modal-open #appBottomNav {
   font-size: 14px;
   color: var(--saffron-dk);
   opacity: 0.6;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .launcher-card:hover .launcher-arrow {
@@ -7360,20 +7488,32 @@ body.modal-open #appBottomNav {
   padding: 16px 18px;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 4px 16px rgba(125, 47, 69, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow:
+    0 4px 16px rgba(125, 47, 69, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.03);
   transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
   position: relative;
   overflow: hidden;
 }
 
-.app-bulletin-card[data-cat="event"] { border-left-color: #f97316; }
-.app-bulletin-card[data-cat="update"] { border-left-color: #3b82f6; }
-.app-bulletin-card[data-cat="announcement"] { border-left-color: #ef4444; }
-.app-bulletin-card[data-cat="bhajan_info"] { border-left-color: #10b981; }
+.app-bulletin-card[data-cat="event"] {
+  border-left-color: #f97316;
+}
+.app-bulletin-card[data-cat="update"] {
+  border-left-color: #3b82f6;
+}
+.app-bulletin-card[data-cat="announcement"] {
+  border-left-color: #ef4444;
+}
+.app-bulletin-card[data-cat="bhajan_info"] {
+  border-left-color: #10b981;
+}
 
 .app-bulletin-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(125, 47, 69, 0.09), 0 2px 6px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 8px 24px rgba(125, 47, 69, 0.09),
+    0 2px 6px rgba(0, 0, 0, 0.04);
   border-color: rgba(217, 138, 43, 0.4);
 }
 
@@ -7520,7 +7660,7 @@ body.modal-open #appBottomNav {
 }
 
 .singer-hub-hero::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -50%;
   right: -20%;
@@ -7556,7 +7696,9 @@ body.modal-open #appBottomNav {
   font-size: 28px;
   font-weight: 800;
   color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.35), 0 8px 20px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 0 0 3px rgba(251, 191, 36, 0.35),
+    0 8px 20px rgba(0, 0, 0, 0.28);
 }
 
 .singer-hub-info {
@@ -7719,10 +7861,18 @@ body.modal-open #appBottomNav {
   font-size: 16px;
 }
 
-.metric-icon-slots { background: rgba(234, 88, 12, 0.12); }
-.metric-icon-songbook { background: rgba(139, 92, 246, 0.12); }
-.metric-icon-history { background: rgba(22, 163, 74, 0.12); }
-.metric-icon-tickets { background: rgba(2, 132, 199, 0.12); }
+.metric-icon-slots {
+  background: rgba(234, 88, 12, 0.12);
+}
+.metric-icon-songbook {
+  background: rgba(139, 92, 246, 0.12);
+}
+.metric-icon-history {
+  background: rgba(22, 163, 74, 0.12);
+}
+.metric-icon-tickets {
+  background: rgba(2, 132, 199, 0.12);
+}
 
 .metric-card-title {
   font-size: 11.5px;
@@ -7740,10 +7890,18 @@ body.modal-open #appBottomNav {
   font-family: var(--font-display);
 }
 
-.metric-val-slots { color: #ea580c; }
-.metric-val-songbook { color: #8b5cf6; }
-.metric-val-history { color: #16a34a; }
-.metric-val-tickets { color: #0284c7; }
+.metric-val-slots {
+  color: #ea580c;
+}
+.metric-val-songbook {
+  color: #8b5cf6;
+}
+.metric-val-history {
+  color: #16a34a;
+}
+.metric-val-tickets {
+  color: #0284c7;
+}
 
 .metric-card-sub {
   font-size: 12px;
@@ -8033,7 +8191,9 @@ body.modal-open #appBottomNav {
   color: #ffffff !important;
   border: none !important;
   box-shadow: 0 4px 14px rgba(22, 163, 74, 0.32) !important;
-  transition: transform 0.16s ease, box-shadow 0.16s ease !important;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease !important;
 }
 
 .btn-modal-confirm:active,
@@ -8046,7 +8206,9 @@ body.modal-open #appBottomNav {
   color: var(--ink) !important;
   border: 1.5px solid var(--border) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
-  transition: transform 0.16s ease, background 0.16s ease !important;
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease !important;
 }
 
 .btn-modal-edit:active {
@@ -8230,7 +8392,7 @@ body.modal-open #appBottomNav {
 }
 
 .quick-lyrics-title {
-  font-family: var(--font-display, 'Fraunces', Georgia, serif);
+  font-family: var(--font-display, "Fraunces", Georgia, serif);
   font-size: 20px;
   font-weight: 800;
   color: var(--ink);
@@ -8302,7 +8464,7 @@ body.modal-open #appBottomNav {
 }
 
 .quick-lyrics-content {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 19px;
   line-height: 1.75;
   color: var(--ink);
@@ -8564,7 +8726,7 @@ body.modal-open #appBottomNav {
 }
 
 .plan-btn-whatsapp {
-  background: #25D366;
+  background: #25d366;
   color: #ffffff !important;
   box-shadow: 0 2px 10px rgba(37, 211, 102, 0.3);
 }
@@ -8599,7 +8761,7 @@ body.modal-open #appBottomNav {
   background: var(--surface-subtle, #f1f5f9);
   padding: 4px;
   border-radius: 12px;
-  border: 1px solid var(--border-soft, rgba(0,0,0,0.06));
+  border: 1px solid var(--border-soft, rgba(0, 0, 0, 0.06));
 }
 
 [data-theme="dark"] .plan-view-tabs {
@@ -9407,7 +9569,9 @@ body.modal-open #appBottomNav {
     margin: 8mm 10mm 10mm 10mm;
   }
 
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     box-shadow: none !important;
     text-shadow: none !important;
     -webkit-print-color-adjust: exact !important;
@@ -9419,7 +9583,14 @@ body.modal-open #appBottomNav {
     color: #0f172a !important;
     padding: 0 !important;
     margin: 0 !important;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+    font-family:
+      "Inter",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      Arial,
+      sans-serif !important;
     font-size: 10pt !important;
     line-height: 1.4 !important;
   }
@@ -9546,7 +9717,7 @@ body.modal-open #appBottomNav {
   }
 
   .letterhead-invoc {
-    font-family: Georgia, 'Times New Roman', serif !important;
+    font-family: Georgia, "Times New Roman", serif !important;
     font-size: 11pt !important;
     font-weight: 700 !important;
     color: #7d2f45 !important; /* Divine Maroon */
@@ -9557,7 +9728,7 @@ body.modal-open #appBottomNav {
   }
 
   .letterhead-org-title {
-    font-family: 'Inter', Arial, sans-serif !important;
+    font-family: "Inter", Arial, sans-serif !important;
     font-size: 13.5pt !important;
     font-weight: 800 !important;
     color: #1e293b !important;
@@ -9568,7 +9739,7 @@ body.modal-open #appBottomNav {
   }
 
   .letterhead-samiti-address {
-    font-family: 'Inter', Arial, sans-serif !important;
+    font-family: "Inter", Arial, sans-serif !important;
     font-size: 8.5pt !important;
     color: #475569 !important;
     line-height: 1.35 !important;
@@ -9576,7 +9747,7 @@ body.modal-open #appBottomNav {
   }
 
   .letterhead-contact-line {
-    font-family: 'Inter', Arial, sans-serif !important;
+    font-family: "Inter", Arial, sans-serif !important;
     font-size: 8pt !important;
     color: #64748b !important;
     font-weight: 600 !important;
@@ -9887,7 +10058,8 @@ body.modal-open #appBottomNav {
     print-color-adjust: exact !important;
   }
 
-  a, a:visited {
+  a,
+  a:visited {
     color: #0f172a !important;
     text-decoration: none !important;
   }
@@ -9913,7 +10085,7 @@ body.modal-open #appBottomNav {
   }
 
   .print-footer-quote {
-    font-family: Georgia, 'Times New Roman', serif !important;
+    font-family: Georgia, "Times New Roman", serif !important;
     font-size: 9.5pt !important;
     font-style: italic !important;
     font-weight: 600 !important;
@@ -9928,7 +10100,7 @@ body.modal-open #appBottomNav {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    font-family: 'Inter', Arial, sans-serif !important;
+    font-family: "Inter", Arial, sans-serif !important;
     font-size: 8pt !important;
     color: #475569 !important;
     border-top: 0.5pt solid #e2e8f0 !important;

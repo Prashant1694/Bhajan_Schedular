@@ -41,7 +41,7 @@
 
   // Devotional Milestones
   const milestones = [
-    { pct: 0,  text: "CONNECTING TO PRASANTHI NILAYAM SANCTUM..." },
+    { pct: 0, text: "CONNECTING TO PRASANTHI NILAYAM SANCTUM..." },
     { pct: 30, text: "HARMONIZING 1,024+ MANDIR MASTER BHAJANS..." },
     { pct: 52, text: "OPENING SAI KULWANT HALL SANCTUM SANCTORUM..." },
     { pct: 78, text: "PREPARING DEVOTEE SONGBOOK & REPERTOIRE..." },

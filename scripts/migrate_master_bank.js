@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
-const xlsx = require('xlsx');
-const sequelize = require('../config/database');
-const { normalizeBhajanTitle } = require('../services/fuzzyMatcher');
+const fs = require("fs");
+const path = require("path");
+const xlsx = require("xlsx");
+const sequelize = require("../config/database");
+const { normalizeBhajanTitle } = require("../services/fuzzyMatcher");
 
 /**
  * Authoritative Master Bhajan Migration Script
@@ -10,12 +10,12 @@ const { normalizeBhajanTitle } = require('../services/fuzzyMatcher');
  * and maintains historical foreign keys.
  */
 
-const EXCEL_FILE = path.join(__dirname, '..', 'data', 'master_bhajans_fully_enriched.xlsx');
-const DB_FILE = path.join(__dirname, '..', 'bhajans.db');
+const EXCEL_FILE = path.join(__dirname, "..", "data", "master_bhajans_fully_enriched.xlsx");
+const DB_FILE = path.join(__dirname, "..", "bhajans.db");
 
 function getTimestamp() {
   const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
+  const pad = (n) => String(n).padStart(2, "0");
   const YYYY = now.getFullYear();
   const MM = pad(now.getMonth() + 1);
   const DD = pad(now.getDate());
@@ -52,27 +52,44 @@ function readAndValidateExcel() {
 
     const rawId = row.id;
     let id = null;
-    if (rawId !== null && rawId !== undefined && String(rawId).trim() !== '') {
+    if (rawId !== null && rawId !== undefined && String(rawId).trim() !== "") {
       id = Number(rawId);
       if (isNaN(id)) id = null;
     }
 
-    const title = row.title ? String(row.title).trim() : '';
-    const deity = row.deity ? String(row.deity).trim() : '';
+    const title = row.title ? String(row.title).trim() : "";
+    const deity = row.deity ? String(row.deity).trim() : "";
     const level = row.level !== null && row.level !== undefined ? String(row.level).trim() : null;
     const tempo = row.tempo !== null && row.tempo !== undefined ? String(row.tempo).trim() : null;
-    const language = row.language !== null && row.language !== undefined ? String(row.language).trim() : null;
+    const language =
+      row.language !== null && row.language !== undefined ? String(row.language).trim() : null;
     const raga = row.raga !== null && row.raga !== undefined ? String(row.raga).trim() : null;
-    const shruti = row.shruti !== null && row.shruti !== undefined ? String(row.shruti).trim() : null;
-    const shruti_female = row.shruti_female !== null && row.shruti_female !== undefined ? String(row.shruti_female).trim() : null;
-    const lyrics = row.lyrics !== null && row.lyrics !== undefined ? String(row.lyrics).trim() : null;
+    const shruti =
+      row.shruti !== null && row.shruti !== undefined ? String(row.shruti).trim() : null;
+    const shruti_female =
+      row.shruti_female !== null && row.shruti_female !== undefined
+        ? String(row.shruti_female).trim()
+        : null;
+    const lyrics =
+      row.lyrics !== null && row.lyrics !== undefined ? String(row.lyrics).trim() : null;
 
     if (!title) blankTitles++;
     if (!deity) blankDeities++;
 
     if (id === null) {
       recordsWithoutId++;
-      withoutIdList.push({ rowNum, title, deity, level, tempo, language, raga, shruti, shruti_female, lyrics });
+      withoutIdList.push({
+        rowNum,
+        title,
+        deity,
+        level,
+        tempo,
+        language,
+        raga,
+        shruti,
+        shruti_female,
+        lyrics
+      });
     } else {
       recordsWithId++;
       if (seenIds.has(id)) {
@@ -124,7 +141,9 @@ function readAndValidateExcel() {
     throw new Error(`Validation failed: Duplicate IDs found: ${JSON.stringify(duplicateIds)}`);
   }
   if (recordsWithoutId !== 2) {
-    throw new Error(`Validation failed: Expected exactly 2 ID-less records, but found ${recordsWithoutId}`);
+    throw new Error(
+      `Validation failed: Expected exactly 2 ID-less records, but found ${recordsWithoutId}`
+    );
   }
 
   return {
@@ -141,15 +160,15 @@ function readAndValidateExcel() {
 }
 
 async function inspectDbAndReferences() {
-  const [dbMasters] = await sequelize.query('SELECT id, title, deity FROM master_bhajans');
+  const [dbMasters] = await sequelize.query("SELECT id, title, deity FROM master_bhajans");
   const dbMasterCount = dbMasters.length;
-  const [maxIdRes] = await sequelize.query('SELECT MAX(id) as max_id FROM master_bhajans');
+  const [maxIdRes] = await sequelize.query("SELECT MAX(id) as max_id FROM master_bhajans");
   const currentMaxId = maxIdRes[0].max_id || 0;
 
   const dbMasterMap = new Map();
-  dbMasters.forEach(m => dbMasterMap.set(m.id, m));
+  dbMasters.forEach((m) => dbMasterMap.set(m.id, m));
 
-  const [submissions] = await sequelize.query('SELECT id FROM bhajans_submitted_v2');
+  const [submissions] = await sequelize.query("SELECT id FROM bhajans_submitted_v2");
   const historicalSubmissionsCount = submissions.length;
 
   const [tables] = await sequelize.query("SELECT name FROM sqlite_master WHERE type='table'");
@@ -160,12 +179,14 @@ async function inspectDbAndReferences() {
 
   for (const t of tables) {
     const [cols] = await sequelize.query(`PRAGMA table_info("${t.name}")`);
-    if (cols.some(c => c.name === 'master_bhajan_id')) {
+    if (cols.some((c) => c.name === "master_bhajan_id")) {
       tablesWithMasterId.push(t.name);
-      const [rows] = await sequelize.query(`SELECT id, master_bhajan_id FROM "${t.name}" WHERE master_bhajan_id IS NOT NULL`);
+      const [rows] = await sequelize.query(
+        `SELECT id, master_bhajan_id FROM "${t.name}" WHERE master_bhajan_id IS NOT NULL`
+      );
       referencesPerTable[t.name] = rows.length;
       totalHistoricalMasterReferences += rows.length;
-      rows.forEach(r => allReferencedMasterIds.add(Number(r.master_bhajan_id)));
+      rows.forEach((r) => allReferencedMasterIds.add(Number(r.master_bhajan_id)));
     }
   }
 
@@ -196,14 +217,14 @@ async function inspectDbAndReferences() {
 async function createBackup() {
   // Flush WAL first
   try {
-    await sequelize.query('PRAGMA wal_checkpoint(FULL);');
+    await sequelize.query("PRAGMA wal_checkpoint(FULL);");
   } catch (e) {
-    console.warn('WAL checkpoint warning:', e.message);
+    console.warn("WAL checkpoint warning:", e.message);
   }
 
   const timestamp = getTimestamp();
   const backupFileName = `bhajans_before_master_migration_${timestamp}.db`;
-  const backupPath = path.join(__dirname, '..', backupFileName);
+  const backupPath = path.join(__dirname, "..", backupFileName);
 
   if (fs.existsSync(backupPath)) {
     throw new Error(`Backup file already exists: ${backupPath}`);
@@ -221,31 +242,33 @@ async function createBackup() {
 }
 
 async function executeSchemaChanges() {
-  const [cols] = await sequelize.query('PRAGMA table_info(master_bhajans)');
-  const colNames = cols.map(c => c.name);
+  const [cols] = await sequelize.query("PRAGMA table_info(master_bhajans)");
+  const colNames = cols.map((c) => c.name);
 
-  if (!colNames.includes('lyrics')) {
+  if (!colNames.includes("lyrics")) {
     console.log('Adding column "lyrics" (TEXT) to master_bhajans...');
-    await sequelize.query('ALTER TABLE master_bhajans ADD COLUMN lyrics TEXT');
+    await sequelize.query("ALTER TABLE master_bhajans ADD COLUMN lyrics TEXT");
   } else {
     console.log('Column "lyrics" already exists in master_bhajans.');
   }
 
-  if (!colNames.includes('is_active')) {
+  if (!colNames.includes("is_active")) {
     console.log('Adding column "is_active" (BOOLEAN DEFAULT 1) to master_bhajans...');
-    await sequelize.query('ALTER TABLE master_bhajans ADD COLUMN is_active BOOLEAN DEFAULT 1');
+    await sequelize.query("ALTER TABLE master_bhajans ADD COLUMN is_active BOOLEAN DEFAULT 1");
   } else {
     console.log('Column "is_active" already exists in master_bhajans.');
   }
 
-  await sequelize.query('CREATE INDEX IF NOT EXISTS idx_master_bhajans_is_active ON master_bhajans(is_active)');
-  console.log('✅ Schema changes applied.');
+  await sequelize.query(
+    "CREATE INDEX IF NOT EXISTS idx_master_bhajans_is_active ON master_bhajans(is_active)"
+  );
+  console.log("✅ Schema changes applied.");
 }
 
 async function runMigration({ isExecute = false }) {
-  console.log('====================================================');
-  console.log(`MASTER BHAJAN BANK MIGRATION - MODE: ${isExecute ? 'EXECUTE' : 'DRY RUN'}`);
-  console.log('====================================================\n');
+  console.log("====================================================");
+  console.log(`MASTER BHAJAN BANK MIGRATION - MODE: ${isExecute ? "EXECUTE" : "DRY RUN"}`);
+  console.log("====================================================\n");
 
   // Step 1: Read and validate Excel
   const excelData = readAndValidateExcel();
@@ -265,21 +288,25 @@ async function runMigration({ isExecute = false }) {
   console.log(`- Historical submissions count: ${dbData.historicalSubmissionsCount}`);
   console.log(`- Tables with master_bhajan_id: ${JSON.stringify(dbData.referencesPerTable)}`);
   console.log(`- Total historical references checked: ${dbData.totalHistoricalMasterReferences}`);
-  console.log(`- Distinct referenced master IDs: ${Array.from(dbData.allReferencedMasterIds).join(', ')}`);
+  console.log(
+    `- Distinct referenced master IDs: ${Array.from(dbData.allReferencedMasterIds).join(", ")}`
+  );
   console.log(`- Broken references currently: ${dbData.brokenReferences}`);
 
   if (dbData.brokenReferences > 0) {
-    throw new Error(`CRITICAL: Database already has broken foreign references: ${JSON.stringify(dbData.brokenRefDetails)}`);
+    throw new Error(
+      `CRITICAL: Database already has broken foreign references: ${JSON.stringify(dbData.brokenRefDetails)}`
+    );
   }
 
   // Cross-reference analysis
-  const excelIdSet = new Set(excelData.cleanRows.filter(r => r.id !== null).map(r => r.id));
+  const excelIdSet = new Set(excelData.cleanRows.filter((r) => r.id !== null).map((r) => r.id));
   let oldMastersNotInExcel = 0;
   let oldMastersReferenced = 0;
   let oldMastersUnreferenced = 0;
   const referencedOldMastersList = [];
 
-  dbData.dbMasters.forEach(m => {
+  dbData.dbMasters.forEach((m) => {
     if (!excelIdSet.has(m.id)) {
       oldMastersNotInExcel++;
       if (dbData.allReferencedMasterIds.has(m.id)) {
@@ -295,9 +322,11 @@ async function runMigration({ isExecute = false }) {
   console.log(`- Category A (Active clean records in Excel with ID): ${excelData.recordsWithId}`);
   console.log(`- Category A+ (New clean records to assign IDs): ${excelData.recordsWithoutId}`);
   console.log(`- Category B (Old unreferenced records to archive): ${oldMastersUnreferenced}`);
-  console.log(`- Category C (Old referenced records to retain as archived): ${oldMastersReferenced}`);
+  console.log(
+    `- Category C (Old referenced records to retain as archived): ${oldMastersReferenced}`
+  );
   if (referencedOldMastersList.length > 0) {
-    referencedOldMastersList.forEach(m => {
+    referencedOldMastersList.forEach((m) => {
       console.log(`  * ID ${m.id}: "${m.title}" (${m.deity})`);
     });
   }
@@ -315,16 +344,18 @@ async function runMigration({ isExecute = false }) {
   }
 
   console.log(`\nPlanned New ID Assignments:`);
-  newAssignments.forEach(na => {
+  newAssignments.forEach((na) => {
     console.log(`- ID ${na.assignedId} -> "${na.title}" (${na.deity})`);
   });
 
   const plannedActiveCount = excelData.cleanRows.length; // 1024
   console.log(`\nPlanned Final Active Master Bhajan Count: ${plannedActiveCount}`);
-  console.log(`Planned Final Total Master Bhajan Count: ${dbData.dbMasterCount + excelData.recordsWithoutId}`);
+  console.log(
+    `Planned Final Total Master Bhajan Count: ${dbData.dbMasterCount + excelData.recordsWithoutId}`
+  );
 
   if (!isExecute) {
-    console.log('\nDRY RUN COMPLETE. No modifications were made to the database.');
+    console.log("\nDRY RUN COMPLETE. No modifications were made to the database.");
     return {
       dryRun: true,
       excelData,
@@ -338,9 +369,9 @@ async function runMigration({ isExecute = false }) {
   }
 
   // === EXECUTION PHASE ===
-  console.log('\n====================================================');
-  console.log('EXECUTING MIGRATION...');
-  console.log('====================================================\n');
+  console.log("\n====================================================");
+  console.log("EXECUTING MIGRATION...");
+  console.log("====================================================\n");
 
   // Step 4: Backup
   const backupPath = await createBackup();
@@ -410,7 +441,7 @@ async function runMigration({ isExecute = false }) {
     activeIds.push(assignedId);
 
     // Check if already exists (idempotency check)
-    const [existing] = await sequelize.query('SELECT id FROM master_bhajans WHERE id = ?', {
+    const [existing] = await sequelize.query("SELECT id FROM master_bhajans WHERE id = ?", {
       replacements: [assignedId]
     });
 
@@ -466,28 +497,40 @@ async function runMigration({ isExecute = false }) {
   // Step 8: Archive Old Masters
   // All records not in activeIds become is_active = 0
   const [archiveResult] = await sequelize.query(
-    `UPDATE master_bhajans SET is_active = 0 WHERE id NOT IN (${activeIds.join(',')})`
+    `UPDATE master_bhajans SET is_active = 0 WHERE id NOT IN (${activeIds.join(",")})`
   );
   console.log(`Old records archived (is_active = 0): ${oldMastersNotInExcel}`);
 
   // Step 10: Validation after migration
-  const [activeCheck] = await sequelize.query('SELECT COUNT(*) as cnt FROM master_bhajans WHERE is_active = 1');
-  const [archivedCheck] = await sequelize.query('SELECT COUNT(*) as cnt FROM master_bhajans WHERE is_active = 0');
-  const [totalCheck] = await sequelize.query('SELECT COUNT(*) as cnt FROM master_bhajans');
-  const [duplicateIdCheck] = await sequelize.query('SELECT id, COUNT(*) as cnt FROM master_bhajans GROUP BY id HAVING cnt > 1');
+  const [activeCheck] = await sequelize.query(
+    "SELECT COUNT(*) as cnt FROM master_bhajans WHERE is_active = 1"
+  );
+  const [archivedCheck] = await sequelize.query(
+    "SELECT COUNT(*) as cnt FROM master_bhajans WHERE is_active = 0"
+  );
+  const [totalCheck] = await sequelize.query("SELECT COUNT(*) as cnt FROM master_bhajans");
+  const [duplicateIdCheck] = await sequelize.query(
+    "SELECT id, COUNT(*) as cnt FROM master_bhajans GROUP BY id HAVING cnt > 1"
+  );
 
   const finalActiveCount = activeCheck[0].cnt;
   const finalArchivedCount = archivedCheck[0].cnt;
   const finalTotalCount = totalCheck[0].cnt;
 
   console.log(`\nPost-Migration Database Counts:`);
-  console.log(`- Final Active Master Bhajans: ${finalActiveCount} (Expected: ${plannedActiveCount})`);
-  console.log(`- Final Archived Master Bhajans: ${finalArchivedCount} (Expected: ${oldMastersNotInExcel})`);
+  console.log(
+    `- Final Active Master Bhajans: ${finalActiveCount} (Expected: ${plannedActiveCount})`
+  );
+  console.log(
+    `- Final Archived Master Bhajans: ${finalArchivedCount} (Expected: ${oldMastersNotInExcel})`
+  );
   console.log(`- Final Total Master Bhajans: ${finalTotalCount}`);
   console.log(`- Duplicate IDs: ${duplicateIdCheck.length}`);
 
   if (finalActiveCount !== plannedActiveCount) {
-    throw new Error(`Integrity error: Active count ${finalActiveCount} does not match expected ${plannedActiveCount}`);
+    throw new Error(
+      `Integrity error: Active count ${finalActiveCount} does not match expected ${plannedActiveCount}`
+    );
   }
   if (duplicateIdCheck.length > 0) {
     throw new Error(`Integrity error: Duplicate IDs detected in master_bhajans table!`);
@@ -496,18 +539,22 @@ async function runMigration({ isExecute = false }) {
   // Re-check foreign reference integrity
   const [postTables] = await sequelize.query("SELECT name FROM sqlite_master WHERE type='table'");
   let postBrokenReferences = 0;
-  const [allMasterRows] = await sequelize.query('SELECT id, is_active FROM master_bhajans');
+  const [allMasterRows] = await sequelize.query("SELECT id, is_active FROM master_bhajans");
   const postMasterMap = new Map();
-  allMasterRows.forEach(m => postMasterMap.set(m.id, m));
+  allMasterRows.forEach((m) => postMasterMap.set(m.id, m));
 
   for (const t of postTables) {
     const [cols] = await sequelize.query(`PRAGMA table_info("${t.name}")`);
-    if (cols.some(c => c.name === 'master_bhajan_id')) {
-      const [refs] = await sequelize.query(`SELECT id, master_bhajan_id FROM "${t.name}" WHERE master_bhajan_id IS NOT NULL`);
+    if (cols.some((c) => c.name === "master_bhajan_id")) {
+      const [refs] = await sequelize.query(
+        `SELECT id, master_bhajan_id FROM "${t.name}" WHERE master_bhajan_id IS NOT NULL`
+      );
       for (const r of refs) {
         if (!postMasterMap.has(Number(r.master_bhajan_id))) {
           postBrokenReferences++;
-          console.error(`Broken reference in table ${t.name}, row ${r.id}: master_bhajan_id ${r.master_bhajan_id} not found!`);
+          console.error(
+            `Broken reference in table ${t.name}, row ${r.id}: master_bhajan_id ${r.master_bhajan_id} not found!`
+          );
         }
       }
     }
@@ -515,17 +562,23 @@ async function runMigration({ isExecute = false }) {
 
   console.log(`- Broken foreign references post-migration: ${postBrokenReferences}`);
   if (postBrokenReferences > 0) {
-    throw new Error(`Integrity error: ${postBrokenReferences} broken references detected after migration!`);
+    throw new Error(
+      `Integrity error: ${postBrokenReferences} broken references detected after migration!`
+    );
   }
 
   // Verify the 2 new bhajans
-  const [new1] = await sequelize.query("SELECT * FROM master_bhajans WHERE title = 'Shiva Shiva Shiva Shiva Shivaya Namah Om'");
-  const [new2] = await sequelize.query("SELECT * FROM master_bhajans WHERE title = 'Jaya Pandari Natha Panduranga Pundalika Varada'");
+  const [new1] = await sequelize.query(
+    "SELECT * FROM master_bhajans WHERE title = 'Shiva Shiva Shiva Shiva Shivaya Namah Om'"
+  );
+  const [new2] = await sequelize.query(
+    "SELECT * FROM master_bhajans WHERE title = 'Jaya Pandari Natha Panduranga Pundalika Varada'"
+  );
   console.log(`Verified new bhajan 1: ID ${new1[0]?.id}, is_active: ${new1[0]?.is_active}`);
   console.log(`Verified new bhajan 2: ID ${new2[0]?.id}, is_active: ${new2[0]?.is_active}`);
 
   if (!new1[0] || new1[0].is_active !== 1 || !new2[0] || new2[0].is_active !== 1) {
-    throw new Error('Integrity error: New bhajans not found or not active!');
+    throw new Error("Integrity error: New bhajans not found or not active!");
   }
 
   // Create Reports
@@ -543,8 +596,8 @@ async function runMigration({ isExecute = false }) {
     executed_at: new Date().toISOString()
   };
 
-  const reportJsonPath = path.join(__dirname, '..', 'master_bank_migration_report.json');
-  fs.writeFileSync(reportJsonPath, JSON.stringify(reportJson, null, 2), 'utf8');
+  const reportJsonPath = path.join(__dirname, "..", "master_bank_migration_report.json");
+  fs.writeFileSync(reportJsonPath, JSON.stringify(reportJson, null, 2), "utf8");
 
   const reportTxt = `================================================================================
 MASTER BHAJAN BANK MIGRATION REPORT
@@ -579,7 +632,7 @@ Generated at: ${new Date().toISOString()}
 - Existing IDs Preserved: ${updatedExisting + insertedWithId}
 - ID Gaps Accepted: Yes (preserves historical continuity without renumbering)
 - New IDs Assigned:
-${newAssignments.map(na => `  * ID ${na.assignedId}: "${na.title}" (${na.deity})`).join('\n')}
+${newAssignments.map((na) => `  * ID ${na.assignedId}: "${na.title}" (${na.deity})`).join("\n")}
 
 4. ARCHIVING & HISTORICAL REFERENCE INTEGRITY
 --------------------------------------------------------------------------------
@@ -587,7 +640,7 @@ ${newAssignments.map(na => `  * ID ${na.assignedId}: "${na.title}" (${na.deity})
 - Archived & Unreferenced: ${oldMastersUnreferenced} (marked is_active = 0)
 - Archived & Referenced by Historical Submissions: ${oldMastersReferenced} (marked is_active = 0, retained in DB)
   Historical References Retained:
-${referencedOldMastersList.map(m => `  * ID ${m.id}: "${m.title}" (${m.deity})`).join('\n')}
+${referencedOldMastersList.map((m) => `  * ID ${m.id}: "${m.title}" (${m.deity})`).join("\n")}
 - Historical Submissions Checked: ${dbData.historicalSubmissionsCount} submissions in bhajans_submitted_v2
 - Foreign Key References Checked: ${dbData.totalHistoricalMasterReferences} rows in diwali_participant_bhajans
 - Broken Foreign References: 0
@@ -602,22 +655,24 @@ ${referencedOldMastersList.map(m => `  * ID ${m.id}: "${m.title}" (${m.deity})`)
 END OF REPORT
 ================================================================================`;
 
-  const reportTxtPath = path.join(__dirname, '..', 'master_bank_migration_report.txt');
-  fs.writeFileSync(reportTxtPath, reportTxt, 'utf8');
+  const reportTxtPath = path.join(__dirname, "..", "master_bank_migration_report.txt");
+  fs.writeFileSync(reportTxtPath, reportTxt, "utf8");
 
-  console.log(`\n✅ Migration report written to: master_bank_migration_report.json and master_bank_migration_report.txt`);
-  console.log('MIGRATION FINISHED SUCCESSFULLY.');
+  console.log(
+    `\n✅ Migration report written to: master_bank_migration_report.json and master_bank_migration_report.txt`
+  );
+  console.log("MIGRATION FINISHED SUCCESSFULLY.");
 
   return reportJson;
 }
 
 // CLI handler
 if (require.main === module) {
-  const isExecute = process.argv.includes('--execute');
+  const isExecute = process.argv.includes("--execute");
   runMigration({ isExecute })
     .then(() => process.exit(0))
-    .catch(err => {
-      console.error('\n❌ MIGRATION FAILED:', err);
+    .catch((err) => {
+      console.error("\n❌ MIGRATION FAILED:", err);
       process.exit(1);
     });
 }

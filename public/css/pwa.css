@@ -16,7 +16,9 @@
   justify-content: center;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.35s ease, visibility 0.35s ease;
+  transition:
+    opacity 0.35s ease,
+    visibility 0.35s ease;
 }
 
 .pwa-install-overlay.show {
@@ -63,7 +65,7 @@
 }
 
 .pwa-banner-info h3 {
-  font-family: 'Fraunces', Georgia, serif;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 1.15rem;
   font-weight: 600;
   color: #221e2a;
@@ -102,7 +104,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .pwa-banner-close:hover {
@@ -152,7 +156,7 @@
 .pwa-btn-install {
   flex: 1;
   padding: 14px 24px;
-  background: linear-gradient(135deg, #D98A2B 0%, #C47A22 100%);
+  background: linear-gradient(135deg, #d98a2b 0%, #c47a22 100%);
   color: #ffffff;
   border: none;
   border-radius: 12px;
@@ -160,7 +164,9 @@
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.2s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.2s;
   box-shadow: 0 4px 16px rgba(217, 138, 43, 0.32);
   letter-spacing: 0.01em;
 }
@@ -185,7 +191,10 @@
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .pwa-btn-dismiss:hover {
@@ -215,7 +224,7 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  background: #2E6F86;
+  background: #2e6f86;
   color: #fff;
   border-radius: 5px;
   font-size: 0.72rem;

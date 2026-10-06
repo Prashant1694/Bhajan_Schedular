@@ -180,4 +180,3 @@ module.exports = {
   resolveSingerForAdmin,
   NINETY_DAYS_MS
 };
-

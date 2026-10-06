@@ -41,7 +41,7 @@ async function generateYearlyExcel(event, options = {}) {
   function formatBhajanRow(sr, b) {
     const lead = b.participant?.lead_name || "";
     const partner = b.participant?.partner_name || "";
-    const pairName = (lead && partner) ? `${lead} + ${partner}` : (lead || partner || "");
+    const pairName = lead && partner ? `${lead} + ${partner}` : lead || partner || "";
     return [
       sr,
       pairName,
@@ -142,13 +142,22 @@ async function generateYearlyPdf(event, options = {}) {
       });
 
       const buffers = [];
-      doc.on("data", b => buffers.push(b));
+      doc.on("data", (b) => buffers.push(b));
       doc.on("end", () => resolve(Buffer.concat(buffers)));
       doc.on("error", reject);
 
       const colX = [30, 65, 175, 285, 485, 550, 630, 700];
       const colWidths = [35, 110, 110, 200, 65, 80, 70, 80];
-      const colHeaders = ["Sr.", "Lead Singer", "Partner", "Bhajan", "Scale", "Tabla Shruti", "Deity", "Remarks"];
+      const colHeaders = [
+        "Sr.",
+        "Lead Singer",
+        "Partner",
+        "Bhajan",
+        "Scale",
+        "Tabla Shruti",
+        "Deity",
+        "Remarks"
+      ];
 
       const renderTableHeader = () => {
         doc.rect(30, doc.y, 750, 20).fill("#f8f4ed");
@@ -162,12 +171,21 @@ async function generateYearlyPdf(event, options = {}) {
       };
 
       const renderSection = (title, items) => {
-        doc.fontSize(15).fillColor("#7d2f45").font("Helvetica-Bold")
-          .text(`DIWALI BHAJANS — ${event.name.toUpperCase()} — ${title.toUpperCase()}`, { align: "center" });
+        doc
+          .fontSize(15)
+          .fillColor("#7d2f45")
+          .font("Helvetica-Bold")
+          .text(`DIWALI BHAJANS — ${event.name.toUpperCase()} — ${title.toUpperCase()}`, {
+            align: "center"
+          });
         doc.moveDown(0.4);
 
         if (items.length === 0) {
-          doc.fontSize(11).fillColor("#666666").font("Helvetica").text(`No ${title.toLowerCase()} participants registered yet.`, { align: "center" });
+          doc
+            .fontSize(11)
+            .fillColor("#666666")
+            .font("Helvetica")
+            .text(`No ${title.toLowerCase()} participants registered yet.`, { align: "center" });
           return;
         }
 
@@ -177,8 +195,14 @@ async function generateYearlyPdf(event, options = {}) {
         for (const b of items) {
           if (doc.y > 520) {
             doc.addPage();
-            doc.fontSize(12).fillColor("#7d2f45").font("Helvetica-Bold")
-              .text(`DIWALI BHAJANS — ${event.name.toUpperCase()} — ${title.toUpperCase()} (Continued)`, { align: "center" });
+            doc
+              .fontSize(12)
+              .fillColor("#7d2f45")
+              .font("Helvetica-Bold")
+              .text(
+                `DIWALI BHAJANS — ${event.name.toUpperCase()} — ${title.toUpperCase()} (Continued)`,
+                { align: "center" }
+              );
             doc.moveDown(0.3);
             renderTableHeader();
           }
@@ -195,13 +219,24 @@ async function generateYearlyPdf(event, options = {}) {
           doc.text(String(sr++), colX[0] + 2, rowY, { width: colWidths[0] - 4 });
           doc.text(lead, colX[1] + 2, rowY, { width: colWidths[1] - 4, ellipsis: true });
           doc.text(partner, colX[2] + 2, rowY, { width: colWidths[2] - 4, ellipsis: true });
-          doc.font("Helvetica-Bold").text(b.bhajan_title || "-", colX[3] + 2, rowY, { width: colWidths[3] - 4, ellipsis: true }).font("Helvetica");
+          doc
+            .font("Helvetica-Bold")
+            .text(b.bhajan_title || "-", colX[3] + 2, rowY, {
+              width: colWidths[3] - 4,
+              ellipsis: true
+            })
+            .font("Helvetica");
           doc.text(b.scale || "-", colX[4] + 2, rowY, { width: colWidths[4] - 4, ellipsis: true });
           doc.text(b.tabla || "-", colX[5] + 2, rowY, { width: colWidths[5] - 4, ellipsis: true });
           doc.text(b.deity || "-", colX[6] + 2, rowY, { width: colWidths[6] - 4, ellipsis: true });
           doc.text(b.remarks || "", colX[7] + 2, rowY, { width: colWidths[7] - 4, ellipsis: true });
 
-          doc.strokeColor("#e7e0d2").lineWidth(0.5).moveTo(30, rowY + 16).lineTo(780, rowY + 16).stroke();
+          doc
+            .strokeColor("#e7e0d2")
+            .lineWidth(0.5)
+            .moveTo(30, rowY + 16)
+            .lineTo(780, rowY + 16)
+            .stroke();
           doc.y = rowY + 18;
         }
       };
@@ -261,15 +296,21 @@ async function generateSequenceExcel(event, options = {}) {
     const sheet = workbook.addWorksheet(sheetName);
 
     const dateStr = seq.assigned_date ? ` (Date: ${seq.assigned_date})` : "";
-    sheet.addRow([`DIWALI BHAJANS — ${event.name.toUpperCase()} — SEQUENCE ${seq.sequence_number}${dateStr}`]);
+    sheet.addRow([
+      `DIWALI BHAJANS — ${event.name.toUpperCase()} — SEQUENCE ${seq.sequence_number}${dateStr}`
+    ]);
     sheet.addRow([]);
     sheet.addRow(headers);
 
     let filteredEntries = seq.entries || [];
     if (category === "Gents") {
-      filteredEntries = filteredEntries.filter(e => e.participantBhajan?.participant?.gender === "Gents");
+      filteredEntries = filteredEntries.filter(
+        (e) => e.participantBhajan?.participant?.gender === "Gents"
+      );
     } else if (category === "Ladies") {
-      filteredEntries = filteredEntries.filter(e => e.participantBhajan?.participant?.gender === "Ladies");
+      filteredEntries = filteredEntries.filter(
+        (e) => e.participantBhajan?.participant?.gender === "Ladies"
+      );
     }
 
     let sr = 1;
@@ -297,7 +338,9 @@ async function generateSequenceExcel(event, options = {}) {
     const noticeSheet = workbook.addWorksheet("Notice");
     noticeSheet.addRow([`DIWALI BHAJANS — ${event.name.toUpperCase()}`]);
     noticeSheet.addRow([]);
-    noticeSheet.addRow(["No sequences have been generated yet. Please click 'Make Sequence' on the dashboard first."]);
+    noticeSheet.addRow([
+      "No sequences have been generated yet. Please click 'Make Sequence' on the dashboard first."
+    ]);
     autoFitWorksheetColumns(noticeSheet);
   }
 
@@ -330,13 +373,22 @@ async function generateSequencePdf(event, options = {}) {
       });
 
       const buffers = [];
-      doc.on("data", b => buffers.push(b));
+      doc.on("data", (b) => buffers.push(b));
       doc.on("end", () => resolve(Buffer.concat(buffers)));
       doc.on("error", reject);
 
       const colX = [30, 65, 175, 285, 485, 550, 630, 700];
       const colWidths = [35, 110, 110, 200, 65, 80, 70, 80];
-      const colHeaders = ["Sr.", "Lead Singer", "Partner", "Bhajan", "Scale", "Tabla Shruti", "Deity", "Remarks"];
+      const colHeaders = [
+        "Sr.",
+        "Lead Singer",
+        "Partner",
+        "Bhajan",
+        "Scale",
+        "Tabla Shruti",
+        "Deity",
+        "Remarks"
+      ];
 
       const renderTableHeader = () => {
         doc.rect(30, doc.y, 750, 20).fill("#f8f4ed");
@@ -350,14 +402,24 @@ async function generateSequencePdf(event, options = {}) {
       };
 
       if (sequences.length === 0) {
-        doc.fontSize(16).fillColor("#7d2f45").font("Helvetica-Bold")
+        doc
+          .fontSize(16)
+          .fillColor("#7d2f45")
+          .font("Helvetica-Bold")
           .text(`DIWALI BHAJANS — ${event.name.toUpperCase()}`, { align: "center" });
         doc.moveDown(1);
-        doc.fontSize(12).fillColor("#666666").font("Helvetica")
+        doc
+          .fontSize(12)
+          .fillColor("#666666")
+          .font("Helvetica")
           .text("No sequences have been generated yet for this Diwali event.", { align: "center" });
         doc.moveDown(0.5);
-        doc.fontSize(10).fillColor("#999999")
-          .text("Please click 'Make Sequence' on the dashboard first to create fair sequences.", { align: "center" });
+        doc
+          .fontSize(10)
+          .fillColor("#999999")
+          .text("Please click 'Make Sequence' on the dashboard first to create fair sequences.", {
+            align: "center"
+          });
         doc.end();
         return;
       }
@@ -367,20 +429,26 @@ async function generateSequencePdf(event, options = {}) {
         if (sIdx > 0) doc.addPage();
 
         // Sequence Header
-        doc.fontSize(16).fillColor("#7d2f45").font("Helvetica-Bold")
+        doc
+          .fontSize(16)
+          .fillColor("#7d2f45")
+          .font("Helvetica-Bold")
           .text(`DIWALI BHAJANS — ${event.name.toUpperCase()}`, { align: "center" });
         doc.moveDown(0.2);
 
         const dateText = seq.assigned_date ? `  |  Date: ${seq.assigned_date}` : "";
-        doc.fontSize(13).fillColor("#d98a2b").font("Helvetica-Bold")
+        doc
+          .fontSize(13)
+          .fillColor("#d98a2b")
+          .font("Helvetica-Bold")
           .text(`SEQUENCE ${seq.sequence_number}${dateText}`, { align: "center" });
         doc.moveDown(0.5);
 
         let entries = seq.entries || [];
         if (category === "Gents") {
-          entries = entries.filter(e => e.participantBhajan?.participant?.gender === "Gents");
+          entries = entries.filter((e) => e.participantBhajan?.participant?.gender === "Gents");
         } else if (category === "Ladies") {
-          entries = entries.filter(e => e.participantBhajan?.participant?.gender === "Ladies");
+          entries = entries.filter((e) => e.participantBhajan?.participant?.gender === "Ladies");
         }
 
         renderTableHeader();
@@ -389,7 +457,10 @@ async function generateSequencePdf(event, options = {}) {
         for (const entry of entries) {
           if (doc.y > 520) {
             doc.addPage();
-            doc.fontSize(12).fillColor("#7d2f45").font("Helvetica-Bold")
+            doc
+              .fontSize(12)
+              .fillColor("#7d2f45")
+              .font("Helvetica-Bold")
               .text(`SEQUENCE ${seq.sequence_number} (Continued)`, { align: "center" });
             doc.moveDown(0.3);
             renderTableHeader();
@@ -405,15 +476,32 @@ async function generateSequencePdf(event, options = {}) {
 
           doc.fillColor("#221e2a");
           doc.text(String(sr++), colX[0] + 2, rowY, { width: colWidths[0] - 4 });
-          doc.text(p.lead_name || "-", colX[1] + 2, rowY, { width: colWidths[1] - 4, ellipsis: true });
-          doc.text(p.partner_name || "-", colX[2] + 2, rowY, { width: colWidths[2] - 4, ellipsis: true });
-          doc.font("Helvetica-Bold").text(b.bhajan_title || "-", colX[3] + 2, rowY, { width: colWidths[3] - 4, ellipsis: true }).font("Helvetica");
+          doc.text(p.lead_name || "-", colX[1] + 2, rowY, {
+            width: colWidths[1] - 4,
+            ellipsis: true
+          });
+          doc.text(p.partner_name || "-", colX[2] + 2, rowY, {
+            width: colWidths[2] - 4,
+            ellipsis: true
+          });
+          doc
+            .font("Helvetica-Bold")
+            .text(b.bhajan_title || "-", colX[3] + 2, rowY, {
+              width: colWidths[3] - 4,
+              ellipsis: true
+            })
+            .font("Helvetica");
           doc.text(b.scale || "-", colX[4] + 2, rowY, { width: colWidths[4] - 4, ellipsis: true });
           doc.text(b.tabla || "-", colX[5] + 2, rowY, { width: colWidths[5] - 4, ellipsis: true });
           doc.text(b.deity || "-", colX[6] + 2, rowY, { width: colWidths[6] - 4, ellipsis: true });
           doc.text(b.remarks || "", colX[7] + 2, rowY, { width: colWidths[7] - 4, ellipsis: true });
 
-          doc.strokeColor("#e7e0d2").lineWidth(0.5).moveTo(30, rowY + 16).lineTo(780, rowY + 16).stroke();
+          doc
+            .strokeColor("#e7e0d2")
+            .lineWidth(0.5)
+            .moveTo(30, rowY + 16)
+            .lineTo(780, rowY + 16)
+            .stroke();
           doc.y = rowY + 18;
         }
       }

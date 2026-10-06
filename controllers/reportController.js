@@ -31,7 +31,11 @@ exports.submitReport = async (req, res) => {
       visitor_id
     } = req.body;
 
-    const cleanTitle = (bhajan_title || "").toString().replace(/<[^>]*>/g, '').trim().slice(0, 200);
+    const cleanTitle = (bhajan_title || "")
+      .toString()
+      .replace(/<[^>]*>/g, "")
+      .trim()
+      .slice(0, 200);
     if (!cleanTitle) {
       return res.status(400).json({ error: "Bhajan title is required." });
     }
@@ -40,7 +44,9 @@ exports.submitReport = async (req, res) => {
     const hasDesc = Boolean(description && description.trim());
 
     if (!hasCategories && !hasDesc) {
-      return res.status(400).json({ error: "Please select at least one issue category or provide details." });
+      return res
+        .status(400)
+        .json({ error: "Please select at least one issue category or provide details." });
     }
 
     const catMap = {
@@ -57,7 +63,7 @@ exports.submitReport = async (req, res) => {
     let effectiveDescription = hasDesc ? description.trim() : "";
     if (!effectiveDescription) {
       const catList = Array.isArray(categories) ? categories : [categories];
-      const labels = catList.map(c => catMap[c] || c);
+      const labels = catList.map((c) => catMap[c] || c);
       effectiveDescription = "Issue reported in: " + labels.join(", ");
     }
 
@@ -75,7 +81,12 @@ exports.submitReport = async (req, res) => {
     }
 
     let effectiveSingerId = null;
-    let effectiveReporterName = (reporter_name || "").toString().replace(/<[^>]*>/g, '').trim().slice(0, 80) || null;
+    let effectiveReporterName =
+      (reporter_name || "")
+        .toString()
+        .replace(/<[^>]*>/g, "")
+        .trim()
+        .slice(0, 80) || null;
 
     if (req.session?.singer) {
       effectiveSingerId = req.session.singer.id;
@@ -84,7 +95,9 @@ exports.submitReport = async (req, res) => {
       }
     }
 
-    const catJson = JSON.stringify(Array.isArray(categories) ? categories : (categories ? [categories] : []));
+    const catJson = JSON.stringify(
+      Array.isArray(categories) ? categories : categories ? [categories] : []
+    );
 
     const report = await BhajanReport.create({
       ticket_code: code,
@@ -93,7 +106,9 @@ exports.submitReport = async (req, res) => {
       bhajan_title: cleanTitle,
       categories: catJson,
       description: effectiveDescription,
-      suggested_correction: suggested_correction ? suggested_correction.trim().slice(0, 1000) : null,
+      suggested_correction: suggested_correction
+        ? suggested_correction.trim().slice(0, 1000)
+        : null,
       reporter_name: effectiveReporterName,
       reporter_contact: reporter_contact ? reporter_contact.trim().slice(0, 100) : null,
       visitor_id: visitor_id || req.session?.visitorId || null,
@@ -103,7 +118,7 @@ exports.submitReport = async (req, res) => {
     try {
       await ActivityLog.create({
         session_id: req.session?.visitorId || "guest",
-        user_type: req.session?.admin ? "admin" : (req.session?.singer ? "singer" : "guest"),
+        user_type: req.session?.admin ? "admin" : req.session?.singer ? "singer" : "guest",
         username: effectiveReporterName || "Anonymous Devotee",
         action: "REPORT_SUBMITTED",
         details: `Report ${code} filed for "${cleanTitle}"`,
@@ -128,7 +143,12 @@ exports.submitReport = async (req, res) => {
 exports.getMyReports = async (req, res) => {
   try {
     const visitorId = req.query.visitor_id || req.session?.visitorId || null;
-    const ticketCodes = req.query.tickets ? req.query.tickets.split(",").map(t => t.trim()).filter(Boolean) : [];
+    const ticketCodes = req.query.tickets
+      ? req.query.tickets
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : [];
 
     const orClauses = [];
     if (visitorId) orClauses.push({ visitor_id: visitorId });
@@ -147,7 +167,7 @@ exports.getMyReports = async (req, res) => {
       order: [["created_at", "DESC"]]
     });
 
-    const parsed = reports.map(r => {
+    const parsed = reports.map((r) => {
       const plain = r.toJSON();
       try {
         plain.categories = JSON.parse(plain.categories);
@@ -157,7 +177,7 @@ exports.getMyReports = async (req, res) => {
       return plain;
     });
 
-    const hasUnreadReply = parsed.some(r => r.admin_response && !r.user_viewed_reply);
+    const hasUnreadReply = parsed.some((r) => r.admin_response && !r.user_viewed_reply);
 
     res.json({
       reports: parsed,
@@ -203,10 +223,7 @@ exports.markTicketSeen = async (req, res) => {
     if (!/^REP-[A-Z0-9]{5,25}$/.test(rawCode)) {
       return res.status(400).json({ error: "Invalid ticket code format." });
     }
-    await BhajanReport.update(
-      { user_viewed_reply: true },
-      { where: { ticket_code: rawCode } }
-    );
+    await BhajanReport.update({ user_viewed_reply: true }, { where: { ticket_code: rawCode } });
     res.json({ success: true });
   } catch (error) {
     console.error(`[Req ${req.id || ""}] Error marking ticket seen:`, error);
@@ -260,7 +277,7 @@ exports.showAdminReports = async (req, res) => {
       limit: 200
     });
 
-    const parsedReports = reports.map(r => {
+    const parsedReports = reports.map((r) => {
       const plain = r.toJSON();
       try {
         plain.categories = JSON.parse(plain.categories);
@@ -305,7 +322,7 @@ exports.updateReport = async (req, res) => {
     }
 
     const admin = req.session.admin;
-    const adminName = admin ? (admin.display_name || admin.username || "Admin") : "Admin";
+    const adminName = admin ? admin.display_name || admin.username || "Admin" : "Admin";
 
     const updatePayload = {
       admin_response: admin_response !== undefined ? admin_response.trim() : report.admin_response,
@@ -327,12 +344,13 @@ exports.updateReport = async (req, res) => {
     if (report.singer_id) {
       try {
         const notificationService = require("../services/notificationService");
-        const notifTitle = (status === "resolved")
-          ? `✅ Ticket Resolved: ${report.bhajan_title}`
-          : `💬 Coordinator Update: ${report.ticket_code}`;
+        const notifTitle =
+          status === "resolved"
+            ? `✅ Ticket Resolved: ${report.bhajan_title}`
+            : `💬 Coordinator Update: ${report.ticket_code}`;
         const notifBody = admin_response
-          ? `${adminName} replied: "${admin_response.slice(0, 100)}${admin_response.length > 100 ? '...' : ''}"`
-          : `Your correction ticket for "${report.bhajan_title}" status is now ${(status || report.status).replace('_', ' ')}.`;
+          ? `${adminName} replied: "${admin_response.slice(0, 100)}${admin_response.length > 100 ? "..." : ""}"`
+          : `Your correction ticket for "${report.bhajan_title}" status is now ${(status || report.status).replace("_", " ")}.`;
 
         await notificationService.createPersonalized({
           type: "report_update",

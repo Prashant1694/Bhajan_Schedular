@@ -5,25 +5,28 @@ const UserPresence = require("../models/UserPresence");
 
 // Automatic Log Retention Cleanup Routine (Runs every 12 hours)
 // Purges logs older than 30 days and presence records older than 7 days
-const cleanupTimer = setInterval(async () => {
-  try {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    await ActivityLog.destroy({
-      where: {
-        created_at: { [Sequelize.Op.lt]: thirtyDaysAgo }
-      }
-    });
+const cleanupTimer = setInterval(
+  async () => {
+    try {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      await ActivityLog.destroy({
+        where: {
+          created_at: { [Sequelize.Op.lt]: thirtyDaysAgo }
+        }
+      });
 
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    await UserPresence.destroy({
-      where: {
-        last_seen_at: { [Sequelize.Op.lt]: sevenDaysAgo }
-      }
-    });
-  } catch (err) {
-    // Silent background cleanup error handling
-  }
-}, 12 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      await UserPresence.destroy({
+        where: {
+          last_seen_at: { [Sequelize.Op.lt]: sevenDaysAgo }
+        }
+      });
+    } catch (err) {
+      // Silent background cleanup error handling
+    }
+  },
+  12 * 60 * 60 * 1000
+);
 if (cleanupTimer.unref) cleanupTimer.unref();
 
 function getSectionName(urlPath) {
@@ -34,7 +37,8 @@ function getSectionName(urlPath) {
   if (urlPath.startsWith("/singer/login")) return "Singer Login";
   if (urlPath.startsWith("/admin/activity-logs")) return "Activity Monitor";
   if (urlPath.startsWith("/admin/admin-users")) return "Admin Management";
-  if (urlPath.startsWith("/admin/singers") || urlPath.startsWith("/admin/singer-dictionary")) return "Singer Directory";
+  if (urlPath.startsWith("/admin/singers") || urlPath.startsWith("/admin/singer-dictionary"))
+    return "Singer Directory";
   if (urlPath.startsWith("/admin/rules")) return "Deity Rules";
   if (urlPath.startsWith("/admin/analytics")) return "Analytics";
   if (urlPath.startsWith("/admin/missing-bhajans")) return "Missing Catcher";
@@ -79,7 +83,7 @@ function getActionDetails(req, section, username, userType) {
     if (path.includes("/api/singer/profile/scale")) {
       return {
         action: "UPDATE_SCALE",
-        details: `${username} set preferred pitch scale to ${body.preferred_scale || 'default'}`
+        details: `${username} set preferred pitch scale to ${body.preferred_scale || "default"}`
       };
     }
     if (path.includes("/api/singer/change-pin")) {
@@ -107,7 +111,10 @@ function getActionDetails(req, section, username, userType) {
       };
     }
     return {
-      action: `POST_${path.replace(/[^a-zA-Z0-9_]/g, "_").slice(0, 25).toUpperCase()}`,
+      action: `POST_${path
+        .replace(/[^a-zA-Z0-9_]/g, "_")
+        .slice(0, 25)
+        .toUpperCase()}`,
       details: `${username} performed action on ${section}`
     };
   }
@@ -193,7 +200,8 @@ const trackActivity = async (req, res, next) => {
     // 1. Check Admin Session
     if (req.session.admin) {
       const admin = req.session.admin;
-      userType = (admin.role === "super_admin" || admin.role === "SUPER_ADMIN") ? "super_admin" : "admin";
+      userType =
+        admin.role === "super_admin" || admin.role === "SUPER_ADMIN" ? "super_admin" : "admin";
       adminId = admin.id;
       const titleStr = admin.title ? ` (${admin.title})` : "";
       username = (admin.display_name || admin.username || "Admin") + titleStr;
@@ -204,7 +212,12 @@ const trackActivity = async (req, res, next) => {
       username = req.session.singer.name;
     }
     // 3. Check Form submission body if anonymous but submitted by named singer
-    else if (req.body && req.body.singer_name && typeof req.body.singer_name === "string" && req.body.singer_name.trim().length > 1) {
+    else if (
+      req.body &&
+      req.body.singer_name &&
+      typeof req.body.singer_name === "string" &&
+      req.body.singer_name.trim().length > 1
+    ) {
       userType = "singer";
       username = req.body.singer_name.trim();
     }

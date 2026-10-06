@@ -1,10 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const singerController = require("../controllers/singerController");
-const {
-  requireLogin,
-  requireApiLogin
-} = require("../middleware/auth");
+const { requireLogin, requireApiLogin } = require("../middleware/auth");
 
 router.get("/admin/singers", requireLogin, singerController.showSingers);
 router.get("/admin/singer-dictionary", requireLogin, singerController.showSingerDictionary);

@@ -41,7 +41,10 @@
   border: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    border-color 0.15s;
 }
 .bulletin-card:hover {
   transform: translateY(-1px);
@@ -278,7 +281,9 @@
   font-size: 15px;
   background: var(--paper);
   color: var(--ink);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
   box-sizing: border-box;
 }
 .admin-bulletin-form input:focus,
@@ -318,7 +323,9 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 .admin-bulletin-form .btn-save:hover {
   transform: translateY(-1px);
@@ -335,7 +342,9 @@
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 .admin-bulletin-form .btn-cancel:hover {
   background: var(--paper);

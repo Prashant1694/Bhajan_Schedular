@@ -7,23 +7,23 @@ const { timeSince, formatDateHuman } = require("../services/helpers");
 exports.showSingers = async (req, res) => {
   try {
     const singers = await Singer.scope("withSecrets").findAll({
-      order: [['name', 'ASC']],
+      order: [["name", "ASC"]],
       raw: true
     });
 
     // Fetch submission stats grouped by singer_name
     const stats = await BhajanSubmission.findAll({
       attributes: [
-        'singer_name',
-        [Sequelize.fn('COUNT', Sequelize.col('id')), 'total_sung'],
-        [Sequelize.fn('MAX', Sequelize.col('session_date')), 'last_sung']
+        "singer_name",
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "total_sung"],
+        [Sequelize.fn("MAX", Sequelize.col("session_date")), "last_sung"]
       ],
-      group: ['singer_name'],
+      group: ["singer_name"],
       raw: true
     });
 
     const statsMap = new Map();
-    stats.forEach(st => {
+    stats.forEach((st) => {
       if (st.singer_name) {
         statsMap.set(st.singer_name.trim().toLowerCase(), {
           total_sung: parseInt(st.total_sung, 10) || 0,
@@ -33,11 +33,11 @@ exports.showSingers = async (req, res) => {
     });
 
     // Also include any singers from submissions that might not yet be in singer_dictionary
-    const existingNames = new Set(singers.map(s => s.name.trim().toLowerCase()));
+    const existingNames = new Set(singers.map((s) => s.name.trim().toLowerCase()));
     const unrecordedSingers = [];
 
-    stats.forEach(st => {
-      const lower = (st.singer_name || '').trim().toLowerCase();
+    stats.forEach((st) => {
+      const lower = (st.singer_name || "").trim().toLowerCase();
       if (lower && !existingNames.has(lower)) {
         unrecordedSingers.push({
           id: null,
@@ -52,8 +52,8 @@ exports.showSingers = async (req, res) => {
     });
 
     const allSingers = [
-      ...singers.map(s => {
-        const lower = (s.name || '').trim().toLowerCase();
+      ...singers.map((s) => {
+        const lower = (s.name || "").trim().toLowerCase();
         const st = statsMap.get(lower) || { total_sung: 0, last_sung: null };
         return {
           ...s,
@@ -61,27 +61,29 @@ exports.showSingers = async (req, res) => {
           pin: undefined, // Never expose raw or hashed PIN to view
           total_sung: st.total_sung,
           last_sung: st.last_sung,
-          lastSungHuman: st.last_sung ? timeSince(st.last_sung) : 'Never',
-          formattedDate: st.last_sung ? formatDateHuman(st.last_sung) : 'No sessions'
+          lastSungHuman: st.last_sung ? timeSince(st.last_sung) : "Never",
+          formattedDate: st.last_sung ? formatDateHuman(st.last_sung) : "No sessions"
         };
       }),
-      ...unrecordedSingers.map(s => ({
+      ...unrecordedSingers.map((s) => ({
         ...s,
         has_pin: false,
-        lastSungHuman: s.last_sung ? timeSince(st.last_sung) : 'Never',
-        formattedDate: s.last_sung ? formatDateHuman(st.last_sung) : 'No sessions'
+        lastSungHuman: s.last_sung ? timeSince(s.last_sung) : "Never",
+        formattedDate: s.last_sung ? formatDateHuman(s.last_sung) : "No sessions"
       }))
     ];
 
     allSingers.sort((a, b) => a.name.localeCompare(b.name));
 
     const totalSingers = allSingers.length;
-    const maleCount = allSingers.filter(s => (s.gender || '').toLowerCase() === 'male').length;
-    const femaleCount = allSingers.filter(s => (s.gender || '').toLowerCase() === 'female').length;
-    const pinProtectedCount = singers.filter(s => Boolean(s.pin)).length;
-    const activeSingersCount = allSingers.filter(s => s.total_sung > 0).length;
+    const maleCount = allSingers.filter((s) => (s.gender || "").toLowerCase() === "male").length;
+    const femaleCount = allSingers.filter(
+      (s) => (s.gender || "").toLowerCase() === "female"
+    ).length;
+    const pinProtectedCount = singers.filter((s) => Boolean(s.pin)).length;
+    const activeSingersCount = allSingers.filter((s) => s.total_sung > 0).length;
 
-    res.render('singers', {
+    res.render("singers", {
       singers: allSingers,
       metrics: {
         total: totalSingers,
@@ -90,20 +92,20 @@ exports.showSingers = async (req, res) => {
         pinProtected: pinProtectedCount,
         active: activeSingersCount
       },
-      pageTitle: 'Singers Directory',
+      pageTitle: "Singers Directory",
       isAdminPage: true,
-      pageCSS: 'admin.css',
-      page: 'singers',
-      pinResetSuccess: req.query.pin_reset === 'success'
+      pageCSS: "admin.css",
+      page: "singers",
+      pinResetSuccess: req.query.pin_reset === "success"
     });
   } catch (error) {
     console.error(`[Req ${req.id || ""}] showSingers error:`, error);
-    res.status(500).send('<h1>Error</h1><p>Failed to load singers directory.</p>');
+    res.status(500).send("<h1>Error</h1><p>Failed to load singers directory.</p>");
   }
 };
 
 exports.showSingerDictionary = (req, res) => {
-  res.redirect(301, '/admin/singers');
+  res.redirect(301, "/admin/singers");
 };
 
 exports.addSinger = async (req, res) => {
@@ -116,10 +118,14 @@ exports.addSinger = async (req, res) => {
       });
       if (!singer.gender && gender) await singer.update({ gender });
     }
-    res.redirect('/admin/singers');
+    res.redirect("/admin/singers");
   } catch (error) {
     console.error(`[Req ${req.id || ""}] addSinger error:`, error);
-    res.status(500).send('<h1>Error adding singer</h1><p>Failed to add singer.</p><a href="/admin/singers">Back</a>');
+    res
+      .status(500)
+      .send(
+        '<h1>Error adding singer</h1><p>Failed to add singer.</p><a href="/admin/singers">Back</a>'
+      );
   }
 };
 
@@ -127,22 +133,33 @@ exports.editSinger = async (req, res) => {
   try {
     const { name, gender } = req.body;
     if (name && name.trim()) {
-      await Singer.update({ name: name.trim(), gender: gender || null }, { where: { id: req.params.id } });
+      await Singer.update(
+        { name: name.trim(), gender: gender || null },
+        { where: { id: req.params.id } }
+      );
     }
-    res.redirect('/admin/singers');
+    res.redirect("/admin/singers");
   } catch (error) {
     console.error(`[Req ${req.id || ""}] editSinger error:`, error);
-    res.status(500).send('<h1>Error editing singer</h1><p>Failed to edit singer.</p><a href="/admin/singers">Back</a>');
+    res
+      .status(500)
+      .send(
+        '<h1>Error editing singer</h1><p>Failed to edit singer.</p><a href="/admin/singers">Back</a>'
+      );
   }
 };
 
 exports.deleteSinger = async (req, res) => {
   try {
     await Singer.destroy({ where: { id: req.params.id } });
-    res.redirect('/admin/singers');
+    res.redirect("/admin/singers");
   } catch (error) {
     console.error(`[Req ${req.id || ""}] deleteSinger error:`, error);
-    res.status(500).send('<h1>Error deleting singer</h1><p>Failed to delete singer.</p><a href="/admin/singers">Back</a>');
+    res
+      .status(500)
+      .send(
+        '<h1>Error deleting singer</h1><p>Failed to delete singer.</p><a href="/admin/singers">Back</a>'
+      );
   }
 };
 
@@ -162,7 +179,11 @@ exports.resetSingerPin = async (req, res) => {
     res.redirect("/admin/singers?pin_reset=success");
   } catch (error) {
     console.error(`[Req ${req.id || ""}] resetSingerPin error:`, error);
-    res.status(500).send('<h1>Error resetting PIN</h1><p>Failed to reset PIN.</p><a href="/admin/singers">Back</a>');
+    res
+      .status(500)
+      .send(
+        '<h1>Error resetting PIN</h1><p>Failed to reset PIN.</p><a href="/admin/singers">Back</a>'
+      );
   }
 };
 
@@ -188,6 +209,8 @@ exports.setSingerPin = async (req, res) => {
     res.redirect("/admin/singers?pin_set=success");
   } catch (error) {
     console.error(`[Req ${req.id || ""}] setSingerPin error:`, error);
-    res.status(500).send('<h1>Error setting PIN</h1><p>Failed to set PIN.</p><a href="/admin/singers">Back</a>');
+    res
+      .status(500)
+      .send('<h1>Error setting PIN</h1><p>Failed to set PIN.</p><a href="/admin/singers">Back</a>');
   }
 };

@@ -20,8 +20,20 @@ router.get("/api/notifications/vapid-key", notificationController.getVapidKey);
 
 // ── Admin routes ─────────────────────────────────────────────
 router.get("/admin/notifications", requireLogin, notificationController.adminNotifications);
-router.post("/admin/notifications/send-custom", requireApiLogin, notificationController.sendCustomNotification);
-router.post("/admin/notifications/test", requireApiLogin, notificationController.sendTestNotification);
-router.post("/admin/notifications/:id/delete", requireApiLogin, notificationController.deleteNotification);
+router.post(
+  "/admin/notifications/send-custom",
+  requireApiLogin,
+  notificationController.sendCustomNotification
+);
+router.post(
+  "/admin/notifications/test",
+  requireApiLogin,
+  notificationController.sendTestNotification
+);
+router.post(
+  "/admin/notifications/:id/delete",
+  requireApiLogin,
+  notificationController.deleteNotification
+);
 
 module.exports = router;

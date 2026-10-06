@@ -14,13 +14,26 @@ router.get("/api/singer/:id/pin-status", singerHubController.checkSingerPinStatu
 router.get("/singer/hub", requireSingerAuth, singerHubController.showHub);
 router.get("/my-hub", requireSingerAuth, singerHubController.showHub);
 router.get("/my-activity", activityController.showMyActivity);
-router.post("/api/singer/change-pin", requireSingerAuth, singerPinChangeLimit, singerHubController.changePin);
-router.post("/api/singer/profile/scale", requireSingerAuth, singerHubController.updatePreferredScale);
+router.post(
+  "/api/singer/change-pin",
+  requireSingerAuth,
+  singerPinChangeLimit,
+  singerHubController.changePin
+);
+router.post(
+  "/api/singer/profile/scale",
+  requireSingerAuth,
+  singerHubController.updatePreferredScale
+);
 
 // Songbook & Repertoire (Phase 2)
 router.get("/api/singer/songbook", requireSingerAuth, singerHubController.getSongbookList);
 router.post("/api/singer/songbook/toggle", requireSingerAuth, singerHubController.toggleSongbook);
-router.post("/api/singer/songbook/update", requireSingerAuth, singerHubController.updateSongbookDetails);
+router.post(
+  "/api/singer/songbook/update",
+  requireSingerAuth,
+  singerHubController.updateSongbookDetails
+);
 router.get("/api/singer/songbook/check/:masterId", singerHubController.checkSongbookStatus);
 
 // Logout

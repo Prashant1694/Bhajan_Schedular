@@ -39,10 +39,7 @@ exports.listBulletins = async (req, res) => {
     const bulletins = await Bulletin.findAll({
       where: {
         status: "published",
-        [Sequelize.Op.or]: [
-          { expires_at: null },
-          { expires_at: { [Sequelize.Op.gt]: now } }
-        ]
+        [Sequelize.Op.or]: [{ expires_at: null }, { expires_at: { [Sequelize.Op.gt]: now } }]
       },
       order: [
         ["is_pinned", "DESC"],
@@ -67,7 +64,11 @@ exports.bulletinDetail = async (req, res) => {
   try {
     const bulletin = await Bulletin.findByPk(req.params.id);
     if (!bulletin || bulletin.status !== "published") {
-      return res.status(404).send(`<!DOCTYPE html><html><head><title>Not Found</title><link rel="stylesheet" href="/css/style.css"></head><body><div class="container" style="text-align:center;padding:40px;"><h2>Bulletin Not Found</h2><p>This bulletin may have been removed or is not yet published.</p><a href="/bulletins" class="button secondary">← Back to Updates</a></div></body></html>`);
+      return res
+        .status(404)
+        .send(
+          `<!DOCTYPE html><html><head><title>Not Found</title><link rel="stylesheet" href="/css/style.css"></head><body><div class="container" style="text-align:center;padding:40px;"><h2>Bulletin Not Found</h2><p>This bulletin may have been removed or is not yet published.</p><a href="/bulletins" class="button secondary">← Back to Updates</a></div></body></html>`
+        );
     }
 
     res.render("bulletin-detail", {
@@ -237,9 +238,8 @@ exports.togglePublish = async (req, res) => {
     if (!bulletin) return res.status(404).json({ error: "Not found" });
 
     const newStatus = bulletin.status === "published" ? "draft" : "published";
-    const publishedAt = newStatus === "published" && !bulletin.published_at
-      ? new Date()
-      : bulletin.published_at;
+    const publishedAt =
+      newStatus === "published" && !bulletin.published_at ? new Date() : bulletin.published_at;
 
     await bulletin.update({ status: newStatus, published_at: publishedAt });
     res.json({ success: true, status: newStatus });
@@ -254,10 +254,7 @@ exports.getLatestBulletins = async (limit = 5) => {
   return Bulletin.findAll({
     where: {
       status: "published",
-      [Sequelize.Op.or]: [
-        { expires_at: null },
-        { expires_at: { [Sequelize.Op.gt]: now } }
-      ]
+      [Sequelize.Op.or]: [{ expires_at: null }, { expires_at: { [Sequelize.Op.gt]: now } }]
     },
     order: [
       ["is_pinned", "DESC"],

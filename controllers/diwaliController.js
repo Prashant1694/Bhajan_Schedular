@@ -3,12 +3,18 @@ const diwaliService = require("../services/diwaliService");
 const diwaliExportService = require("../services/diwaliExportService");
 const diwaliImportService = require("../services/diwaliImportService");
 const activityService = require("../services/activityService");
-const { MasterBhajan, DiwaliParticipant, DiwaliParticipantBhajan } = require("../models/diwaliModels");
+const {
+  MasterBhajan,
+  DiwaliParticipant,
+  DiwaliParticipantBhajan
+} = require("../models/diwaliModels");
 const BhajanSubmission = require("../models/BhajanSubmission");
 
 // Pitch-shift calculation matching Thursday Bhajan form
 function femaleFallbackShruti(maleShruti) {
-  const match = String(maleShruti || "").trim().match(/^(1|1\.5|2|2\.5|3|4|4\.5|5|5\.5|6|6\.5|7)\s*([pPmM])?$/i);
+  const match = String(maleShruti || "")
+    .trim()
+    .match(/^(1|1\.5|2|2\.5|3|4|4\.5|5|5\.5|6|6\.5|7)\s*([pPmM])?$/i);
   if (!match) return maleShruti || "";
   const values = ["1", "1.5", "2", "2.5", "3", "4", "4.5", "5", "5.5", "6", "6.5", "7"];
   let pitch = values.indexOf(match[1]);
@@ -20,11 +26,11 @@ function femaleFallbackShruti(maleShruti) {
 }
 
 function calculateScaleForGender(bhajan, gender) {
-  const isFemale = (gender === "Ladies" || gender === "Female");
+  const isFemale = gender === "Ladies" || gender === "Female";
   const rawFemale = String(bhajan.shruti_female || "").trim();
   const rawMale = String(bhajan.shruti || "").trim();
-  const cleanFemale = (rawFemale === "#N/A" || !rawFemale) ? "" : rawFemale;
-  const cleanMale = (rawMale === "#N/A" || !rawMale) ? "" : rawMale;
+  const cleanFemale = rawFemale === "#N/A" || !rawFemale ? "" : rawFemale;
+  const cleanMale = rawMale === "#N/A" || !rawMale ? "" : rawMale;
 
   if (isFemale) {
     if (cleanFemale) return cleanFemale;
@@ -40,7 +46,7 @@ async function resolveSelectedEvent(req) {
   const requestedYear = req.query?.year || req.body?.year || req.session?.diwaliYear;
   if (requestedYear) {
     const all = await diwaliService.getAllEvents();
-    event = all.find(e => e.year === parseInt(requestedYear, 10));
+    event = all.find((e) => e.year === parseInt(requestedYear, 10));
   }
   if (!event) {
     event = await diwaliService.getOrCreateDefaultEvent();
@@ -58,14 +64,18 @@ exports.dashboard = async (req, res) => {
     const allEvents = await diwaliService.getAllEvents();
     const stats = await diwaliService.getStats(selectedEvent.id);
 
-    const gentsBhajans = await diwaliService.getFlatBhajanRows(selectedEvent.id, { gender: "Gents" });
-    const ladiesBhajans = await diwaliService.getFlatBhajanRows(selectedEvent.id, { gender: "Ladies" });
+    const gentsBhajans = await diwaliService.getFlatBhajanRows(selectedEvent.id, {
+      gender: "Gents"
+    });
+    const ladiesBhajans = await diwaliService.getFlatBhajanRows(selectedEvent.id, {
+      gender: "Ladies"
+    });
     const sequences = await diwaliService.getFullSequences(selectedEvent.id);
 
     // Extract unique deities and scales for filter dropdowns
     const allBhajans = [...gentsBhajans, ...ladiesBhajans];
-    const deities = [...new Set(allBhajans.map(b => b.deity).filter(Boolean))].sort();
-    const scales = [...new Set(allBhajans.map(b => b.scale).filter(Boolean))].sort();
+    const deities = [...new Set(allBhajans.map((b) => b.deity).filter(Boolean))].sort();
+    const scales = [...new Set(allBhajans.map((b) => b.scale).filter(Boolean))].sort();
 
     res.render("diwali/dashboard", {
       pageTitle: `Diwali Bhajans — ${selectedEvent.name}`,
@@ -124,13 +134,19 @@ exports.createParticipant = async (req, res) => {
 
     if (!Array.isArray(bhajans) && req.body["bhajan_title"]) {
       // If submitted as traditional multi-inputs
-      const titles = Array.isArray(req.body.bhajan_title) ? req.body.bhajan_title : [req.body.bhajan_title];
-      const masterIds = Array.isArray(req.body.master_bhajan_id) ? req.body.master_bhajan_id : [req.body.master_bhajan_id];
+      const titles = Array.isArray(req.body.bhajan_title)
+        ? req.body.bhajan_title
+        : [req.body.bhajan_title];
+      const masterIds = Array.isArray(req.body.master_bhajan_id)
+        ? req.body.master_bhajan_id
+        : [req.body.master_bhajan_id];
       const scales = Array.isArray(req.body.scale) ? req.body.scale : [req.body.scale];
       const tablas = Array.isArray(req.body.tabla) ? req.body.tabla : [req.body.tabla];
       const shrutis = Array.isArray(req.body.shruti) ? req.body.shruti : [req.body.shruti];
       const deities = Array.isArray(req.body.deity) ? req.body.deity : [req.body.deity];
-      const bhajanRemarks = Array.isArray(req.body.bhajan_remarks) ? req.body.bhajan_remarks : [req.body.bhajan_remarks];
+      const bhajanRemarks = Array.isArray(req.body.bhajan_remarks)
+        ? req.body.bhajan_remarks
+        : [req.body.bhajan_remarks];
 
       bhajans = titles.map((title, idx) => ({
         bhajan_title: title,
@@ -231,7 +247,9 @@ exports.updateParticipant = async (req, res) => {
 exports.deleteParticipant = async (req, res) => {
   try {
     const participant = await diwaliService.getParticipantById(req.params.id);
-    const desc = participant ? `'${participant.lead_name}' & '${participant.partner_name}'` : `ID ${req.params.id}`;
+    const desc = participant
+      ? `'${participant.lead_name}' & '${participant.partner_name}'`
+      : `ID ${req.params.id}`;
 
     await diwaliService.deleteParticipant(req.params.id);
 
@@ -310,7 +328,9 @@ exports.showImport = async (req, res) => {
 exports.previewImport = async (req, res) => {
   try {
     if (!req.file || !req.file.buffer) {
-      return res.status(400).json({ success: false, error: "Please select an Excel file (.xlsx or .xls) to upload." });
+      return res
+        .status(400)
+        .json({ success: false, error: "Please select an Excel file (.xlsx or .xls) to upload." });
     }
 
     const previewData = await diwaliImportService.parseExcelBuffer(req.file.buffer);
@@ -358,12 +378,23 @@ exports.exportYearly = async (req, res) => {
     if (format === "pdf") {
       const pdfBuffer = await diwaliExportService.generateYearlyPdf(selectedEvent, { category });
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="Diwali_Bhajans_${selectedEvent.year}.pdf"`);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="Diwali_Bhajans_${selectedEvent.year}.pdf"`
+      );
       return res.send(pdfBuffer);
     } else {
-      const excelBuffer = await diwaliExportService.generateYearlyExcel(selectedEvent, { category });
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-      res.setHeader("Content-Disposition", `attachment; filename="Diwali_Bhajans_${selectedEvent.year}.xlsx"`);
+      const excelBuffer = await diwaliExportService.generateYearlyExcel(selectedEvent, {
+        category
+      });
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="Diwali_Bhajans_${selectedEvent.year}.xlsx"`
+      );
       return res.send(excelBuffer);
     }
   } catch (error) {
@@ -497,13 +528,22 @@ exports.exportSequence = async (req, res) => {
       : `Diwali_${selectedEvent.year}_All_Sequences`;
 
     if (format === "pdf") {
-      const pdfBuffer = await diwaliExportService.generateSequencePdf(selectedEvent, { sequenceId, category });
+      const pdfBuffer = await diwaliExportService.generateSequencePdf(selectedEvent, {
+        sequenceId,
+        category
+      });
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="${filename}.pdf"`);
       return res.send(pdfBuffer);
     } else {
-      const excelBuffer = await diwaliExportService.generateSequenceExcel(selectedEvent, { sequenceId, category });
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      const excelBuffer = await diwaliExportService.generateSequenceExcel(selectedEvent, {
+        sequenceId,
+        category
+      });
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
       res.setHeader("Content-Disposition", `attachment; filename="${filename}.xlsx"`);
       return res.send(excelBuffer);
     }
@@ -523,7 +563,7 @@ exports.searchMasterBhajans = async (req, res) => {
     }
 
     const tokens = q.split(/\s+/).filter(Boolean);
-    const likeConditions = tokens.map(tok => ({
+    const likeConditions = tokens.map((tok) => ({
       title: { [Op.like]: `%${tok}%` }
     }));
 
@@ -541,7 +581,7 @@ exports.searchMasterBhajans = async (req, res) => {
       let scale = calculateScaleForGender(b, gender);
       if (!scale) {
         const cleanTitle = b.title.replace(/\s*\(\d+\)$/, "").trim();
-        const targetGender = (gender === "Ladies" || gender === "Female") ? "Female" : "Male";
+        const targetGender = gender === "Ladies" || gender === "Female" ? "Female" : "Male";
         const prev = await BhajanSubmission.findOne({
           where: {
             title: { [Op.or]: [{ [Op.like]: b.title }, { [Op.like]: cleanTitle }] },
@@ -559,11 +599,13 @@ exports.searchMasterBhajans = async (req, res) => {
               bhajan_title: { [Op.or]: [{ [Op.like]: b.title }, { [Op.like]: cleanTitle }] },
               scale: { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: "" }] }
             },
-            include: [{
-              model: DiwaliParticipant,
-              as: "participant",
-              where: { gender: (gender === "Ladies" || gender === "Female") ? "Ladies" : "Gents" }
-            }],
+            include: [
+              {
+                model: DiwaliParticipant,
+                as: "participant",
+                where: { gender: gender === "Ladies" || gender === "Female" ? "Ladies" : "Gents" }
+              }
+            ],
             order: [["created_at", "DESC"]]
           });
           if (diwaliPrev && diwaliPrev.scale) scale = diwaliPrev.scale.trim();
