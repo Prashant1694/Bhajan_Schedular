@@ -1,0 +1,49 @@
+<!-- App-First Floating Mobile Bottom Navigation -->
+<nav class="app-bottom-nav no-print" id="appBottomNav" aria-label="Main Mobile Navigation">
+  <div class="app-bottom-nav-inner">
+    <a href="/" class="nav-tab" data-route="/" id="navTabHome">
+      <div class="tab-icon-box">
+        <span class="tab-icon">🏠</span>
+      </div>
+      <span class="tab-label">Home</span>
+    </a>
+
+    <a href="/submit-form" class="nav-tab" data-route="/submit-form" id="navTabSinger">
+      <div class="tab-icon-box">
+        <span class="tab-icon">🎤</span>
+      </div>
+      <span class="tab-label">Singer Zone</span>
+    </a>
+
+    <a href="/master-bank" class="nav-tab" data-route="/master-bank" id="navTabBank">
+      <div class="tab-icon-box">
+        <span class="tab-icon">📖</span>
+      </div>
+      <span class="tab-label">Songbook</span>
+    </a>
+
+    <a href="/plan-view" class="nav-tab" data-route="/plan-view" id="navTabPlan">
+      <div class="tab-icon-box">
+        <span class="tab-icon">📊</span>
+      </div>
+      <span class="tab-label">Live Plan</span>
+    </a>
+
+    <a href="/my-hub" class="nav-tab" data-route="/my-hub" id="navTabHub">
+      <div class="tab-icon-box">
+        <span class="tab-icon">👤</span>
+        <span class="tab-badge-dot" id="hubBadgeDot" style="display:none;"></span>
+      </div>
+      <span class="tab-label">My Hub</span>
+    </a>
+
+    <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
+      <a href="/admin" class="nav-tab" data-route="/admin" id="navTabAdmin">
+        <div class="tab-icon-box">
+          <span class="tab-icon">👑</span>
+        </div>
+        <span class="tab-label">Admin</span>
+      </a>
+    <% } %>
+  </div>
+</nav>

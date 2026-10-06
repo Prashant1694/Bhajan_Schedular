@@ -1,96 +1,969 @@
-<div class="container container-xl">
-  <div class="header">
-    <h1>🛠️ Session Details</h1>
-    <p>Date: <%= date %></p>
-    <% if (isLocked) { %>
-      <span style="background:#e03131; color:white; padding:4px 12px; border-radius:12px; font-size:12px; font-weight:bold; margin-top:10px; display:inline-block;">🔒 SESSION LOCKED</span>
-    <% } %>
-  </div>
-  
-  <div style="margin-bottom: 24px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
-    <a href="/admin" class="button secondary">⬅️ Back to Calendar</a>
-    <a href="/submit-form?admin=true&session_date=<%= date %>" class="button">➕ Add / Append to this Date</a>
-    <a href="/admin/rules?date=<%= date %>" class="button secondary">⚙️ Session Rules</a>
-    <button onclick="toggleSessionLock('<%= date %>', <%= !isLocked %>)" class="button" style="background:<%= isLocked ? '#28a745' : '#e03131' %>; border:none;"><%= isLocked ? "🔓 Unlock Submissions" : "🔒 Lock Submissions" %></button>
-    <a href="/plan-view?session_date=<%= date %>" class="button secondary">📅 View Plan</a>
-    <a href="/admin" class="button secondary">🏠 Dashboard</a>
-  </div>
+<div class="session-unified-page">
 
-  <section class="submitted-bhajans" aria-labelledby="submittedBhajansHeading">
-    <div class="submitted-bhajans-heading" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:12px;">
-      <div>
-        <h3 id="submittedBhajansHeading">🎵 Bhajan Sequence & Lineup</h3>
-        <p><%= submissions.length %> bhajan<%= submissions.length === 1 ? '' : 's' %> in this session. Drag ☰ handle to reorder sequence.</p>
+  <!-- ═══ 1. UNIFIED EXECUTIVE HEADER (Merged Hero, Actions, Stats & Diagnostics) ═══ -->
+  <header class="session-unified-header">
+    
+    <!-- Top Row: Identity & Action Toolbar -->
+    <div class="session-header-top-row">
+      <div class="session-header-identity">
+        <% 
+          let monthShort = 'SES';
+          let dayNum = '01';
+          try {
+            const parts = date.split('-');
+            const dObj = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            monthShort = dObj.toLocaleDateString('en-US', { month: 'short' });
+            dayNum = dObj.toLocaleDateString('en-US', { day: '2-digit' });
+          } catch(e) {}
+        %>
+        <div class="session-date-tile" title="Session Date">
+          <span class="session-date-tile-month"><%= monthShort %></span>
+          <span class="session-date-tile-day"><%= dayNum %></span>
+        </div>
+
+        <div class="session-title-block">
+          <h1>
+            <span><%= humanDate || date %></span>
+            <span style="font-size:15px; font-weight:500; color:var(--text-light); font-family:var(--font-body);">
+              (<%= dayOfWeek || 'Session' %>)
+            </span>
+          </h1>
+
+          <div class="session-tags-row">
+            <% if (sessionPerm && sessionPerm.type === 'festival') { %>
+              <span class="session-tag session-tag-festival">
+                <span>🌺</span> Festival: <%= sessionPerm.description || 'Special Celebration' %>
+              </span>
+            <% } else if (sessionPerm && sessionPerm.type === 'special') { %>
+              <span class="session-tag session-tag-special">
+                <span>⭐</span> Special: <%= sessionPerm.description || 'Special Session' %>
+              </span>
+            <% } else { %>
+              <span class="session-tag session-tag-regular">
+                <span>🪔</span> Regular Mandir Session
+              </span>
+            <% } %>
+
+            <span id="sessionLockBadge" class="session-lock-tag <%= isLocked ? 'is-locked' : 'is-open' %>">
+              <span class="session-pulse-indicator"></span>
+              <span id="sessionLockText"><%= isLocked ? '🔒 Submissions Locked' : '🔓 Submissions Open' %></span>
+            </span>
+
+            <% if (isUpcoming) { %>
+              <span class="session-tag session-tag-regular" style="color:var(--primary); font-weight:700;">
+                ⏳ Upcoming
+              </span>
+            <% } else { %>
+              <span class="session-tag session-tag-regular" style="color:var(--text-light);">
+                📜 Past
+              </span>
+            <% } %>
+          </div>
+        </div>
       </div>
-      <button id="saveOrderBtn" class="button" style="background:#28a745; border:none; display:none; padding:8px 18px; font-weight:700;" onclick="saveReorderSequence()">💾 Save New Sequence</button>
+
+      <!-- 2-Tier Cohesive Action Command Bar -->
+      <div class="session-actions-command-bar">
+        <!-- Tier 1: Primary High-Priority Actions -->
+        <div class="session-primary-actions">
+          <a href="/submit-form?admin=true&session_date=<%= date %>" class="cmd-btn cmd-btn-add" title="Add a new bhajan to this date">
+            <span class="cmd-btn-icon">➕</span>
+            <span class="cmd-btn-text">Add Bhajan</span>
+          </a>
+
+          <button type="button" class="cmd-btn cmd-btn-share" onclick="openShareModal()" title="Share program via WhatsApp">
+            <span class="cmd-btn-icon">📤</span>
+            <span class="cmd-btn-text">Share WhatsApp</span>
+          </button>
+        </div>
+
+        <!-- Tier 2: Secondary Tools Grid (Equal column, balanced layout) -->
+        <div class="session-secondary-tools">
+          <button type="button" id="toggleLockBtn" onclick="toggleLockAjax('<%= date %>')" 
+                  class="sec-tool-btn <%= isLocked ? 'is-unlocked-state' : 'is-locked-state' %>"
+                  title="<%= isLocked ? 'Unlock submissions' : 'Lock session submissions' %>">
+            <span class="sec-tool-icon"><%= isLocked ? '🔓' : '🔒' %></span>
+            <span class="sec-tool-label" id="toggleLockBtnText"><%= isLocked ? 'Unlock' : 'Lock' %></span>
+          </button>
+
+          <a href="/plan-view?session_date=<%= date %>" class="sec-tool-btn" title="View live devotee program">
+            <span class="sec-tool-icon">👁️</span>
+            <span class="sec-tool-label">Live Plan</span>
+          </a>
+
+          <a href="/admin/rules?date=<%= date %>" class="sec-tool-btn" title="Session sequence rules">
+            <span class="sec-tool-icon">⚙️</span>
+            <span class="sec-tool-label">Rules</span>
+          </a>
+
+          <button type="button" class="sec-tool-btn" onclick="openCopyModal()" title="Duplicate lineup from past session">
+            <span class="sec-tool-icon">🔄</span>
+            <span class="sec-tool-label">Duplicate</span>
+          </button>
+
+          <button type="button" class="sec-tool-btn" onclick="window.print()" title="Print physical session schedule">
+            <span class="sec-tool-icon">🖨️</span>
+            <span class="sec-tool-label">Print</span>
+          </button>
+
+          <a href="/admin" class="sec-tool-btn" title="Back to session calendar">
+            <span class="sec-tool-icon">🗓️</span>
+            <span class="sec-tool-label">Calendar</span>
+          </a>
+        </div>
+      </div>
     </div>
 
-    <% if (submissions.length > 0) { %>
-      <div class="table-container">
-        <table>
+    <!-- Executive Session Metrics & Quality Diagnostics -->
+    <div class="session-metrics-deck">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-card-icon">🎵</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= submissions.length %></span>
+            <span class="metric-card-lbl">Bhajans <%= submissions.length > 0 ? '(~' + Math.round(submissions.length * 4.5) + 'm)' : '' %></span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-card-icon">👥</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= uniqueSingers %></span>
+            <span class="metric-card-lbl">Singers</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-card-icon">🥁</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val">
+              <span style="color:#059669;"><%= speedCounts.slow || 0 %>S</span> · 
+              <span style="color:#2563eb;"><%= speedCounts.medium || 0 %>M</span> · 
+              <span style="color:#d97706;"><%= speedCounts.fast || 0 %>F</span>
+            </span>
+            <span class="metric-card-lbl">Tempo Balance</span>
+          </div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-card-icon">🕉️</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= Object.keys(deityCounts).length %></span>
+            <span class="metric-card-lbl">Deities</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Checklist Diagnostics Strip -->
+      <% if (submissions.length > 0) { %>
+        <div class="metrics-diagnostics-bar">
+          <% if (ganeshaOpening) { %>
+            <span class="diag-chip pass" title="Starts with Ganesha as prescribed">
+              <span class="diag-chip-dot">✅</span> <strong>Ganesha #1</strong>: OK
+            </span>
+          <% } else { %>
+            <span class="diag-chip warn" title="Opening song is not Ganesha">
+              <span class="diag-chip-dot">⚠️</span> <strong>Opening</strong>: <%= submissions[0].deity %>
+            </span>
+          <% } %>
+
+          <% if (saiIncluded) { %>
+            <span class="diag-chip pass" title="Sai bhajan included in lineup">
+              <span class="diag-chip-dot">🪔</span> <strong>Sai Bhajan</strong>: Included
+            </span>
+          <% } else { %>
+            <span class="diag-chip warn" title="No Sai bhajan found yet">
+              <span class="diag-chip-dot">ℹ️</span> <strong>Sai Bhajan</strong>: Missing
+            </span>
+          <% } %>
+
+          <% if (consecutiveRepeats && consecutiveRepeats.length > 0) { %>
+            <span class="diag-chip warn" title="Repeated deity in adjacent sequence">
+              <span class="diag-chip-dot">⚠️</span> <strong>Repeat</strong>: <%= consecutiveRepeats[0].deity %> (#<%= consecutiveRepeats[0].index1 %> & #<%= consecutiveRepeats[0].index2 %>)
+            </span>
+          <% } else { %>
+            <span class="diag-chip pass" title="Balanced deity distribution">
+              <span class="diag-chip-dot">✨</span> <strong>Flow</strong>: Balanced
+            </span>
+          <% } %>
+        </div>
+      <% } %>
+    </div>
+
+  </header>
+
+  <!-- ═══ 2. MAIN UNIFIED WORKSPACE (Full-Width Sequencer Data Grid & Cards) ═══ -->
+  <main id="sessionWorkspace" class="session-unified-workspace view-mode-table">
+
+    <!-- Workspace Controls Bar -->
+    <div class="workspace-header-bar">
+      <div class="workspace-filter-box">
+        <input type="text" id="sequencerSearch" class="workspace-search-input" 
+               placeholder="🔍 Search singer, bhajan title, deity, scale..." 
+               oninput="filterSequencer(this.value)" 
+               aria-label="Filter bhajans">
+        
+        <span class="workspace-meta-text" id="sequencerCountDisplay">
+          <%= submissions.length %> Bhajans • Drag ⠿ handle or use ▲/▼ to sequence
+        </span>
+      </div>
+
+      <div class="workspace-view-controls">
+        <button type="button" class="action-tool-btn" style="padding:5px 11px; font-size:12px;" onclick="resetDeityOrder()" title="Reset sequence to traditional deity order">
+          <span>🔄</span>
+          <span>Deity Order</span>
+        </button>
+
+        <div class="view-switcher-pill" role="group" aria-label="View mode switch">
+          <button type="button" class="view-switch-btn active" id="btnViewTable" onclick="setSequencerView('table')" title="Dense full-width sequence table (Recommended)">
+            <span>📋</span>
+            <span>Table</span>
+          </button>
+          <button type="button" class="view-switch-btn" id="btnViewCards" onclick="setSequencerView('cards')" title="Card list view">
+            <span>🎴</span>
+            <span>Cards</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ VIEW 1: STUDIO TABLE (Default Primary View) ═══ -->
+    <div id="sequencerTableWrapper" class="workspace-table-scroll">
+      <% if (submissions.length > 0) { %>
+        <table class="sequencer-studio-table">
           <thead>
             <tr>
-              <th width="50" style="text-align:center;">#</th>
-              <th>Singer</th>
-              <th>Deity</th>
-              <th>Bhajan</th>
-              <th>Tempo</th>
-              <th>Raag</th>
-              <th>Scale</th>
-              <th style="text-align:right;">Actions</th>
+              <th width="80" style="text-align:center;">Seq #</th>
+              <th width="20%">Singer / Accompanist</th>
+              <th width="14%">Deity</th>
+              <th width="28%">Bhajan Title</th>
+              <th width="12%">Scale / Pitch</th>
+              <th width="14%">Tempo & Raag</th>
+              <th width="12%" style="text-align:right;">Actions</th>
             </tr>
           </thead>
           <tbody id="sortable-body">
             <% submissions.forEach((s, idx) => { %>
-              <tr data-id="<%= s.id %>" class="draggable-row" draggable="true" style="cursor: grab;">
-                <td data-label="#" style="text-align:center; white-space:nowrap;">
-                  <span class="drag-handle" title="Drag to reorder" style="cursor:grab; font-size:16px; margin-right:4px; color:var(--primary); -webkit-user-select:none; user-select:none;">☰</span>
-                  <strong class="row-num"><%= idx + 1 %></strong>
+              <tr data-id="<%= s.id %>" 
+                  class="draggable-row" 
+                  data-deity="<%= (s.deity || '').toLowerCase() %>"
+                  data-singer="<%= (s.singer_name || '').toLowerCase() %>"
+                  data-title="<%= (s.title || '').toLowerCase() %>"
+                  data-scale="<%= (s.scale || '').toLowerCase() %>"
+                  draggable="true">
+                
+                <td style="text-align:center;">
+                  <div class="table-order-cell">
+                    <span class="table-drag-handle" title="Drag row to reorder">⠿</span>
+                    <button type="button" class="table-order-badge" 
+                            onclick="promptMoveToPosition(<%= s.id %>, <%= idx + 1 %>)" 
+                            title="Click to jump to specific position">
+                      <span class="row-index"><%= idx + 1 %></span>
+                    </button>
+                    <div style="display:flex; flex-direction:column; gap:1px;">
+                      <button type="button" class="table-arrow-btn" onclick="moveItemStep(this, 'up')" <%= idx === 0 ? 'disabled' : '' %> title="Move up">▲</button>
+                      <button type="button" class="table-arrow-btn" onclick="moveItemStep(this, 'down')" <%= idx === submissions.length - 1 ? 'disabled' : '' %> title="Move down">▼</button>
+                    </div>
+                  </div>
                 </td>
-                <td data-label="Singer">
+
+                <td>
                   <strong><%= s.singer_name %></strong>
-                  <% if (s.partner_name) { %><br><small style="color:var(--text-light);">& <%= s.partner_name %></small><% } %>
-                  <% if (s.gender) { %><br><small style="color:var(--text-light); font-size:11px;">(<%= s.gender %>)</small><% } %>
+                  <% if (s.partner_name) { %>
+                    <br><small style="color:var(--text-light);">& <%= s.partner_name %></small>
+                  <% } %>
+                  <% if (s.gender) { %>
+                    <span class="card-gender-pill" style="margin-left:4px;"><%= s.gender %></span>
+                  <% } %>
                 </td>
-                <td data-label="Deity"><span class="deity-pill"><%= s.deity %></span></td>
-                <td data-label="Bhajan">
+
+                <td>
+                  <span class="card-deity-pill">
+                    <span><%= s.deityIcon || '🕉️' %></span>
+                    <span><%= s.deity %></span>
+                  </span>
+                </td>
+
+                <td>
                   <% if (s.master_id) { %>
-                    <a href="/bhajan/<%= s.master_id %>" style="color:inherit; text-decoration:none; font-weight:700;" title="View lyrics & details"><%= s.title %></a>
+                    <a href="/bhajan/<%= s.master_id %>" class="card-bhajan-title" title="Open lyrics & audio recording">
+                      <%= s.title %>
+                    </a>
                   <% } else { %>
-                    <strong><%= s.title %></strong>
+                    <span class="card-bhajan-title"><%= s.title %></span>
                   <% } %>
                   <% if (s.sheet_filename) { %>
-                    <br><a href="/sheets/<%= encodeURIComponent(s.sheet_filename) %>" target="_blank" rel="noopener noreferrer" class="sheet-link-pill" title="Open official reference sheet music (PDF)">📄 Music Sheet</a>
+                    <a href="/sheets/<%= encodeURIComponent(s.sheet_filename) %>" target="_blank" rel="noopener noreferrer" class="card-sheet-link" style="margin-left:6px;" title="Official music sheet PDF">
+                      📄 Sheet
+                    </a>
                   <% } %>
                 </td>
-                <td data-label="Tempo"><%= s.speed || '-' %></td>
-                <td data-label="Raag"><%= s.raga || '-' %></td>
-                <td data-label="Scale"><%= s.scale || '-' %></td>
-                <td data-label="Actions" style="text-align:right;">
-                  <div style="display:flex; gap:6px; justify-content:flex-end;">
-                    <a href="/admin/edit/<%= s.id %>" class="button secondary" style="padding:4px 10px; font-size:12px; text-decoration:none;">✏️ Edit</a>
-                    <form action="/admin/delete/<%= s.id %>" method="POST" onsubmit="return confirm('Delete this entry?');" style="margin:0;">
-                      <button type="submit" class="button" style="padding:4px 10px; font-size:12px; background:var(--danger); border:none; color:white; cursor:pointer;">❌ Del</button>
+
+                <td>
+                  <strong><%= s.scale || '-' %></strong>
+                  <% if (s.westernScale && s.westernScale !== '-') { %>
+                    <small style="color:var(--text-light);"> (<%= s.westernScale %>)</small>
+                  <% } %>
+                </td>
+
+                <td>
+                  <% 
+                    const sp = (s.speed || 'medium').toLowerCase();
+                    const pillClass = sp === 'slow' ? 'card-tempo-slow' : (sp === 'fast' ? 'card-tempo-fast' : 'card-tempo-med');
+                  %>
+                  <span class="card-meta-chip <%= pillClass %>">
+                    <%= (s.speed || 'Medium').charAt(0).toUpperCase() + (s.speed || 'Medium').slice(1) %>
+                  </span>
+                  <% if (s.raga) { %>
+                    <br><small style="color:var(--text-light); font-size:11.5px;">🎼 <%= s.raga %></small>
+                  <% } %>
+                </td>
+
+                <td style="text-align:right; white-space:nowrap;">
+                  <div style="display:inline-flex; gap:6px; justify-content:flex-end;">
+                    <a href="/admin/edit/<%= s.id %>" class="action-tool-btn" style="padding:4px 9px; font-size:12px;" title="Edit entry">
+                      ✏️ Edit
+                    </a>
+                    <form action="/admin/delete/<%= s.id %>" method="POST" onsubmit="return confirm('Delete this bhajan from session?');" style="margin:0; display:inline;">
+                      <button type="submit" class="action-tool-btn" style="padding:4px 9px; font-size:12px; color:var(--danger); border-color:rgba(178,59,50,0.3);" title="Delete entry">
+                        🗑️ Del
+                      </button>
                     </form>
                   </div>
                 </td>
+
               </tr>
             <% }) %>
           </tbody>
         </table>
-      </div>
-    <% } else { %>
-      <p class="submitted-bhajans-empty" style="padding:20px 0; text-align:center;">No bhajan submissions found for this date.</p>
-    <% } %>
-  </section>
+      <% } else { %>
+        <div class="sequencer-empty-state">
+          <div style="font-size:42px; margin-bottom:12px;">🪔</div>
+          <h3 style="margin-top:0; font-size:18px; font-weight:700;">No Bhajans Scheduled Yet</h3>
+          <p style="font-size:13.5px; color:var(--text-light); margin-bottom:20px;">
+            This session currently has no bhajan submissions.
+          </p>
+          <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <a href="/submit-form?admin=true&session_date=<%= date %>" class="action-tool-btn action-tool-btn-primary">
+              ➕ Add First Bhajan
+            </a>
+            <button type="button" class="action-tool-btn" onclick="openCopyModal()">
+              🔄 Duplicate Past Session
+            </button>
+          </div>
+        </div>
+      <% } %>
+    </div>
 
-  <div style="margin-top:30px; background:var(--paper); padding:20px; border-radius:var(--radius); border:1px solid var(--border);">
-    <h3 style="margin-bottom:8px; color:var(--text); font-size:16px;">🔄 Copy Previous Session</h3>
-    <p style="font-size:13px; color:var(--text-light); margin-bottom:14px;">Duplicate the singer lineup from a past session directly into this date.</p>
-    <form action="/admin/copy-session" method="POST" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <input type="hidden" name="target_date" value="<%= date %>">
-      <input type="date" name="source_date" required class="filter-input" style="max-width:200px;">
-      <button type="submit" class="button secondary" onclick="return confirm('Copy all entries? This will append to the current list.')">Copy Lineup</button>
-    </form>
+    <!-- ═══ VIEW 2: CARDS LIST (Spacious, Executive Card Deck) ═══ -->
+    <div id="sequencerCardsWrapper" class="workspace-cards-list" style="display:none;">
+      <% if (submissions.length > 0) { %>
+        <div id="cardsListContainer" class="cards-deck-container">
+          <% submissions.forEach((s, idx) => { %>
+            <article class="sequencer-card draggable-card" 
+                     data-id="<%= s.id %>" 
+                     data-deity="<%= (s.deity || '').toLowerCase() %>"
+                     data-singer="<%= (s.singer_name || '').toLowerCase() %>"
+                     data-title="<%= (s.title || '').toLowerCase() %>"
+                     data-scale="<%= (s.scale || '').toLowerCase() %>"
+                     draggable="true">
+              
+              <!-- Card Top Header: Stepper Badge & Song Title & Deity -->
+              <div class="card-top-header">
+                <div class="card-reorder-group">
+                  <span class="card-drag-handle" title="Drag to reorder sequence">⠿</span>
+                  <button type="button" class="card-order-badge" onclick="promptMoveToPosition(<%= s.id %>, <%= idx + 1 %>)" title="Jump to position">
+                    <span class="row-index"><%= idx + 1 %></span>
+                  </button>
+                  <div class="card-arrow-btns">
+                    <button type="button" class="card-arrow-btn" onclick="moveItemStep(this, 'up')" <%= idx === 0 ? 'disabled' : '' %> title="Move up">▲</button>
+                    <button type="button" class="card-arrow-btn" onclick="moveItemStep(this, 'down')" <%= idx === submissions.length - 1 ? 'disabled' : '' %> title="Move down">▼</button>
+                  </div>
+                </div>
+
+                <div class="card-header-main">
+                  <div class="card-title-wrap">
+                    <% if (s.master_id) { %>
+                      <a href="/bhajan/<%= s.master_id %>" class="card-bhajan-title"><%= s.title %></a>
+                    <% } else { %>
+                      <span class="card-bhajan-title"><%= s.title %></span>
+                    <% } %>
+                  </div>
+
+                  <div class="card-header-pills">
+                    <span class="card-deity-pill">
+                      <span><%= s.deityIcon || '🕉️' %></span>
+                      <span><%= s.deity %></span>
+                    </span>
+
+                    <% if (s.sheet_filename) { %>
+                      <a href="/sheets/<%= encodeURIComponent(s.sheet_filename) %>" target="_blank" rel="noopener noreferrer" class="card-sheet-link">
+                        📄 Sheet PDF
+                      </a>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card Middle Body: Singer Details & Musical Info -->
+              <div class="card-middle-details">
+                <div class="card-singer-box">
+                  <span class="card-singer-icon">👤</span>
+                  <div class="card-singer-names">
+                    <strong class="card-singer-main"><%= s.singer_name %></strong>
+                    <% if (s.partner_name) { %>
+                      <span class="card-partner-sub">& <%= s.partner_name %></span>
+                    <% } %>
+                    <% if (s.gender) { %>
+                      <span class="card-gender-chip">(<%= s.gender %>)</span>
+                    <% } %>
+                  </div>
+                </div>
+
+                <div class="card-metadata-row">
+                  <span class="card-meta-chip chip-pitch" title="Scale / Pitch">
+                    <span>🎹</span>
+                    <span><%= s.scale || 'Scale N/A' %><%= s.westernScale && s.westernScale !== '-' ? ' (' + s.westernScale + ')' : '' %></span>
+                  </span>
+
+                  <% 
+                    const sp = (s.speed || 'medium').toLowerCase();
+                    const pillClass = sp === 'slow' ? 'card-tempo-slow' : (sp === 'fast' ? 'card-tempo-fast' : 'card-tempo-med');
+                    const tempoIcon = sp === 'slow' ? '🐢' : (sp === 'fast' ? '⚡' : '🎵');
+                  %>
+                  <span class="card-meta-chip <%= pillClass %>" title="Tempo / Speed">
+                    <span><%= tempoIcon %></span>
+                    <span><%= (s.speed || 'Medium').charAt(0).toUpperCase() + (s.speed || 'Medium').slice(1) %></span>
+                  </span>
+
+                  <% if (s.raga) { %>
+                    <span class="card-meta-chip chip-raag" title="Classical Raag">
+                      <span>🎼</span>
+                      <span><%= s.raga %></span>
+                    </span>
+                  <% } %>
+                </div>
+              </div>
+
+              <!-- Card Bottom Actions: Spacious, Touch-friendly Buttons -->
+              <div class="card-bottom-actions">
+                <a href="/admin/edit/<%= s.id %>" class="card-touch-btn btn-edit" title="Edit entry">
+                  <span>✏️</span>
+                  <span>Edit</span>
+                </a>
+                <form action="/admin/delete/<%= s.id %>" method="POST" onsubmit="return confirm('Delete this bhajan from session?');" style="margin:0;">
+                  <button type="submit" class="card-touch-btn btn-delete" title="Delete entry">
+                    <span>🗑️</span>
+                    <span>Delete</span>
+                  </button>
+                </form>
+              </div>
+
+            </article>
+          <% }) %>
+        </div>
+      <% } %>
+    </div>
+
+  </main>
+
+  <!-- ═══ FLOATING STICKY SAVE BAR ═══ -->
+  <aside id="sequencerSaveBar" class="sequencer-save-bar" role="region" aria-label="Sequence changes bar">
+    <div class="save-bar-info">
+      <span>⚠️</span>
+      <span id="saveBarMsg">Unsaved sequence changes</span>
+    </div>
+    <div class="save-bar-actions">
+      <button type="button" class="save-bar-btn save-bar-btn-cancel" onclick="discardSequenceChanges()">
+        <span>↩</span> Discard
+      </button>
+      <button type="button" id="saveSequenceBtn" class="save-bar-btn save-bar-btn-save" onclick="saveReorderSequence()">
+        <span>💾</span> Save Sequence
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══ MODAL 1: SHARE ON WHATSAPP ═══ -->
+  <div id="shareModal" class="session-modal-overlay" onclick="if(event.target===this) closeShareModal()">
+    <div class="session-modal-card">
+      <div class="session-modal-header">
+        <h3><span>📱</span> Share Session Schedule</h3>
+        <button type="button" class="close-btn" onclick="closeShareModal()" style="border:none; background:none; font-size:22px; cursor:pointer;" aria-label="Close modal">&times;</button>
+      </div>
+      <div class="session-modal-body">
+        <p style="font-size:13px; color:var(--text-light); margin-top:0; margin-bottom:12px;">
+          Preformatted for WhatsApp groups with singer lineup, keys, and live plan link.
+        </p>
+        <textarea id="whatsappShareBox" readonly 
+                  style="width:100%; height:220px; font-family:monospace; font-size:12.5px; padding:12px; border-radius:12px; border:1px solid var(--border); background:var(--surface-raised); color:var(--text); resize:vertical;" 
+                  aria-label="WhatsApp schedule text"><%= whatsappText %></textarea>
+      </div>
+      <div class="session-modal-footer">
+        <button type="button" class="action-tool-btn" onclick="copyShareText()" id="copyShareBtn">
+          <span>📋</span> Copy Text
+        </button>
+        <a href="https://api.whatsapp.com/send?text=<%= whatsappEncoded %>" target="_blank" rel="noopener noreferrer" class="action-tool-btn action-tool-btn-primary" style="background:#25D366; border:none;">
+          <span>💬</span> Open WhatsApp
+        </a>
+      </div>
+    </div>
   </div>
+
+  <!-- ═══ MODAL 2: DUPLICATE PAST SESSION ═══ -->
+  <div id="copyModal" class="session-modal-overlay" onclick="if(event.target===this) closeCopyModal()">
+    <div class="session-modal-card">
+      <div class="session-modal-header">
+        <h3><span>🔄</span> Copy Lineup from Past Session</h3>
+        <button type="button" class="close-btn" onclick="closeCopyModal()" style="border:none; background:none; font-size:22px; cursor:pointer;" aria-label="Close modal">&times;</button>
+      </div>
+      <form action="/admin/copy-session" method="POST">
+        <input type="hidden" name="target_date" value="<%= date %>">
+        <div class="session-modal-body">
+          <p style="font-size:13px; color:var(--text-light); margin-top:0; margin-bottom:16px;">
+            Duplicate singers and their bhajans from an earlier session into <strong><%= humanDate || date %></strong>. This appends to the current date.
+          </p>
+
+          <label style="display:block; font-size:13px; font-weight:700; margin-bottom:6px; color:var(--text);">
+            Choose Source Session Date:
+          </label>
+
+          <% if (recentSessions && recentSessions.length > 0) { %>
+            <select name="source_date" required class="workspace-search-input" style="width:100%; max-width:none; padding:10px 14px; margin-bottom:14px;">
+              <option value="">-- Select Recent Session --</option>
+              <% recentSessions.forEach(rs => { %>
+                <option value="<%= rs.session_date %>">
+                  <%= rs.session_date %> (<%= rs.bhajan_count %> bhajan<%= rs.bhajan_count === 1 ? '' : 's' %>)
+                </option>
+              <% }) %>
+            </select>
+          <% } else { %>
+            <input type="date" name="source_date" required class="workspace-search-input" style="width:100%; max-width:none; padding:10px 14px; margin-bottom:14px;">
+          <% } %>
+
+          <div style="font-size:12px; color:var(--text-light); background:var(--surface-raised); padding:10px 14px; border-radius:10px; border:1px solid var(--border);">
+            💡 All duplicated entries will appear in this session and can be reordered or edited freely.
+          </div>
+        </div>
+        <div class="session-modal-footer">
+          <button type="button" class="action-tool-btn" onclick="closeCopyModal()">Cancel</button>
+          <button type="submit" class="action-tool-btn action-tool-btn-primary" onclick="return confirm('Copy all submissions from selected date into this session?');">
+            Copy Lineup
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
 </div>
+
+<!-- ═══ CLIENT-SIDE SEQUENCER SCRIPT ═══ -->
+<script>
+(function() {
+  'use strict';
+
+  let isDirty = false;
+  let initialOrder = [];
+
+  // Capture initial order on load
+  function captureInitialOrder() {
+    const rows = document.querySelectorAll('#sortable-body tr[data-id]');
+    initialOrder = Array.from(rows).map(r => r.getAttribute('data-id'));
+  }
+
+  // Update visual numbers across both Table and Cards views
+  function syncOrderNumbers() {
+    const rows = document.querySelectorAll('#sortable-body tr[data-id]');
+    rows.forEach((row, idx) => {
+      const num = row.querySelector('.row-index');
+      if (num) num.textContent = idx + 1;
+      const upBtn = row.querySelector('.table-arrow-btn[title="Move up"]');
+      const downBtn = row.querySelector('.table-arrow-btn[title="Move down"]');
+      if (upBtn) upBtn.disabled = (idx === 0);
+      if (downBtn) downBtn.disabled = (idx === rows.length - 1);
+    });
+
+    const cards = document.querySelectorAll('#cardsListContainer .sequencer-card');
+    cards.forEach((card, idx) => {
+      const badge = card.querySelector('.row-index');
+      if (badge) badge.textContent = idx + 1;
+      const upBtn = card.querySelector('.card-arrow-btn[title="Move up"]');
+      const downBtn = card.querySelector('.card-arrow-btn[title="Move down"]');
+      if (upBtn) upBtn.disabled = (idx === 0);
+      if (downBtn) downBtn.disabled = (idx === cards.length - 1);
+    });
+
+    // Check if order differs from initial
+    const currentOrder = Array.from(rows).map(r => r.getAttribute('data-id'));
+    const hasChanged = currentOrder.some((id, i) => id !== initialOrder[i]);
+    setDirtyState(hasChanged);
+  }
+
+  function setDirtyState(dirty) {
+    isDirty = dirty;
+    const saveBar = document.getElementById('sequencerSaveBar');
+    if (!saveBar) return;
+    if (dirty) {
+      saveBar.classList.add('show');
+    } else {
+      saveBar.classList.remove('show');
+    }
+  }
+
+  // Move item up or down via button
+  window.moveItemStep = function(btn, direction) {
+    const item = btn.closest('tr[data-id]') || btn.closest('.sequencer-card');
+    if (!item) return;
+
+    const id = item.getAttribute('data-id');
+    const tableRow = document.querySelector(`#sortable-body tr[data-id="${id}"]`);
+    const cardEl = document.querySelector(`#cardsListContainer .sequencer-card[data-id="${id}"]`);
+
+    if (direction === 'up') {
+      if (tableRow && tableRow.previousElementSibling) {
+        tableRow.parentNode.insertBefore(tableRow, tableRow.previousElementSibling);
+      }
+      if (cardEl && cardEl.previousElementSibling) {
+        cardEl.parentNode.insertBefore(cardEl, cardEl.previousElementSibling);
+      }
+    } else if (direction === 'down') {
+      if (tableRow && tableRow.nextElementSibling) {
+        tableRow.parentNode.insertBefore(tableRow.nextElementSibling, tableRow);
+      }
+      if (cardEl && cardEl.nextElementSibling) {
+        cardEl.parentNode.insertBefore(cardEl.nextElementSibling, cardEl);
+      }
+    }
+
+    syncOrderNumbers();
+  };
+
+  // Direct Position Editing via click prompt
+  window.promptMoveToPosition = function(id, currentPos) {
+    const rows = document.querySelectorAll('#sortable-body tr[data-id]');
+    const total = rows.length;
+    const input = prompt(`Move this bhajan to sequence position (1 to ${total}):`, currentPos);
+    if (!input) return;
+    const targetPos = parseInt(input, 10);
+    if (isNaN(targetPos) || targetPos < 1 || targetPos > total || targetPos === currentPos) return;
+
+    const tableBody = document.getElementById('sortable-body');
+    const cardsContainer = document.getElementById('cardsListContainer');
+    const row = document.querySelector(`#sortable-body tr[data-id="${id}"]`);
+    const card = document.querySelector(`#cardsListContainer .sequencer-card[data-id="${id}"]`);
+
+    if (!row || !tableBody) return;
+    const allRows = Array.from(tableBody.querySelectorAll('tr[data-id]'));
+    const targetRow = allRows[targetPos - 1];
+
+    if (targetPos < currentPos) {
+      tableBody.insertBefore(row, targetRow);
+      if (card && cardsContainer) {
+        const allCards = Array.from(cardsContainer.querySelectorAll('.sequencer-card'));
+        cardsContainer.insertBefore(card, allCards[targetPos - 1]);
+      }
+    } else {
+      tableBody.insertBefore(row, targetRow.nextSibling);
+      if (card && cardsContainer) {
+        const allCards = Array.from(cardsContainer.querySelectorAll('.sequencer-card'));
+        cardsContainer.insertBefore(card, allCards[targetPos - 1].nextSibling);
+      }
+    }
+
+    syncOrderNumbers();
+  };
+
+  // Drag and Drop implementation for Table & Cards
+  let draggedEl = null;
+
+  function initDragDrop() {
+    const tableBody = document.getElementById('sortable-body');
+    if (tableBody) {
+      tableBody.addEventListener('dragstart', (e) => {
+        draggedEl = e.target.closest('tr[data-id]');
+        if (!draggedEl) return;
+        e.dataTransfer.effectAllowed = 'move';
+        draggedEl.classList.add('is-dragging');
+      });
+
+      tableBody.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!draggedEl) return;
+        const targetRow = e.target.closest('tr[data-id]');
+        if (targetRow && targetRow !== draggedEl && targetRow.parentNode === tableBody) {
+          const rect = targetRow.getBoundingClientRect();
+          const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+          tableBody.insertBefore(draggedEl, next ? targetRow.nextSibling : targetRow);
+        }
+      });
+
+      tableBody.addEventListener('dragend', () => {
+        if (draggedEl) draggedEl.classList.remove('is-dragging');
+        draggedEl = null;
+        syncCardsFromTable();
+        syncOrderNumbers();
+      });
+    }
+
+    // Cards Drag & Drop
+    const cardsContainer = document.getElementById('cardsListContainer');
+    if (cardsContainer) {
+      cardsContainer.addEventListener('dragstart', (e) => {
+        draggedEl = e.target.closest('.sequencer-card');
+        if (!draggedEl) return;
+        e.dataTransfer.effectAllowed = 'move';
+        draggedEl.classList.add('is-dragging');
+      });
+
+      cardsContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (!draggedEl) return;
+        const targetCard = e.target.closest('.sequencer-card');
+        if (targetCard && targetCard !== draggedEl && targetCard.parentNode === cardsContainer) {
+          const rect = targetCard.getBoundingClientRect();
+          const next = (e.clientY - rect.top) / (rect.bottom - rect.top) > 0.5;
+          cardsContainer.insertBefore(draggedEl, next ? targetCard.nextSibling : targetCard);
+        }
+      });
+
+      cardsContainer.addEventListener('dragend', () => {
+        if (draggedEl) draggedEl.classList.remove('is-dragging');
+        draggedEl = null;
+        syncTableFromCards();
+        syncOrderNumbers();
+      });
+    }
+  }
+
+  function syncCardsFromTable() {
+    const rows = document.querySelectorAll('#sortable-body tr[data-id]');
+    const cardsContainer = document.getElementById('cardsListContainer');
+    if (!cardsContainer) return;
+    rows.forEach(r => {
+      const id = r.getAttribute('data-id');
+      const card = cardsContainer.querySelector(`.sequencer-card[data-id="${id}"]`);
+      if (card) cardsContainer.appendChild(card);
+    });
+  }
+
+  function syncTableFromCards() {
+    const cards = document.querySelectorAll('#cardsListContainer .sequencer-card');
+    const tableBody = document.getElementById('sortable-body');
+    if (!tableBody) return;
+    cards.forEach(card => {
+      const id = card.getAttribute('data-id');
+      const row = tableBody.querySelector(`tr[data-id="${id}"]`);
+      if (row) tableBody.appendChild(row);
+    });
+  }
+
+  // Save reordered sequence to backend
+  window.saveReorderSequence = function() {
+    const saveBtn = document.getElementById('saveSequenceBtn');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+
+    const rows = document.querySelectorAll('#sortable-body tr[data-id]');
+    const orderData = Array.from(rows).map((row, index) => ({
+      id: parseInt(row.getAttribute('data-id'), 10),
+      order: index + 1
+    }));
+
+    fetch('/api/admin/reorder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderData })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('⚠️ Could not save sequence: ' + (data.error || 'Server error'));
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = '💾 Save Sequence';
+        }
+      }
+    })
+    .catch(() => {
+      alert('Network error saving sequence');
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 Save Sequence';
+      }
+    });
+  };
+
+  // Discard Sequence Changes
+  window.discardSequenceChanges = function() {
+    if (!confirm('Discard all sequence changes and reload original lineup?')) return;
+    location.reload();
+  };
+
+  // Reset to Traditional Deity Order
+  window.resetDeityOrder = function() {
+    const DEITY_ORDER = ["ganesha", "guru", "mata", "sarvadharma", "sai", "shiva", "krishna", "rama", "narayana", "vitthala", "hanuman"];
+    function getDeityKey(d) {
+      if (!d) return 99;
+      let val = d.toLowerCase().trim();
+      if (val === 'vittala' || val === 'vithala') val = 'vitthala';
+      if (val === 'anjaneya' || val === 'maruti') val = 'hanuman';
+      const idx = DEITY_ORDER.indexOf(val);
+      return idx !== -1 ? idx : 50;
+    }
+
+    const tableBody = document.getElementById('sortable-body');
+    if (!tableBody) return;
+    const rows = Array.from(tableBody.querySelectorAll('tr[data-id]'));
+    rows.sort((a, b) => {
+      const d1 = getDeityKey(a.getAttribute('data-deity'));
+      const d2 = getDeityKey(b.getAttribute('data-deity'));
+      if (d1 !== d2) return d1 - d2;
+      return (a.getAttribute('data-singer') || '').localeCompare(b.getAttribute('data-singer') || '');
+    });
+
+    rows.forEach(r => tableBody.appendChild(r));
+    syncCardsFromTable();
+    syncOrderNumbers();
+  };
+
+  // Search filter
+  window.filterSequencer = function(query) {
+    const q = (query || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('#sortable-body tr[data-id]');
+    const cards = document.querySelectorAll('#cardsListContainer .sequencer-card');
+
+    let visibleCount = 0;
+    rows.forEach(r => {
+      const match = !q || 
+        r.getAttribute('data-title').includes(q) || 
+        r.getAttribute('data-singer').includes(q) || 
+        r.getAttribute('data-deity').includes(q) || 
+        r.getAttribute('data-scale').includes(q);
+      r.style.display = match ? '' : 'none';
+      if (match) visibleCount++;
+    });
+
+    cards.forEach(c => {
+      const match = !q || 
+        c.getAttribute('data-title').includes(q) || 
+        c.getAttribute('data-singer').includes(q) || 
+        c.getAttribute('data-deity').includes(q) || 
+        c.getAttribute('data-scale').includes(q);
+      c.style.display = match ? 'flex' : 'none';
+    });
+
+    const countDisplay = document.getElementById('sequencerCountDisplay');
+    if (countDisplay) {
+      countDisplay.textContent = q ? `${visibleCount} of ${rows.length} Bhajans filtered` : `${rows.length} Bhajans • Drag ⠿ handle or use ▲/▼ to sequence`;
+    }
+  };
+
+  // View switch: Table (Default) vs Cards
+  window.setSequencerView = function(mode) {
+    const workspace = document.getElementById('sessionWorkspace');
+    const tableWrap = document.getElementById('sequencerTableWrapper');
+    const cardsWrap = document.getElementById('sequencerCardsWrapper');
+    const btnTable = document.getElementById('btnViewTable');
+    const btnCards = document.getElementById('btnViewCards');
+
+    if (mode === 'cards') {
+      if (workspace) {
+        workspace.classList.remove('view-mode-table');
+        workspace.classList.add('view-mode-cards');
+      }
+      if (tableWrap) tableWrap.style.cssText = 'display: none !important;';
+      if (cardsWrap) cardsWrap.style.cssText = 'display: block !important;';
+      if (btnCards) btnCards.classList.add('active');
+      if (btnTable) btnTable.classList.remove('active');
+      try { localStorage.setItem('bp-seq-view', 'cards'); } catch(e) {}
+    } else {
+      // Table is default
+      if (workspace) {
+        workspace.classList.remove('view-mode-cards');
+        workspace.classList.add('view-mode-table');
+      }
+      if (tableWrap) tableWrap.style.cssText = 'display: block !important;';
+      if (cardsWrap) cardsWrap.style.cssText = 'display: none !important;';
+      if (btnTable) btnTable.classList.add('active');
+      if (btnCards) btnCards.classList.remove('active');
+      try { localStorage.setItem('bp-seq-view', 'table'); } catch(e) {}
+    }
+  };
+
+  // Lock Toggle AJAX
+  window.toggleLockAjax = function(date) {
+    const isCurrentlyLocked = document.getElementById('sessionLockBadge').classList.contains('is-locked');
+    const newLockState = !isCurrentlyLocked;
+
+    const btn = document.getElementById('toggleLockBtn');
+    if (btn) btn.disabled = true;
+
+    fetch('/api/admin/toggle-lock', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date, is_locked: newLockState })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Could not toggle session lock');
+        if (btn) btn.disabled = false;
+      }
+    })
+    .catch(() => {
+      alert('Network error toggling lock');
+      if (btn) btn.disabled = false;
+    });
+  };
+
+  // Modals
+  window.openShareModal = function() {
+    document.getElementById('shareModal').classList.add('show');
+  };
+  window.closeShareModal = function() {
+    document.getElementById('shareModal').classList.remove('show');
+  };
+  window.copyShareText = function() {
+    const ta = document.getElementById('whatsappShareBox');
+    ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.getElementById('copyShareBtn');
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<span>✅</span> Copied!';
+        setTimeout(() => btn.innerHTML = orig, 2000);
+      }
+    });
+  };
+
+  window.openCopyModal = function() {
+    document.getElementById('copyModal').classList.add('show');
+  };
+  window.closeCopyModal = function() {
+    document.getElementById('copyModal').classList.remove('show');
+  };
+
+  // On DOM ready
+  document.addEventListener('DOMContentLoaded', () => {
+    captureInitialOrder();
+    initDragDrop();
+
+    try {
+      const saved = localStorage.getItem('bp-seq-view');
+      if (saved === 'cards') {
+        setSequencerView('cards');
+      } else {
+        setSequencerView('table');
+      }
+    } catch(e) {
+      setSequencerView('table');
+    }
+  });
+
+})();
+</script>

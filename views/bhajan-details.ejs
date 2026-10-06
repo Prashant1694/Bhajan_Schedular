@@ -125,6 +125,12 @@
             </a>
           <% } %>
 
+          <!-- Schedule This Bhajan Button (Phase 4) -->
+          <a href="/submit-form?prefill_title=<%= encodeURIComponent(bhajan.title) %>&prefill_deity=<%= encodeURIComponent(bhajan.deity || '') %>&prefill_scale=<%= encodeURIComponent(bhajan.shruti || '') %>&prefill_speed=<%= encodeURIComponent(bhajan.tempo || '') %>&master_id=<%= bhajan.id %>" class="tool-btn schedule-tool-btn no-print" title="Schedule this bhajan for the upcoming session" style="color: #16a34a; border-color: rgba(22, 163, 74, 0.4); text-decoration: none; font-weight: 700;">
+            <span class="btn-icon">🎤</span>
+            <span class="btn-text">Schedule</span>
+          </a>
+
           <!-- Add to My Songbook / Repertoire Button (Phase 2) -->
           <button type="button" id="songbookBtn" onclick="openSongbookModal()" class="tool-btn songbook-btn no-print" title="Save this bhajan to your personal Songbook repertoire" style="color: #7c3aed; border-color: rgba(124, 58, 237, 0.35);">
             <span class="btn-icon" id="songbookIcon">⭐</span>
@@ -994,7 +1000,8 @@
 
   html, body {
     width: 100% !important;
-    height: 100% !important;
+    min-height: 100% !important;
+    height: auto !important;
     background: #ffffff !important;
     color: #000000 !important;
     margin: 0 !important;
@@ -1033,7 +1040,7 @@
   /* FULL FRAME Page Wrapper & Container (Spanning Full A4 Printable Frame) */
   .bhajan-detail-page {
     width: 100% !important;
-    min-height: calc(297mm - 24mm) !important;
+    min-height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     background: none !important;
@@ -1045,7 +1052,7 @@
   .detail-container {
     width: 100% !important;
     max-width: 100% !important;
-    min-height: calc(297mm - 24mm) !important;
+    min-height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     display: flex !important;

@@ -64,7 +64,7 @@ exports.markAllRead = async (req, res) => {
     if (!device_id) return res.status(400).json({ error: "Missing device_id" });
 
     const sub = await PushSubscription.findOne({ where: { device_id } });
-    const singerId = sub ? sub.singer_id : null;
+    const singerId = req.session?.singer?.id || (sub ? sub.singer_id : null);
 
     await notificationService.markAllRead(device_id, singerId);
     res.json({ success: true });

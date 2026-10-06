@@ -1,160 +1,315 @@
 <div class="prasanthi-border"></div>
 
-  <div class="container dashboard-container">
-    
-    <div class="hero-banner">
-      <div class="hero-img-container">
-        <img src="/images/logo.png" alt="Sri Sathya Sai Lotus Emblem" class="hero-image">
-      </div>
-      <div class="hero-text">
-        <h2 class="hero-subtitle">Sri Sathya Sai Seva Organisations, Gandhinagar</h2>
-        <h1 class="hero-title">Bhajan Planner</h1>
-      </div>
-      <div class="hero-img-container">
-        <img src="/images/logo_birthday.png" alt="Sri Sathya Sai 100th Birthday Emblem" class="hero-image">
-      </div>
+<div class="container dashboard-container app-dashboard">
+
+  <!-- Hero Banner with Authentic Unclipped Logos -->
+  <div class="hero-banner app-hero-banner">
+    <div class="hero-img-container">
+      <img src="/images/logo.png" alt="Sri Sathya Sai Lotus Emblem" class="hero-image">
     </div>
-    <div class="menu-grid">
-      <a href="/submit-form" class="menu-card card-pink">
-        <div class="card-icon">🎤</div>
-        <div class="card-content">
-          <div class="card-title">Singer's zone</div>
-          <div class="card-desc">Mark your Bhajans</div>
-        </div>
-      </a>
-
-      <a href="/master-bank" class="menu-card card-blue">
-        <div class="card-icon">📖</div>
-        <div class="card-content">
-          <div class="card-title">Bhajan Database</div>
-          <div class="card-desc">Prashanthi Mandir Bhajans</div>
-        </div>
-      </a>
-      
-      <a href="/database" class="menu-card card-green">
-        <div class="card-icon">🗃️</div>
-        <div class="card-content">
-          <div class="card-title">History</div>
-          <div class="card-desc">Records - Gandhinagar Bhajan schedules</div>
-        </div>
-      </a>
-
-
-      <% if (typeof currentSinger !== 'undefined' && currentSinger) { %>
-      <a href="/my-hub" class="menu-card card-purple" id="homeSingerHubCard" style="position: relative; border-color: #c084fc;">
-        <span style="position: absolute; top: 10px; right: 10px; background: #9333ea; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px;"><%= (typeof currentAdmin !== 'undefined' && currentAdmin) ? '👑 Admin' : 'Logged In' %></span>
-        <div class="card-icon">🌟</div>
-        <div class="card-content">
-          <div class="card-title">My Hub</div>
-          <div class="card-desc"><%= currentSinger.name %></div>
-        </div>
-      </a>
-      <% } else if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
-      <a href="/my-hub" class="menu-card card-purple" id="homeSingerHubCard" style="position: relative; border-color: #c084fc;">
-        <span style="position: absolute; top: 10px; right: 10px; background: #9333ea; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px;">👑 Admin</span>
-        <div class="card-icon">🌟</div>
-        <div class="card-content">
-          <div class="card-title">My Hub</div>
-          <div class="card-desc">Singer & Songbook Hub</div>
-        </div>
-      </a>
-      <% } %>
-
-      <a href="<%= (typeof currentAdmin !== 'undefined' && currentAdmin) ? '/admin' : '/admin-login' %>" class="menu-card card-yellow" style="position: relative;">
-        <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
-          <span style="position: absolute; top: 10px; right: 10px; background: #eab308; color: #713f12; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px;">Admin Active</span>
-        <% } %>
-        <div class="card-icon">🔐</div>
-        <div class="card-content">
-          <div class="card-title">Administration</div>
-          <div class="card-desc"><%= (typeof currentAdmin !== 'undefined' && currentAdmin) ? (currentAdmin.display_name || 'Control Tower') : 'Schedular - Control Tower' %></div>
-        </div>
-      </a>
+    <div class="hero-text">
+      <h2 class="hero-subtitle">Sri Sathya Sai Seva Organisations, Gandhinagar</h2>
+      <h1 class="hero-title">Bhajan Planner</h1>
     </div>
-
-    <!-- Bulletin / Latest Updates Section -->
-    <% if (typeof bulletins !== 'undefined' && bulletins && bulletins.length > 0) { %>
-    <div class="bulletin-section">
-      <div class="bulletin-section-header">
-        <h3>📢 Latest Updates</h3>
-        <a href="/bulletins" class="bulletin-view-all">View All →</a>
-      </div>
-      <% bulletins.forEach(function(b) { %>
-        <% 
-          const catInfo = (typeof CATEGORY_INFO !== 'undefined' && CATEGORY_INFO[b.category]) ? CATEGORY_INFO[b.category] : { label: 'Update', icon: '📢', color: '#4dabf7' };
-          const isNew = b.published_at && (Date.now() - new Date(b.published_at).getTime()) < 5 * 24 * 60 * 60 * 1000;
-        %>
-        <a href="/bulletins/<%= b.id %>" class="bulletin-card">
-          <div class="bulletin-card-header">
-            <span class="bulletin-category-badge" style="background:<%= catInfo.color %>"><%= catInfo.icon %> <%= catInfo.label %></span>
-            <% if (isNew) { %><span class="bulletin-new-badge">🆕 NEW</span><% } %>
-            <% if (b.is_pinned) { %><span class="bulletin-pin-badge">📌</span><% } %>
-          </div>
-          <h3 class="bulletin-card-title"><%= b.title %></h3>
-          <div class="bulletin-card-date">
-            <% if (b.published_at) { %>
-              <%= new Date(b.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) %>
-            <% } %>
-          </div>
-        </a>
-      <% }); %>
+    <div class="hero-img-container">
+      <img src="/images/logo_birthday.png" alt="Sri Sathya Sai 100th Birthday Emblem" class="hero-image">
     </div>
-    <% } %>
-
-    <div class="sai-quote-card">
-      <h3 class="quote-header" style="margin-bottom: 12px;">🕉️ The Spirit of Bhajan</h3>
-      <p class="quote-text-para"><strong>BHARAT:</strong> The heart of singing lies in the union of Bha (Bhava/Feeling), Ra (Raga/Melody), and Ta (Taala/Rhythm). Remember: "A tune (raga) without feeling (bhava) is an infliction (roga)."</p>
-      <p class="quote-text-para"><strong>Unity in Unison:</strong> We strive to merge our individual voices into a single wave of vibration. When we sing in one voice and one beat, we create a powerful demonstration of oneness.</p>
-      <p class="quote-text-para"><strong>Global Purification:</strong> Sacred sound waves act as spiritual "antibiotics," destroying negative thoughts in the air and purifying the environment for the welfare of the world.</p>
-      <p class="quote-text-para" style="margin-bottom: 20px;"><strong>Full-Throated Devotion:</strong> Sing with enthusiasm! Let your devotion resonate through full-throated participation.</p>
-
-      <h3 class="quote-header conduct-header">📋 Singer's Code of Conduct</h3>
-      <div class="conduct-list">
-        <div class="conduct-item conduct-item--saffron">
-          <strong class="conduct-label">⏳ Punctuality</strong>
-          <p class="conduct-body">Singers must be seated and ready before the Veda Recitation concludes.</p>
-        </div>
-        <div class="conduct-item conduct-item--sky">
-          <strong class="conduct-label">🎹 Seating</strong>
-          <p class="conduct-body">All instrumentalists must sit together in the designated section to ensure perfect synchronization.</p>
-        </div>
-        <div class="conduct-item conduct-item--sage">
-          <strong class="conduct-label">🎵 The Format</strong>
-          <ol class="conduct-format-list">
-            <li>1st Speed: Sing each line twice.</li>
-            <li>2nd Speed: Sing lines once; repeat the last line twice.</li>
-            <li>3rd Speed: (If applicable) Sing with increased tempo.</li>
-          </ol>
-        </div>
-        <div class="conduct-item conduct-item--maroon">
-          <strong class="conduct-label">🔉 Pitch (Sruti)</strong>
-          <p class="conduct-body">Select a pitch that is comfortable for your range. Avoid straining your voice on high or low notes to maintain sweetness.</p>
-        </div>
-        <div class="conduct-item conduct-item--gold">
-          <strong class="conduct-label">👏 Hand Claps</strong>
-          <p class="conduct-body">Clap in rhythm! This act removes negative instincts from within and recharges us with divine energy.</p>
-        </div>
-        <div class="conduct-item conduct-item--clay">
-          <strong class="conduct-label">🔕 Silence</strong>
-          <p class="conduct-body">Mobile phones must be on Silent Mode to maintain the sanctity of the atmosphere.</p>
-        </div>
-      </div>
-      <div class="conduct-footer">— Bhagwan Sri Sathya Sai Baba</div>
-    </div>
-
-
-
-
-    <div class="shanti-footer">
-      <div class="shanti-main">
-        <div class="motto">"Love All - Serve All"</div>
-        <div class="shanti-baba-quote">
-          "Bhajan must spread good-will, love, ecstasy; it must cleanse the polluted atmosphere; it must invite all to share in the joy and peace" — Baba
-        </div>
-      </div>
-      <div class="prayer">Samastha Loka Sukhino Bhavantu</div>
-    </div>
-
   </div>
 
-  <%- include('partials/site-footer') %>
+  <!-- Devotee Greeting Bar (Strict single line, clean Sai Ram + Full Name) -->
+  <% if (typeof currentSinger !=='undefined' && currentSinger) { %>
+    <div class="devotee-greeting-bar" id="devoteeGreetingBar">
+      <span class="greeting-sparkle">🌸</span>
+      <span class="greeting-text">Sai Ram, <strong>
+          <%= currentSinger.name %>
+        </strong></span>
+    </div>
+    <% } else if (typeof currentAdmin !=='undefined' && currentAdmin) { %>
+      <div class="devotee-greeting-bar" id="devoteeGreetingBar">
+        <span class="greeting-sparkle">👑</span>
+        <span class="greeting-text">Sai Ram, <strong>
+            <%= currentAdmin.display_name || currentAdmin.displayName || 'Admin' %>
+          </strong></span>
+      </div>
+      <% } else { %>
+        <div class="devotee-greeting-bar" id="devoteeGreetingBar" style="display:none;">
+          <span class="greeting-sparkle" id="greetingSparkle">🌸</span>
+          <span class="greeting-text" id="devoteeGreetingText"></span>
+        </div>
+        <script>
+          (function () {
+            try {
+              var bar = document.getElementById('devoteeGreetingBar');
+              var txt = document.getElementById('devoteeGreetingText');
+              var sprk = document.getElementById('greetingSparkle');
+              var sName = localStorage.getItem('bp_singer_name');
+              var aName = localStorage.getItem('bp_admin_name');
+              var isAdmin = localStorage.getItem('bp_is_admin') === 'true';
+              var name = sName || aName;
+              if (bar && txt && name) {
+                if (isAdmin && sprk) sprk.textContent = '👑';
+                txt.innerHTML = 'Sai Ram, <strong>' + name + '</strong>';
+                bar.style.display = 'inline-flex';
+              }
+            } catch (_) { }
+          })();
+        </script>
+        <% } %>
+
+          <!-- Upcoming Sessions Widget -->
+          <% const sessionList = (typeof upcomingSessions !== 'undefined' && Array.isArray(upcomingSessions) && upcomingSessions.length > 0) 
+               ? upcomingSessions 
+               : (typeof upcomingSession !== 'undefined' && upcomingSession ? [upcomingSession] : []); %>
+
+          <% if (sessionList.length > 0) { %>
+            <div class="upcoming-sessions-container">
+              <div class="session-section-header">
+                <div class="section-title-row" style="margin-bottom:0;">
+                  <h3 class="app-section-title">
+                    <span>✨</span>
+                    <span><%= sessionList.length > 1 ? 'Upcoming Sessions (' + sessionList.length + ')' : 'Upcoming Session' %></span>
+                  </h3>
+                </div>
+                <% if (sessionList.length > 1) { %>
+                  <span class="multi-sessions-note">Available for submissions & plan</span>
+                <% } %>
+              </div>
+
+              <div class="upcoming-sessions-grid <%= sessionList.length > 1 ? 'multi-sessions-layout' : 'single-session-layout' %>">
+                <% sessionList.forEach(function(s) { %>
+                  <div class="session-live-card <%= s.isLiveNow ? 'session-card-live' : '' %>">
+                    <div class="session-live-header">
+                      <div class="session-status-badge <%= s.isLiveNow ? 'badge-live' : (s.isOpen ? 'badge-open' : 'badge-soon') %>">
+                        <span class="session-pulse-dot"></span>
+                        <span>
+                          <% if (s.isLiveNow) { %>
+                            🔴 Live Plan Active
+                          <% } else if (s.isOpen) { %>
+                            Submissions Open
+                          <% } else if (s.opensAt8pmToday) { %>
+                            Opens 8:00 PM Today
+                          <% } else { %>
+                            Submissions Closed
+                          <% } %>
+                        </span>
+                      </div>
+                      <div class="session-date-pill">
+                        <span>📅</span>
+                        <%= s.formattedDate %>
+                      </div>
+                    </div>
+
+                    <div class="session-live-body">
+                      <div class="session-live-info">
+                        <div class="session-title-wrap">
+                          <h3 class="session-live-title"><%= s.label %></h3>
+                          <% if (s.tag) { %>
+                            <span class="session-type-pill"><%= s.tag %></span>
+                          <% } %>
+                        </div>
+                        <p class="session-live-subtitle">
+                          <% if (s.isLiveNow) { %>
+                            Bhajan sequence finalized. Follow live schedule during the session (7:30 PM - 8:30 PM).
+                          <% } else if (s.opensAt8pmToday) { %>
+                            Submissions for this session will open today at <strong>8:00 PM</strong>.
+                          <% } else { %>
+                            <strong class="count-highlight"><%= s.submissionCount %></strong> bhajan<%= s.submissionCount === 1 ? '' : 's' %> registered for this session.
+                          <% } %>
+                        </p>
+                      </div>
+                      <div class="session-live-actions">
+                        <% if (!s.isClosedForSubmissions && s.isOpen) { %>
+                          <a href="/submit-form?session_date=<%= s.date %>" class="btn-live primary-live-btn" data-haptic="light">
+                            <span>🎤</span> Mark Your Bhajan
+                          </a>
+                        <% } %>
+                        <a href="/plan-view?session_date=<%= s.date %>" class="btn-live <%= (!s.isClosedForSubmissions && s.isOpen) ? 'secondary-live-btn' : 'primary-live-btn' %>" data-haptic="light">
+                          <span>📊</span> View Live Plan
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                <% }); %>
+              </div>
+            </div>
+          <% } %>
+
+          <!-- Bulletin / Latest Updates Section -->
+          <% if (typeof bulletins !== 'undefined' && bulletins && bulletins.length > 0) { %>
+            <div class="bulletin-section app-bulletin-section">
+              <div class="bulletin-section-header">
+                <div class="section-title-row" style="margin-bottom:0;">
+                  <h3 class="app-section-title">
+                    <span>📢</span>
+                    <span>Announcements & Updates</span>
+                  </h3>
+                </div>
+                <a href="/bulletins<%= (typeof _embed !== 'undefined' && _embed) ? '?_embed=1' : '' %>" class="bulletin-view-all-pill" data-haptic="light">
+                  View All (<%= bulletins.length %>) →
+                </a>
+              </div>
+
+              <div class="app-bulletin-grid">
+                <% bulletins.forEach(function(b) { %>
+                  <% 
+                    const catInfo = (typeof CATEGORY_INFO !== 'undefined' && CATEGORY_INFO[b.category]) 
+                      ? CATEGORY_INFO[b.category] 
+                      : { label: 'Update', icon: '📢', color: '#4dabf7' };
+                    const isNew = b.published_at && (Date.now() - new Date(b.published_at).getTime()) < 5 * 24 * 60 * 60 * 1000;
+                    const previewText = b.content ? b.content.replace(/<[^>]*>?/gm, '').trim().substring(0, 95) : '';
+                  %>
+                  <a href="/bulletins/<%= b.id %><%= (typeof _embed !== 'undefined' && _embed) ? '?_embed=1' : '' %>" class="app-bulletin-card" data-cat="<%= b.category %>" data-haptic="light">
+                    <div class="app-bulletin-card-top">
+                      <div class="app-bulletin-badges">
+                        <span class="app-bulletin-chip" style="--chip-color: <%= catInfo.color %>;">
+                          <span><%= catInfo.icon %></span>
+                          <span><%= catInfo.label %></span>
+                        </span>
+                        <% if (b.is_pinned) { %>
+                          <span class="app-bulletin-pinned-badge">📌 Pinned</span>
+                        <% } %>
+                        <% if (isNew) { %>
+                          <span class="app-bulletin-new-badge">✨ NEW</span>
+                        <% } %>
+                      </div>
+                      <div class="app-bulletin-date">
+                        <% if (b.published_at) { %>
+                          <span>🗓️</span>
+                          <span><%= new Date(b.published_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) %></span>
+                        <% } %>
+                      </div>
+                    </div>
+
+                    <h4 class="app-bulletin-title"><%= b.title %></h4>
+                    
+                    <% if (previewText) { %>
+                      <p class="app-bulletin-excerpt"><%= previewText %>...</p>
+                    <% } %>
+
+                    <div class="app-bulletin-footer">
+                      <span class="app-bulletin-link-text">Read announcement</span>
+                      <span class="app-bulletin-arrow">→</span>
+                    </div>
+                  </a>
+                <% }); %>
+              </div>
+            </div>
+          <% } %>
+
+                  <!-- Sai Bhajan Wisdom & Singer's Code of Conduct -->
+                  <div class="sai-quote-card app-devotional-card">
+                    <div class="devotional-card-header">
+                      <span class="devotional-om-badge">ॐ</span>
+                      <h3 class="quote-header" style="margin: 0;">The Spirit of Bhajan</h3>
+                    </div>
+
+                    <p class="quote-text-para"><strong>BHARAT:</strong> The heart of singing lies in the union of
+                      <em>Bha</em> (Bhava/Feeling), <em>Ra</em> (Raga/Melody), and <em>Ta</em> (Taala/Rhythm). Remember:
+                      <em>"A tune without feeling is an infliction."</em>
+                    </p>
+                    <p class="quote-text-para"><strong>Unity in Unison:</strong> We strive to merge our individual
+                      voices into a single wave of sacred vibration. One voice, one beat—oneness with Bhagawan.</p>
+                    <p class="quote-text-para"><strong>Global Purification:</strong> Sacred sound waves act as spiritual
+                      "antibiotics," destroying negative thoughts in the air and purifying the environment for all
+                      beings.</p>
+
+                    <div class="conduct-section-divider"></div>
+
+                    <h3 class="quote-header conduct-header">📋 Singer's Code of Conduct</h3>
+                    <div class="conduct-list">
+                      <div class="conduct-item conduct-item--saffron">
+                        <strong class="conduct-label">⏳ Punctuality</strong>
+                        <p class="conduct-body">Singers must be seated and ready before Veda Recitation concludes.</p>
+                      </div>
+                      <div class="conduct-item conduct-item--sky">
+                        <strong class="conduct-label">🎹 Seating</strong>
+                        <p class="conduct-body">All instrumentalists sit together to ensure perfect synchronization.</p>
+                      </div>
+                      <div class="conduct-item conduct-item--sage">
+                        <strong class="conduct-label">🎵 The Format</strong>
+                        <ol class="conduct-format-list">
+                          <li>1st Speed: Sing each line twice.</li>
+                          <li>2nd Speed: Sing lines once; repeat the last line twice.</li>
+                          <li>3rd Speed: (If applicable) Sing with increased tempo.</li>
+                        </ol>
+                      </div>
+                      <div class="conduct-item conduct-item--maroon">
+                        <strong class="conduct-label">🔉 Pitch (Sruti)</strong>
+                        <p class="conduct-body">Select a pitch comfortable for your range to preserve sweetness.</p>
+                      </div>
+                      <div class="conduct-item conduct-item--gold">
+                        <strong class="conduct-label">👏 Hand Claps</strong>
+                        <p class="conduct-body">Clap in rhythm to dispel negativity and recharge divine energy.</p>
+                      </div>
+                      <div class="conduct-item conduct-item--clay">
+                        <strong class="conduct-label">🔕 Silence</strong>
+                        <p class="conduct-body">Mobile phones on Silent Mode to maintain sanctuary sanctity.</p>
+                      </div>
+                    </div>
+                    <div class="conduct-footer">— Bhagwan Sri Sathya Sai Baba</div>
+                  </div>
+
+                  <!-- Samiti Archive & Coordinator Portal (Positioned below info cards as requested) -->
+                  <div class="app-launcher-section home-admin-records-section">
+                    <div class="section-title-row">
+                      <h3 class="app-section-title">🏛️ Archive & Administration</h3>
+                    </div>
+
+                    <div class="app-launcher-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+                      <!-- 1. Bhajan Archives -->
+                      <a href="/database<%= (typeof _embed !== 'undefined' && _embed) ? '?_embed=1' : '' %>" class="launcher-card card-history" data-haptic="light">
+                        <div class="launcher-icon-wrap">
+                          <span class="launcher-icon">🏛️</span>
+                        </div>
+                        <div class="launcher-info">
+                          <div class="launcher-header-row">
+                            <h4 class="launcher-title">Bhajan Archives</h4>
+                            <span class="launcher-arrow">→</span>
+                          </div>
+                          <p class="launcher-desc">Search archived Gandhinagar bhajan schedules, sequences & past records</p>
+                        </div>
+                      </a>
+
+                      <!-- 2. Control Tower / Administration -->
+                      <% if (typeof currentAdmin !=='undefined' && currentAdmin) { %>
+                        <a href="/admin"
+                          onclick="if(window.top && window.top.switchTab){ window.top.switchTab('admin'); return false; }"
+                          class="launcher-card card-admin">
+                          <div class="launcher-badge badge-admin-active">Active</div>
+                          <% } else { %>
+                            <a href="/admin-login" target="_top" class="launcher-card card-admin">
+                              <% } %>
+                                <div class="launcher-icon-wrap">
+                                  <span class="launcher-icon">🔐</span>
+                                </div>
+                                <div class="launcher-info">
+                                  <div class="launcher-header-row">
+                                    <h4 class="launcher-title">Control Tower</h4>
+                                    <span class="launcher-arrow">→</span>
+                                  </div>
+                                  <p class="launcher-desc">
+                                    <%= (typeof currentAdmin !=='undefined' && currentAdmin) ?
+                                      (currentAdmin.display_name || 'Admin Center' )
+                                      : 'Samiti Coordinator & Lead Portal' %>
+                                  </p>
+                                </div>
+                            </a>
+                    </div>
+                  </div>
+
+                  <!-- Shanti Footer Prayer -->
+                  <div class="shanti-footer">
+                    <div class="shanti-main">
+                      <div class="motto">"Love All • Serve All"</div>
+                      <div class="shanti-baba-quote">
+                        "Bhajan must spread good-will, love, ecstasy; it must cleanse the polluted atmosphere; it must
+                        invite all to share in the joy and peace" — Baba
+                      </div>
+                    </div>
+                    <div class="prayer">Samastha Loka Sukhino Bhavantu</div>
+                  </div>
+
+</div>
+
+<!-- Home Page Contact & Support Footer -->
+<%- include('partials/site-footer') %>

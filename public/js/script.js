@@ -390,17 +390,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
       // Reset fields
-      titleInput.value = '';
+      if (titleInput) {
+        titleInput.value = '';
+        titleInput.placeholder = `Loading ${selectedDeity} bhajans...`;
+        // Immediately focus search/type field on deity tap so keyboard & cursor appear
+        titleInput.focus();
+      }
       const masterIdInput = document.getElementById('selectedMasterBhajanId');
       if (masterIdInput) masterIdInput.value = '';
-      titleInput.placeholder = `Loading ${selectedDeity} bhajans...`;
-      document.getElementById('masterDataBadge').style.display = 'none';
+      const badge = document.getElementById('masterDataBadge');
+      if (badge) badge.style.display = 'none';
 
       // Pre-fill singer's preferred default pitch if configured
       const prefScaleEl = document.getElementById('singerPreferredScale');
       const scaleInputEl = document.getElementById('scaleInput');
       if (prefScaleEl && prefScaleEl.value && scaleInputEl && !scaleInputEl.value) {
         scaleInputEl.value = prefScaleEl.value;
+        scaleInputEl.dispatchEvent(new Event('input', { bubbles: true }));
       }
 
       // Fetch Master Bhajans
@@ -408,16 +414,70 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(response => response.json())
         .then(data => {
           currentMasterBhajans = data; // Save data globally for this session
-          titleInput.placeholder = `Search ${data.length} ${selectedDeity} bhajans...`;
+          if (titleInput) {
+            titleInput.placeholder = `Search ${data.length} ${selectedDeity} bhajans...`;
+            // Keep cursor in search field and display loaded suggestions
+            titleInput.focus();
+          }
           renderBhajanSuggestions();
         })
-        .catch(err => titleInput.placeholder = "Type bhajan name here...");
+        .catch(err => {
+          if (titleInput) titleInput.placeholder = "Type bhajan name here...";
+        });
 
       setTimeout(() => {
-        document.getElementById('bhajanDetails').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const details = document.getElementById('bhajanDetails');
+        if (details) details.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        if (titleInput) {
+          titleInput.focus();
+        }
       }, 100);
     });
   });
+
+  // Phase 4 Integration: Check for Songbook / Master Bank prefill query params
+  (function handleSongbookPrefill() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const prefillTitle = params.get('prefill_title');
+      const prefillDeity = params.get('prefill_deity');
+      const prefillScale = params.get('prefill_scale');
+      const prefillSpeed = params.get('prefill_speed');
+      const masterId = params.get('master_id');
+
+      if (prefillDeity) {
+        const deityCard = Array.from(document.querySelectorAll('.deity-card.available')).find(c => {
+          return c.dataset.deity && c.dataset.deity.toLowerCase() === prefillDeity.toLowerCase();
+        });
+        if (deityCard) {
+          deityCard.click();
+          if (prefillTitle) {
+            setTimeout(() => {
+              if (titleInput) {
+                titleInput.value = prefillTitle;
+                const masterIdInput = document.getElementById('selectedMasterBhajanId');
+                if (masterIdInput && masterId) masterIdInput.value = masterId;
+                if (prefillScale) {
+                  const scaleEl = document.getElementById('scaleInput');
+                  if (scaleEl) {
+                    scaleEl.value = prefillScale;
+                    scaleEl.dispatchEvent(new Event('input', { bubbles: true }));
+                  }
+                }
+                if (prefillSpeed) {
+                  const speedEl = document.getElementById('speedInput');
+                  if (speedEl) speedEl.value = prefillSpeed;
+                }
+                titleInput.dispatchEvent(new Event('input'));
+              }
+            }, 450);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Songbook prefill error:', e);
+    }
+  })();
 
   // MAGIC AUTO-FILL LOGIC: Listen for when they select a title
   let searchTimeout;
@@ -513,7 +573,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const genderSelect = document.getElementById('gender');
         const gender = genderSelect ? genderSelect.value : '';
         const scaleSelection = scaleForGender(matchedBhajan, gender);
-        document.getElementById('scaleInput').value = scaleSelection.scale;
+        const scaleInput = document.getElementById('scaleInput');
+        scaleInput.value = scaleSelection.scale;
+        scaleInput.dispatchEvent(new Event('input', { bubbles: true }));
         document.getElementById('speedInput').value = cleanValue(matchedBhajan.tempo);
 
         // 2. Auto-fill other inputs to send to database
@@ -606,7 +668,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const matchedBhajan = currentMasterBhajans.find(b => b.title === selectedTitle);
       if (matchedBhajan) {
         const gender = e.target.value;
-        document.getElementById('scaleInput').value = scaleForGender(matchedBhajan, gender).scale;
+        const scaleInput = document.getElementById('scaleInput');
+        scaleInput.value = scaleForGender(matchedBhajan, gender).scale;
+        scaleInput.dispatchEvent(new Event('input', { bubbles: true }));
       }
     }
     fetchScaleSuggestions();
@@ -690,14 +754,78 @@ document.addEventListener('DOMContentLoaded', function () {
     closeSelectBhajanBtn.addEventListener('click', closeSelectBhajanModal);
   }
 
+  // Mobile Bottom Sheet backdrop click dismissal
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', function (e) {
+      if (e.target === this) {
+        this.classList.remove('show');
+      }
+    });
+  });
+
+  // Touch drag-down to dismiss on mobile bottom sheets
+  document.querySelectorAll('.modal-content').forEach(content => {
+    let startY = 0;
+    let currentY = 0;
+    let isDragging = false;
+
+    content.addEventListener('touchstart', function (e) {
+      if (content.scrollTop === 0) {
+        startY = e.touches[0].clientY;
+        isDragging = true;
+      }
+    }, { passive: true });
+
+    content.addEventListener('touchmove', function (e) {
+      if (!isDragging) return;
+      currentY = e.touches[0].clientY;
+      const deltaY = currentY - startY;
+      if (deltaY > 0) {
+        content.style.transform = `translateY(${deltaY}px)`;
+        content.style.transition = 'none';
+      }
+    }, { passive: true });
+
+    content.addEventListener('touchend', function () {
+      if (!isDragging) return;
+      isDragging = false;
+      const deltaY = currentY - startY;
+      content.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+      if (deltaY > 80) {
+        const modal = content.closest('.modal');
+        if (modal) modal.classList.remove('show');
+        setTimeout(() => {
+          content.style.transform = '';
+        }, 300);
+      } else {
+        content.style.transform = '';
+      }
+    });
+  });
+
   window.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') {
-      const selectModal = document.getElementById('selectBhajanModal');
-      if (selectModal && selectModal.classList.contains('show')) {
-        closeSelectBhajanModal();
-      }
+      document.querySelectorAll('.modal.show').forEach(m => m.classList.remove('show'));
     }
   });
+
+  // Keep body.modal-open synchronized whenever any modal opens or closes
+  function updateBodyModalOpenState() {
+    const hasOpenModal = document.querySelector('.modal.show') !== null;
+    document.body.classList.toggle('modal-open', hasOpenModal);
+  }
+
+  try {
+    const modalObserver = new MutationObserver(function() {
+      updateBodyModalOpenState();
+    });
+    document.querySelectorAll('.modal').forEach(m => {
+      modalObserver.observe(m, { attributes: true, attributeFilter: ['class'] });
+    });
+    updateBodyModalOpenState();
+  } catch (err) {
+    console.error('Modal observer init error:', err);
+  }
 });
 
 let filterTableTimeout;
@@ -1183,6 +1311,7 @@ function submitCopySession() {
 (function () {
   let pageStartTime = Date.now();
   function sendHeartbeat() {
+    if (window.self !== window.top) return;
     const elapsedSeconds = Math.round((Date.now() - pageStartTime) / 1000);
     pageStartTime = Date.now();
     fetch('/api/activity/heartbeat', {
@@ -1200,7 +1329,7 @@ function submitCopySession() {
     }
   }
 
-  setInterval(sendHeartbeat, 8000);
+  setInterval(sendHeartbeat, 45000);
   window.addEventListener('pagehide', sendOfflineBeacon);
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'hidden') {
@@ -1452,36 +1581,48 @@ document.addEventListener('click', function (e) {
   const topFill = document.getElementById('top-nav-fill');
   if (!topBar || !topFill) return;
 
-  let progressTimer = null;
-  let currentWidth = 0;
-
-  function startTopNav() {
-    clearTimeout(progressTimer);
-    topBar.classList.add('active');
-    currentWidth = 18;
-    topFill.style.width = '18%';
-
-    function step() {
-      if (currentWidth < 85) {
-        currentWidth += Math.random() * 14 + 6;
-        if (currentWidth > 85) currentWidth = 85;
-        topFill.style.width = currentWidth + '%';
-        progressTimer = setTimeout(step, 160);
-      }
-    }
-    progressTimer = setTimeout(step, 100);
+  // Never run a duplicate progress bar inside an iframe tab
+  if (window.self !== window.top) {
+    topBar.style.display = 'none';
+    return;
   }
+
+  let progressTimer = null;
+  let safetyTimer = null;
+  let currentWidth = 0;
 
   function finishTopNav() {
     clearTimeout(progressTimer);
+    clearTimeout(safetyTimer);
     topFill.style.width = '100%';
     setTimeout(() => {
       topBar.classList.remove('active');
       setTimeout(() => {
         topFill.style.width = '0%';
         currentWidth = 0;
-      }, 250);
-    }, 200);
+      }, 200);
+    }, 150);
+  }
+
+  function startTopNav() {
+    clearTimeout(progressTimer);
+    clearTimeout(safetyTimer);
+    topBar.classList.add('active');
+    currentWidth = 20;
+    topFill.style.width = '20%';
+
+    function step() {
+      if (currentWidth < 85) {
+        currentWidth += Math.random() * 12 + 6;
+        if (currentWidth > 85) currentWidth = 85;
+        topFill.style.width = currentWidth + '%';
+        progressTimer = setTimeout(step, 140);
+      }
+    }
+    progressTimer = setTimeout(step, 80);
+
+    // Hard safety timeout: ALWAYS auto-finish within 2.5 seconds to prevent getting stuck
+    safetyTimer = setTimeout(finishTopNav, 2500);
   }
 
   // Intercept navigation links
@@ -1505,10 +1646,105 @@ document.addEventListener('click', function (e) {
     }
   });
 
-  // Complete on pageshow (including back/forward cache navigation)
-  window.addEventListener('pageshow', function() {
-    finishTopNav();
+  // Always finish on back/forward, page restore, DOM ready, or visibility changes
+  window.addEventListener('pageshow', finishTopNav);
+  window.addEventListener('popstate', finishTopNav);
+  window.addEventListener('pagehide', finishTopNav);
+  window.addEventListener('load', finishTopNav);
+  document.addEventListener('DOMContentLoaded', finishTopNav);
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') finishTopNav();
   });
 })();
 
+// ==========================================================================
+// App-First Mobile Bottom Navigation Controller
+// Active Route Highlighting & Notification Badge Sync
+// ==========================================================================
+(function() {
+  function updateActiveNavTab() {
+    const nav = document.getElementById('appBottomNav');
+    if (!nav) return;
 
+    const path = window.location.pathname.toLowerCase();
+    const tabs = nav.querySelectorAll('.nav-tab');
+
+    tabs.forEach(tab => {
+      const route = (tab.getAttribute('data-route') || '').toLowerCase();
+      let isActive = false;
+
+      if (route === '/' && (path === '/' || path === '')) {
+        isActive = true;
+      } else if (route !== '/') {
+        if (path === route || path.startsWith(route)) {
+          isActive = true;
+        } else if (route === '/my-hub' && (path.startsWith('/singer/hub') || path.startsWith('/my-hub'))) {
+          isActive = true;
+        }
+      }
+
+      tab.classList.toggle('active', isActive);
+      if (isActive) {
+        tab.setAttribute('aria-current', 'page');
+      } else {
+        tab.removeAttribute('aria-current');
+      }
+    });
+
+    // Sync notification dot for My Hub tab
+    try {
+      const hubDot = document.getElementById('hubBadgeDot');
+      if (hubDot) {
+        const storedTickets = JSON.parse(localStorage.getItem('bp_my_report_tickets') || '[]');
+        const devId = localStorage.getItem('bp_device_id') || '';
+        if (storedTickets.length > 0 || devId) {
+          const reportDots = ['homeReportDot', 'bankReportDot', 'unreadReplyDot'];
+          const hasUnread = reportDots.some(id => {
+            const el = document.getElementById(id);
+            return el && el.style.display !== 'none';
+          });
+          if (hasUnread) {
+            hubDot.style.display = 'block';
+          }
+        }
+      }
+    } catch(e) {}
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateActiveNavTab);
+  } else {
+    updateActiveNavTab();
+  }
+  window.addEventListener('pageshow', updateActiveNavTab);
+})();
+
+// Cross-tab link navigation inside native shell
+(function() {
+  document.addEventListener('click', function(e) {
+    var a = e.target.closest('a');
+    if (!a || !a.getAttribute('href')) return;
+    var href = a.getAttribute('href');
+    if (href.startsWith('#') || href.startsWith('javascript:')) return;
+
+    if (window.parent && window.parent !== window && typeof window.parent.switchTabFromChild === 'function') {
+      try {
+        var url = new URL(href, window.location.origin);
+        if (url.origin === window.location.origin) {
+          var tabMap = {
+            '/': 'home',
+            '/submit-form': 'singer',
+            '/master-bank': 'bank',
+            '/plan-view': 'plan',
+            '/my-hub': 'hub'
+          };
+          var tabKey = tabMap[url.pathname];
+          if (tabKey) {
+            e.preventDefault();
+            window.parent.switchTabFromChild(tabKey, url.pathname + url.search);
+          }
+        }
+      } catch (err) {}
+    }
+  });
+})();

@@ -5,9 +5,18 @@
       if (!b.deity) return;
       const parts = b.deity.split(',').map(s => s.trim()).filter(Boolean);
       parts.forEach(d => {
-        const key = d.toLowerCase();
+        let name = d;
+        let key = d.toLowerCase();
+        if (key === 'vittala' || key === 'vithhala' || key === 'vithala' || key === 'vitthala') {
+          name = 'Vitthala';
+          key = 'vitthala';
+        }
+        if (key === 'anjaneya' || key === 'aanjaneya' || key === 'hanuman' || key === 'maruti' || key === 'maruthi') {
+          name = 'Hanuman';
+          key = 'hanuman';
+        }
         if (!deityMap.has(key)) {
-          deityMap.set(key, { name: d, count: 0 });
+          deityMap.set(key, { name: name, count: 0 });
         }
         deityMap.get(key).count++;
       });
@@ -42,43 +51,47 @@
       if ((match[2] || '').toUpperCase() === 'M') index = (index + 5) % 12;
       return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"][index];
     }
+
+    function getDeityIcon(deity) {
+      if (!deity) return '🕉️';
+      const d = deity.toLowerCase();
+      if (d.includes('ganesh')) return '🐘';
+      if (d.includes('guru')) return '🙏';
+      if (d.includes('shiva')) return '🔱';
+      if (d.includes('devi') || d.includes('amman') || d.includes('durga') || d.includes('saraswati') || d.includes('lakshmi')) return '🌸';
+      if (d.includes('ram')) return '🏹';
+      if (d.includes('krishna')) return '🪈';
+      if (d.includes('sai') || d.includes('baba')) return '🕉️';
+      if (d.includes('subrahmanya') || d.includes('muruga') || d.includes('kartikeya')) return '🪶';
+      if (d.includes('hanuman') || d.includes('anjaneya') || d.includes('maruti')) return '🐒';
+      if (d.includes('sarva') || d.includes('all')) return '🪔';
+      return '✨';
+    }
   %>
 
   <div class="master-bank-page">
     <div class="container container-xl">
 
-      <!-- Navigation & Page Toolbar -->
-      <nav class="bank-top-nav" aria-label="Page navigation">
-        <a href="<%= isAdmin ? '/admin' : '/' %>" class="bank-nav-back">
-          <span class="nav-arrow">←</span> <%= isAdmin ? 'Admin Dashboard' : 'Home' %>
-        </a>
-        <div class="bank-top-actions">
-          <a href="/my-reports" class="bank-btn-action secondary-cta" title="View my submitted bhajan corrections and tickets" style="position: relative;">
-            <span>🚩</span> My Reports
-            <span id="bankReportDot" style="display: none; position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; background: #ef4444; border-radius: 50%; border: 2px solid white;"></span>
-          </a>
-          <a href="/submit-form" class="bank-btn-action primary-cta" title="Go to Thursday Bhajan Scheduler">
-            <span>📋</span> Schedule Bhajan
-          </a>
-          <% if (isAdmin) { %>
-            <a href="/admin/archived-master-bhajans" class="bank-btn-action secondary-cta" title="View deactivated master bhajans">
-              <span>📦</span> Archived Masters
-            </a>
-            <a href="/admin/export-master" class="bank-btn-action secondary-cta" title="Download Master Catalog JSON">
-              <span>⬇️</span> Download JSON
-            </a>
-          <% } %>
-        </div>
-      </nav>
-
       <!-- Unified Master Bhajan Bank Hero, Search & Filter Card -->
       <section class="bank-unified-card" aria-label="Master Bhajan Bank and Search Filters">
         <!-- Top Hero Section within Unified Card -->
         <div class="bank-card-hero">
-          <div class="bank-card-badge-row">
-            <span class="bank-hero-icon" aria-hidden="true">📖</span>
-            <span class="bank-hero-count-badge" id="heroCountBadge"><%= bhajans.length %> Active Bhajans</span>
-            <span class="bank-hero-subtag">Official Mandir Catalog</span>
+          <div class="bank-hero-header-row">
+            <div class="bank-card-badge-row">
+              <span class="bank-hero-icon" aria-hidden="true">📖</span>
+              <span class="bank-hero-count-badge" id="heroCountBadge"><%= bhajans.length %> Active Bhajans</span>
+              <span class="bank-hero-subtag">Official Mandir Catalog</span>
+            </div>
+            <% if (isAdmin) { %>
+              <div class="bank-top-actions" aria-label="Admin catalog tools">
+                <a href="/admin/archived-master-bhajans" class="bank-btn-action secondary-cta" title="View deactivated master bhajans">
+                  <span>📦</span> Archived Masters
+                </a>
+                <a href="/admin/export-master" class="bank-btn-action secondary-cta" title="Download Master Catalog JSON">
+                  <span>⬇️</span> Download JSON
+                </a>
+              </div>
+            <% } %>
           </div>
           <h1 class="bank-card-title">Master Bhajan Bank</h1>
           <p class="bank-card-subtitle">
@@ -103,6 +116,18 @@
             />
             <button type="button" id="clearBankSearchBtn" class="clear-search-btn" style="display:none;" onclick="clearBankSearch()" aria-label="Clear search">✕</button>
           </div>
+        </div>
+
+        <!-- App-First Swipeable Deity Filter Chips -->
+        <div class="bank-deity-chips-scroll" id="bankDeityChipsScroll" role="tablist" aria-label="Filter by Deity">
+          <button type="button" class="deity-chip active-chip" data-deity="" onclick="selectDeityChip(this, '')">
+            <span>✨ All</span> <span class="chip-count"><%= bhajans.length %></span>
+          </button>
+          <% uniqueDeities.forEach(d => { %>
+            <button type="button" class="deity-chip" data-deity="<%= d.name.toLowerCase() %>" onclick="selectDeityChip(this, '<%= d.name.toLowerCase() %>')">
+              <span><%= getDeityIcon(d.name) %> <%= d.name %></span> <span class="chip-count"><%= d.count %></span>
+            </button>
+          <% }) %>
         </div>
 
         <!-- Integrated Filter Controls & Result Count Row -->
@@ -229,29 +254,34 @@
       <div id="masterBankMobileCards" class="bank-mobile-cards-grid" aria-label="Mobile Bhajan Cards">
         <% if (initialBhajans.length > 0) { %>
           <% initialBhajans.forEach(b => { %>
-            <div class="bhajan-mobile-card" id="card-<%= b.id %>" data-deity="<%= (b.deity || '').toLowerCase() %>">
+            <div class="bhajan-mobile-card" id="card-<%= b.id %>" data-id="<%= b.id %>" data-deity="<%= (b.deity || '').toLowerCase() %>" onclick="window.openQuickLyrics(<%= b.id %>)">
               <div class="card-top-row">
                 <div class="card-pills-row">
-                  <% if (b.deity) { %><span class="deity-pill"><%= b.deity %></span><% } %>
-                  <% if (b.tempo) { %><span class="meta-tag tempo-tag"><%= b.tempo %></span><% } %>
+                  <% if (b.deity) { %><span class="deity-pill"><%= getDeityIcon(b.deity) %> <%= b.deity %></span><% } %>
+                  <% if (b.tempo) { %><span class="meta-tag tempo-tag">⏱️ <%= b.tempo %></span><% } %>
                 </div>
-                <% if (isAdmin) { %>
-                  <div class="card-admin-actions">
-                    <button class="btn-table-action btn-table-edit" onclick="editMasterRow(<%= b.id %>)">✏️ Edit</button>
-                    <button class="btn-table-action btn-table-delete" onclick="deleteMasterRow(<%= b.id %>)">❌</button>
-                  </div>
-                <% } %>
+                <div class="card-top-right-actions">
+                  <button type="button" class="btn-card-bookmark" data-id="<%= b.id %>" onclick="event.stopPropagation(); window.toggleSongbookBookmark(<%= b.id %>, this)" title="Add to My Songbook" aria-label="Bookmark">
+                    <span class="bookmark-star">☆</span>
+                  </button>
+                  <% if (isAdmin) { %>
+                    <div class="card-admin-actions" onclick="event.stopPropagation();">
+                      <button class="btn-table-action btn-table-edit" onclick="editMasterRow(<%= b.id %>)">✏️ Edit</button>
+                      <button class="btn-table-action btn-table-delete" onclick="deleteMasterRow(<%= b.id %>)">❌</button>
+                    </div>
+                  <% } %>
+                </div>
               </div>
               <h3 class="card-title">
-                <a href="/bhajan/<%= b.id %>"><%= b.title %></a>
+                <a href="/bhajan/<%= b.id %>" onclick="event.stopPropagation();"><%= b.title %></a>
               </h3>
               <div class="card-scales-grid">
                 <div class="scale-item">
-                  <span class="scale-lbl">Male Pitch:</span>
+                  <span class="scale-lbl">👤 Male:</span>
                   <span class="scale-val"><%= b.shruti || '-' %> <%= getWesternScale(b.shruti) !== '-' ? '(' + getWesternScale(b.shruti) + ')' : '' %></span>
                 </div>
                 <div class="scale-item">
-                  <span class="scale-lbl">Female Pitch:</span>
+                  <span class="scale-lbl">👩 Female:</span>
                   <span class="scale-val"><%= b.shruti_female || '-' %> <%= getWesternScale(b.shruti_female) !== '-' ? '(' + getWesternScale(b.shruti_female) + ')' : '' %></span>
                 </div>
               </div>
@@ -262,11 +292,12 @@
                 </div>
                 <div class="card-footer-actions">
                   <% if (b.sheet_filename) { %>
-                    <a href="/sheets/<%= encodeURIComponent(b.sheet_filename) %>" target="_blank" rel="noopener noreferrer" class="card-view-sheet-btn" title="Open music sheet (PDF)">📄 Sheet</a>
+                    <a href="/sheets/<%= encodeURIComponent(b.sheet_filename) %>" target="_blank" rel="noopener noreferrer" class="card-view-sheet-btn" title="Open music sheet (PDF)" onclick="event.stopPropagation();">📄 Sheet</a>
                   <% } %>
-                  <a href="/bhajan/<%= b.id %>" class="card-view-lyrics-btn">
-                    View Lyrics →
-                  </a>
+                  <button type="button" class="card-quick-lyrics-btn" onclick="event.stopPropagation(); window.openQuickLyrics(<%= b.id %>);">
+                    📖 Lyrics
+                  </button>
+                  <a href="/bhajan/<%= b.id %>" class="card-view-lyrics-btn" onclick="event.stopPropagation();" title="Full devotion details">↗</a>
                 </div>
               </div>
             </div>
@@ -286,6 +317,72 @@
     </div>
   </div>
 
+  <!-- App-First Quick Lyrics Bottom Sheet Modal -->
+  <div id="quickLyricsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="quickLyricsTitle">
+    <div class="modal-content quick-lyrics-sheet">
+      <div class="sheet-drag-handle"></div>
+      
+      <div class="modal-header quick-lyrics-header">
+        <div class="quick-lyrics-title-wrap">
+          <div class="quick-lyrics-badge-strip">
+            <span id="quickDeityBadge" class="hero-pill deity-pill">🕉️ Sai</span>
+            <span id="quickTempoBadge" class="hero-pill tempo-pill">⏱️ Fast</span>
+            <span id="quickRagaBadge" class="hero-pill raga-pill" style="display:none;">🎼 Raag</span>
+          </div>
+          <h2 id="quickLyricsTitle" class="quick-lyrics-title">Bhajan Title</h2>
+        </div>
+        <button type="button" class="close-btn" onclick="closeQuickLyrics()" aria-label="Close">&times;</button>
+      </div>
+
+      <!-- Accompaniment Scales -->
+      <div class="quick-scales-bar">
+        <div class="quick-scale-box">
+          <span class="scale-lbl">👤 Male Pitch:</span>
+          <strong id="quickScaleMale" class="scale-val">-</strong>
+        </div>
+        <div class="quick-scale-box">
+          <span class="scale-lbl">👩 Female Pitch:</span>
+          <strong id="quickScaleFemale" class="scale-val">-</strong>
+        </div>
+      </div>
+
+      <!-- Sacred Lyrics Reader Area -->
+      <div class="quick-lyrics-reader-box">
+        <div class="quick-lyrics-toolbar">
+          <span class="quick-reader-heading">📜 Sacred Lyrics</span>
+          <div class="quick-reader-controls">
+            <button type="button" class="font-btn" onclick="adjustQuickFontSize(-2)" title="Decrease font">A−</button>
+            <span id="quickFontSizeVal" class="quick-font-val">19px</span>
+            <button type="button" class="font-btn" onclick="adjustQuickFontSize(2)" title="Increase font">A+</button>
+            <button type="button" class="font-btn font-reset-btn" onclick="adjustQuickFontSize(0)" title="Reset font">↺</button>
+          </div>
+        </div>
+        <div id="quickLyricsText" class="quick-lyrics-content">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Modal Bottom Actions Row -->
+      <div class="modal-actions-row quick-modal-actions">
+        <button type="button" id="quickCopyBtn" class="button secondary btn-modal-edit" onclick="copyQuickLyrics()">
+          📋 Copy
+        </button>
+        <button type="button" id="quickBookmarkBtn" class="button secondary btn-modal-edit" onclick="toggleQuickBookmark()">
+          ⭐ Songbook
+        </button>
+        <a id="quickScheduleBtn" href="/submit-form" class="button button-confirm btn-modal-confirm" style="text-decoration:none;">
+          🎤 Schedule
+        </a>
+        <a id="quickFullPageBtn" href="#" class="button secondary btn-modal-edit" style="text-decoration:none;">
+          📖 Full Page ↗
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification for Quick Actions -->
+  <div id="bankToast" class="bank-toast" style="display:none;" role="status" aria-live="polite"></div>
+
   <!-- Raw Master Bhajans Data Cache for Instant Zero-Latency Filtering -->
   <script id="allMasterBhajansData" type="application/json">
     <%- JSON.stringify(bhajans.map(b => ({
@@ -300,7 +397,8 @@
       wf: getWesternScale(b.shruti_female),
       level: b.level || '',
       language: b.language || '',
-      sheet_filename: b.sheet_filename || ''
+      sheet_filename: b.sheet_filename || '',
+      lyrics: b.lyrics || ''
     }))) %>
   </script>
 
@@ -363,38 +461,64 @@
         '</tr>';
     }
 
+    function getDeityIconClient(deity) {
+      if (!deity) return '🕉️';
+      var d = deity.toLowerCase();
+      if (d.includes('ganesh')) return '🐘';
+      if (d.includes('guru')) return '🙏';
+      if (d.includes('shiva')) return '🔱';
+      if (d.includes('devi') || d.includes('amman') || d.includes('durga') || d.includes('saraswati') || d.includes('lakshmi')) return '🌸';
+      if (d.includes('ram')) return '🏹';
+      if (d.includes('krishna')) return '🪈';
+      if (d.includes('sai') || d.includes('baba')) return '🕉️';
+      if (d.includes('subrahmanya') || d.includes('muruga') || d.includes('kartikeya')) return '🪶';
+      if (d.includes('sarva') || d.includes('all')) return '🪔';
+      return '✨';
+    }
+
     function createCardHtml(b) {
       var isAdmin = window.IS_ADMIN_MASTER_BANK;
-      var deityPill = b.deity ? '<span class="deity-pill">' + escapeHtml(b.deity) + '</span>' : '';
-      var tempoPill = b.tempo ? '<span class="meta-tag tempo-tag">' + escapeHtml(b.tempo) + '</span>' : '';
+      var isBookmarked = window.BOOKMARKED_BHAJAN_IDS && window.BOOKMARKED_BHAJAN_IDS.has(Number(b.id));
+      var deityPill = b.deity ? '<span class="deity-pill">' + getDeityIconClient(b.deity) + ' ' + escapeHtml(b.deity) + '</span>' : '';
+      var tempoPill = b.tempo ? '<span class="meta-tag tempo-tag">⏱️ ' + escapeHtml(b.tempo) + '</span>' : '';
       var ragaTag = b.raga ? '<span class="meta-tag raga-tag">🎼 ' + escapeHtml(b.raga) + '</span>' : '';
       var langTag = b.language ? '<span class="meta-tag lang-tag">🗣️ ' + escapeHtml(b.language) + '</span>' : '';
-      var sheetBtn = b.sheet_filename ? '<a href="/sheets/' + encodeURIComponent(b.sheet_filename) + '" target="_blank" rel="noopener noreferrer" class="card-view-sheet-btn" title="Open music sheet (PDF)">📄 Sheet</a>' : '';
+      var sheetBtn = b.sheet_filename ? '<a href="/sheets/' + encodeURIComponent(b.sheet_filename) + '" target="_blank" rel="noopener noreferrer" class="card-view-sheet-btn" title="Open music sheet (PDF)" onclick="event.stopPropagation();">📄 Sheet</a>' : '';
 
       var scaleM = (b.shruti || '-') + (b.wm && b.wm !== '-' ? ' (' + b.wm + ')' : '');
       var scaleF = (b.shruti_female || '-') + (b.wf && b.wf !== '-' ? ' (' + b.wf + ')' : '');
 
+      var bookmarkBtn = '<button type="button" class="btn-card-bookmark ' + (isBookmarked ? 'active' : '') + '" data-id="' + b.id + '" onclick="event.stopPropagation(); window.toggleSongbookBookmark(' + b.id + ', this);" title="' + (isBookmarked ? 'Remove from Songbook' : 'Add to My Songbook') + '" aria-label="Bookmark">' +
+        '<span class="bookmark-star">' + (isBookmarked ? '★' : '☆') + '</span>' +
+        '</button>';
+
       var adminActions = '';
       if (isAdmin) {
-        adminActions = '<div class="card-admin-actions">' +
+        adminActions = '<div class="card-admin-actions" onclick="event.stopPropagation();">' +
           '<button class="btn-table-action btn-table-edit" onclick="editMasterRow(' + b.id + ')">✏️ Edit</button> ' +
           '<button class="btn-table-action btn-table-delete" onclick="deleteMasterRow(' + b.id + ')">❌</button>' +
           '</div>';
       }
 
-      return '<div class="bhajan-mobile-card" id="card-' + b.id + '" data-deity="' + escapeHtml((b.deity || '').toLowerCase()) + '">' +
+      return '<div class="bhajan-mobile-card" id="card-' + b.id + '" data-id="' + b.id + '" data-deity="' + escapeHtml((b.deity || '').toLowerCase()) + '" onclick="window.openQuickLyrics(' + b.id + ');">' +
         '<div class="card-top-row">' +
           '<div class="card-pills-row">' + deityPill + tempoPill + '</div>' +
-          adminActions +
+          '<div class="card-top-right-actions">' + bookmarkBtn + adminActions + '</div>' +
         '</div>' +
-        '<h3 class="card-title"><a href="/bhajan/' + b.id + '">' + escapeHtml(b.title) + '</a></h3>' +
+        '<h3 class="card-title"><a href="/bhajan/' + b.id + '" onclick="event.stopPropagation();">' + escapeHtml(b.title) + '</a></h3>' +
         '<div class="card-scales-grid">' +
-          '<div class="scale-item"><span class="scale-lbl">Male Pitch:</span> <span class="scale-val">' + escapeHtml(scaleM) + '</span></div>' +
-          '<div class="scale-item"><span class="scale-lbl">Female Pitch:</span> <span class="scale-val">' + escapeHtml(scaleF) + '</span></div>' +
+          '<div class="scale-item"><span class="scale-lbl">👤 Male:</span> <span class="scale-val">' + escapeHtml(scaleM) + '</span></div>' +
+          '<div class="scale-item"><span class="scale-lbl">👩 Female:</span> <span class="scale-val">' + escapeHtml(scaleF) + '</span></div>' +
         '</div>' +
         '<div class="card-footer-row">' +
           '<div class="card-meta-tags">' + ragaTag + langTag + '</div>' +
-          '<div class="card-footer-actions">' + sheetBtn + '<a href="/bhajan/' + b.id + '" class="card-view-lyrics-btn">View Lyrics →</a></div>' +
+          '<div class="card-footer-actions">' +
+            sheetBtn +
+            '<button type="button" class="card-quick-lyrics-btn" onclick="event.stopPropagation(); window.openQuickLyrics(' + b.id + ');">' +
+              '📖 Lyrics' +
+            '</button>' +
+            '<a href="/bhajan/' + b.id + '" class="card-view-lyrics-btn" onclick="event.stopPropagation();" title="Full devotion details">↗</a>' +
+          '</div>' +
         '</div>' +
       '</div>';
     }
@@ -461,7 +585,11 @@
       var deityList = (b.deity || '')
         .toLowerCase()
         .split(',')
-        .map(function(s) { return s.trim(); })
+        .map(function(s) {
+          var trimmed = s.trim();
+          if (trimmed === 'vittala' || trimmed === 'vithhala' || trimmed === 'vithala') return 'vitthala';
+          return trimmed;
+        })
         .filter(Boolean);
 
       // Clean individual ragas list for multi-raga bhajans
@@ -504,6 +632,19 @@
       window.filterMasterBank();
     };
 
+    window.selectDeityChip = function(btn, deityVal) {
+      document.querySelectorAll('.deity-chip').forEach(function(c) { c.classList.remove('active-chip'); });
+      if (btn) btn.classList.add('active-chip');
+      var deitySelect = document.getElementById('filterBankDeity');
+      if (deitySelect) {
+        deitySelect.value = deityVal;
+      }
+      window.filterMasterBank();
+      if (btn && btn.scrollIntoView) {
+        btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+    };
+
     window.resetAllBankFilters = function() {
       var titleIn = document.getElementById('filterBankTitle');
       var deityIn = document.getElementById('filterBankDeity');
@@ -515,6 +656,10 @@
       if (tempoIn) tempoIn.value = '';
       if (ragaIn) ragaIn.value = '';
       if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+
+      document.querySelectorAll('.deity-chip').forEach(function(c) { c.classList.remove('active-chip'); });
+      var allChip = document.querySelector('.deity-chip[data-deity=""]');
+      if (allChip) allChip.classList.add('active-chip');
 
       window.filterMasterBank();
     };
@@ -529,6 +674,9 @@
       }
 
       var deityFilter = (document.getElementById('filterBankDeity') ? document.getElementById('filterBankDeity').value : '').trim().toLowerCase();
+      document.querySelectorAll('.deity-chip').forEach(function(c) {
+        c.classList.toggle('active-chip', (c.getAttribute('data-deity') || '') === deityFilter);
+      });
       var tempoFilter = (document.getElementById('filterBankTempo') ? document.getElementById('filterBankTempo').value : '').trim().toLowerCase();
       var ragaFilter  = (document.getElementById('filterBankRaga') ? document.getElementById('filterBankRaga').value : '').trim().toLowerCase();
 
@@ -650,5 +798,221 @@
 
       updateLoadMoreUI();
     };
+
+    // ---------------------------------------------------------------
+    // PHASE 4: QUICK LYRICS BOTTOM SHEET & SONGBOOK BOOKMARKS
+    // ---------------------------------------------------------------
+    var activeQuickBhajan = null;
+    var currentQuickFontSize = 19;
+
+    window.openQuickLyrics = function(id) {
+      var b = allData.find(function(x) { return x.id === id || String(x.id) === String(id); });
+      if (!b) return;
+      activeQuickBhajan = b;
+
+      var modal = document.getElementById('quickLyricsModal');
+      var titleElem = document.getElementById('quickLyricsTitle');
+      var deityBadge = document.getElementById('quickDeityBadge');
+      var tempoBadge = document.getElementById('quickTempoBadge');
+      var ragaBadge = document.getElementById('quickRagaBadge');
+      var maleElem = document.getElementById('quickScaleMale');
+      var femaleElem = document.getElementById('quickScaleFemale');
+      var textElem = document.getElementById('quickLyricsText');
+      var scheduleBtn = document.getElementById('quickScheduleBtn');
+      var fullPageBtn = document.getElementById('quickFullPageBtn');
+      var bookmarkBtn = document.getElementById('quickBookmarkBtn');
+
+      if (titleElem) titleElem.textContent = b.title;
+      if (deityBadge) {
+        deityBadge.innerHTML = getDeityIconClient(b.deity) + ' ' + (b.deity || 'Devotional');
+      }
+      if (tempoBadge) {
+        if (b.tempo) {
+          tempoBadge.textContent = '⏱️ ' + b.tempo;
+          tempoBadge.style.display = 'inline-block';
+        } else {
+          tempoBadge.style.display = 'none';
+        }
+      }
+      if (ragaBadge) {
+        if (b.raga) {
+          ragaBadge.textContent = '🎼 ' + b.raga;
+          ragaBadge.style.display = 'inline-block';
+        } else {
+          ragaBadge.style.display = 'none';
+        }
+      }
+
+      var scaleM = (b.shruti || '-') + (b.wm && b.wm !== '-' ? ' (' + b.wm + ')' : '');
+      var scaleF = (b.shruti_female || '-') + (b.wf && b.wf !== '-' ? ' (' + b.wf + ')' : '');
+      if (maleElem) maleElem.textContent = scaleM;
+      if (femaleElem) femaleElem.textContent = scaleF;
+
+      if (textElem) {
+        if (b.lyrics && b.lyrics.trim().length > 0) {
+          var stanzas = b.lyrics.trim().split(/\r?\n\s*\r?\n/);
+          textElem.innerHTML = stanzas.map(function(st) {
+            return '<div class="quick-lyrics-stanza">' + escapeHtml(st).replace(/\n/g, '<br/>') + '</div>';
+          }).join('');
+        } else {
+          textElem.innerHTML = '<div class="empty-lyrics-prompt">' +
+            '<p>🌸 Lyrics are being added to our sacred master bank.</p>' +
+            '<a href="/bhajan/' + b.id + '" class="button secondary" style="display:inline-block; font-size:12px; margin-top:8px;">Open Full Page to Contribute</a>' +
+            '</div>';
+        }
+      }
+
+      if (scheduleBtn) {
+        scheduleBtn.href = '/submit-form?prefill_title=' + encodeURIComponent(b.title) +
+          '&prefill_deity=' + encodeURIComponent(b.deity || '') +
+          '&prefill_scale=' + encodeURIComponent(b.shruti || '') +
+          '&prefill_speed=' + encodeURIComponent(b.tempo || '') +
+          '&master_id=' + b.id;
+      }
+      if (fullPageBtn) {
+        fullPageBtn.href = '/bhajan/' + b.id;
+      }
+
+      var isBookmarked = window.BOOKMARKED_BHAJAN_IDS && window.BOOKMARKED_BHAJAN_IDS.has(Number(b.id));
+      if (bookmarkBtn) {
+        bookmarkBtn.innerHTML = isBookmarked ? '★ In Songbook' : '⭐ Songbook';
+        bookmarkBtn.classList.toggle('bookmarked', isBookmarked);
+      }
+
+      if (modal) modal.classList.add('show');
+    };
+
+    window.closeQuickLyrics = function() {
+      var modal = document.getElementById('quickLyricsModal');
+      if (modal) modal.classList.remove('show');
+    };
+
+    window.copyQuickLyrics = function() {
+      if (!activeQuickBhajan) return;
+      var text = activeQuickBhajan.title + '\nDeity: ' + (activeQuickBhajan.deity || 'Sai') + '\n\n' + (activeQuickBhajan.lyrics || '');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+          var btn = document.getElementById('quickCopyBtn');
+          if (btn) {
+            var orig = btn.innerHTML;
+            btn.innerHTML = '✅ Copied!';
+            setTimeout(function() { btn.innerHTML = orig; }, 1800);
+          }
+          window.showToast('📋 Bhajan lyrics copied to clipboard!');
+        });
+      }
+    };
+
+    window.adjustQuickFontSize = function(delta) {
+      if (delta === 0) {
+        currentQuickFontSize = 19;
+      } else {
+        currentQuickFontSize = Math.min(30, Math.max(14, currentQuickFontSize + delta));
+      }
+      var textElem = document.getElementById('quickLyricsText');
+      var valElem = document.getElementById('quickFontSizeVal');
+      if (textElem) textElem.style.fontSize = currentQuickFontSize + 'px';
+      if (valElem) valElem.textContent = currentQuickFontSize + 'px';
+    };
+
+    window.showToast = function(msg) {
+      var toast = document.getElementById('bankToast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      toast.classList.add('show');
+      setTimeout(function() {
+        toast.classList.remove('show');
+        setTimeout(function() { toast.style.display = 'none'; }, 250);
+      }, 2500);
+    };
+
+    // Singer Bookmarking integration
+    window.BOOKMARKED_BHAJAN_IDS = new Set();
+
+    function saveLocalBookmarks() {
+      try {
+        localStorage.setItem('bj_bookmarks', JSON.stringify(Array.from(window.BOOKMARKED_BHAJAN_IDS)));
+      } catch (e) {}
+    }
+
+    function updateBookmarkStarsOnPage(id, isBookmarked) {
+      document.querySelectorAll('.btn-card-bookmark[data-id="' + id + '"]').forEach(function(b) {
+        b.classList.toggle('active', isBookmarked);
+        var star = b.querySelector('.bookmark-star');
+        if (star) star.textContent = isBookmarked ? '★' : '☆';
+      });
+
+      if (activeQuickBhajan && String(activeQuickBhajan.id) === String(id)) {
+        var quickBmBtn = document.getElementById('quickBookmarkBtn');
+        if (quickBmBtn) {
+          quickBmBtn.innerHTML = isBookmarked ? '★ In Songbook' : '⭐ Songbook';
+          quickBmBtn.classList.toggle('bookmarked', isBookmarked);
+        }
+      }
+    }
+
+    window.toggleSongbookBookmark = async function(id, btnElem) {
+      var isNowBookmarked = !window.BOOKMARKED_BHAJAN_IDS.has(Number(id));
+      if (isNowBookmarked) {
+        window.BOOKMARKED_BHAJAN_IDS.add(Number(id));
+        window.showToast('⭐ Saved to your Personal Songbook!');
+      } else {
+        window.BOOKMARKED_BHAJAN_IDS.delete(Number(id));
+        window.showToast('Removed from Personal Songbook');
+      }
+      saveLocalBookmarks();
+      updateBookmarkStarsOnPage(id, isNowBookmarked);
+
+      // Try server sync
+      try {
+        await fetch('/api/singer/songbook/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ master_id: id })
+        });
+      } catch (err) {
+        // Fallback already saved locally
+      }
+    };
+
+    window.toggleQuickBookmark = function() {
+      if (!activeQuickBhajan) return;
+      window.toggleSongbookBookmark(activeQuickBhajan.id);
+    };
+
+    // Load initial bookmarks from localStorage & server
+    (async function loadUserBookmarks() {
+      try {
+        var local = localStorage.getItem('bj_bookmarks');
+        if (local) {
+          var parsed = JSON.parse(local);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(function(bid) { window.BOOKMARKED_BHAJAN_IDS.add(Number(bid)); });
+          }
+        }
+      } catch (e) {}
+
+      try {
+        var res = await fetch('/api/singer/songbook');
+        var data = await res.json();
+        if (data && data.bookmarks && Array.isArray(data.bookmarks)) {
+          data.bookmarks.forEach(function(bm) {
+            window.BOOKMARKED_BHAJAN_IDS.add(Number(bm.master_id));
+          });
+          saveLocalBookmarks();
+        }
+      } catch (e) {}
+
+      // Update initial rendered cards
+      document.querySelectorAll('.btn-card-bookmark').forEach(function(b) {
+        var bid = Number(b.getAttribute('data-id'));
+        if (window.BOOKMARKED_BHAJAN_IDS.has(bid)) {
+          b.classList.add('active');
+          var star = b.querySelector('.bookmark-star');
+          if (star) star.textContent = '★';
+        }
+      });
+    })();
   })();
   </script>

@@ -1,32 +1,320 @@
-<div class="container container-lg">
-    <div class="header">
-      <h1>👤 Singer Directory</h1>
-      <p>Devotee Participation Stats</p>
-    </div>
-    
-    <div style="margin-bottom: 20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-      <a href="/admin" class="button secondary">⬅️ Back to Admin</a>
-      <a href="/admin/singer-dictionary" class="button button-info">📖 Singer Dictionary (Add / Edit / Delete)</a>
+<div class="session-unified-page">
+
+  <!-- ═══ EXECUTIVE HEADER ═══ -->
+  <header class="session-unified-header">
+    <div class="session-header-top-row">
+      <div class="session-header-identity">
+        <div class="session-date-tile" style="background:linear-gradient(135deg, rgba(217, 138, 43, 0.2), rgba(125, 47, 69, 0.15)); border-color:var(--primary);">
+          <span style="font-size:22px;">👥</span>
+        </div>
+        <div class="session-title-block">
+          <h1>Singers Directory</h1>
+          <div class="session-tags-row">
+            <span class="session-tag session-tag-regular">Community Portal</span>
+            <span class="session-tag session-tag-festival"><%= metrics.total %> Total Singers</span>
+            <span class="session-tag session-tag-special"><%= metrics.active %> Active Performers</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="session-primary-actions" style="max-width:320px;">
+        <button type="button" class="cmd-btn cmd-btn-add" onclick="toggleAddSingerDrawer()" title="Add a new singer to directory">
+          <span class="cmd-btn-icon">➕</span>
+          <span class="cmd-btn-text">Add Singer</span>
+        </button>
+        <a href="/admin" class="sec-tool-btn" style="height:42px; min-height:42px; flex-direction:row; gap:6px;">
+          <span>🏠</span>
+          <span>Dashboard</span>
+        </a>
+      </div>
     </div>
 
-    <div class="table-container">
-      <table id="singerTable">
+    <!-- Executive Metrics Grid -->
+    <div class="session-metrics-deck" style="margin-top:14px;">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-card-icon">👥</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= metrics.total %></span>
+            <span class="metric-card-lbl">Total Singers</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-icon">👨</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= metrics.male %></span>
+            <span class="metric-card-lbl">Male (<%= metrics.total ? Math.round((metrics.male / metrics.total) * 100) : 0 %>%)</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-icon">👩</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= metrics.female %></span>
+            <span class="metric-card-lbl">Female (<%= metrics.total ? Math.round((metrics.female / metrics.total) * 100) : 0 %>%)</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-icon">🔒</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= metrics.pinProtected %></span>
+            <span class="metric-card-lbl">PIN Protected</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ ADD SINGER COLLAPSIBLE DRAWER ═══ -->
+  <div id="addSingerDrawer" class="session-unified-header" style="display:none; margin-bottom:14px; border:2px dashed var(--primary); background:var(--surface-raised);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="margin:0; font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px;">
+        <span>➕</span> Register New Devotee Singer
+      </h3>
+      <button type="button" onclick="toggleAddSingerDrawer()" class="sec-tool-btn" style="width:32px; min-height:32px; padding:0; border-radius:50%;">✕</button>
+    </div>
+    <form action="/api/admin/add-singer" method="POST" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)) auto; gap:10px; align-items:center;">
+      <input type="text" name="name" required class="workspace-search-input" placeholder="Singer Full Name (e.g. Ramesh S.)" style="max-width:none;">
+      <select name="gender" required class="workspace-search-input" style="max-width:none;">
+        <option value="">-- Select Gender --</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select>
+      <button type="submit" class="cmd-btn cmd-btn-share" style="height:40px; padding:0 20px;">
+        <span>💾</span> Save Singer
+      </button>
+    </form>
+  </div>
+
+  <!-- ═══ MAIN DIRECTORY WORKSPACE ═══ -->
+  <main class="session-unified-workspace view-mode-table">
+
+    <!-- Workspace Controls Bar -->
+    <div class="workspace-header-bar">
+      <div class="workspace-filter-box">
+        <input type="text" id="singerSearchInput" class="workspace-search-input" 
+               placeholder="🔍 Search singer name, gender, or status..." 
+               oninput="filterSingersTable(this.value)" 
+               aria-label="Filter singers">
+        
+        <span class="workspace-meta-text" id="singerCountDisplay">
+          Showing <%= singers.length %> Singers
+        </span>
+      </div>
+
+      <div class="workspace-view-controls">
+        <div class="view-switcher-pill" role="group" aria-label="Gender filter">
+          <button type="button" class="view-switch-btn active" id="btnGenderAll" onclick="setGenderFilter('all')">All</button>
+          <button type="button" class="view-switch-btn" id="btnGenderMale" onclick="setGenderFilter('male')">👨 Male</button>
+          <button type="button" class="view-switch-btn" id="btnGenderFemale" onclick="setGenderFilter('female')">👩 Female</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Singers Table -->
+    <div class="workspace-table-scroll">
+      <table class="sequencer-studio-table" id="mainSingersTable">
         <thead>
           <tr>
-            <th onclick="sortTable(0, 'singerTable')" style="cursor:pointer;">Singer Name ↕</th>
-            <th onclick="sortTable(1, 'singerTable')" style="cursor:pointer; text-align:center;">Total Bhajans Sung ↕</th>
-            <th onclick="sortTable(2, 'singerTable')" style="cursor:pointer;">Last Sung Date ↕</th>
+            <th width="50" style="text-align:center;">#</th>
+            <th width="30%">Singer Devotee</th>
+            <th width="14%">Gender</th>
+            <th width="18%" style="text-align:center;">Bhajans Sung</th>
+            <th width="20%">Last Participation</th>
+            <th width="12%">Portal PIN</th>
+            <th width="10%" style="text-align:right;">Actions</th>
           </tr>
         </thead>
-        <tbody>
-          <% singers.forEach(s => { %>
+        <tbody id="singersTableBody">
+          <% if (singers.length > 0) { %>
+            <% singers.forEach((s, idx) => { %>
+              <tr data-name="<%= (s.name || '').toLowerCase() %>" 
+                  data-gender="<%= (s.gender || 'unset').toLowerCase() %>"
+                  data-pin="<%= s.pin ? 'yes' : 'no' %>">
+                
+                <td style="text-align:center; color:var(--text-light); font-weight:700;">
+                  <%= idx + 1 %>
+                </td>
+
+                <td>
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg, rgba(217,138,43,0.15), rgba(125,47,69,0.15)); color:var(--primary); font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(217,138,43,0.25); flex-shrink:0;">
+                      <%= (s.name || 'S').charAt(0).toUpperCase() %>
+                    </div>
+                    <div>
+                      <strong style="font-size:14px; color:var(--text);"><%= s.name %></strong>
+                      <% if (s.is_unrecorded) { %>
+                        <br><small style="color:var(--danger); font-size:11px;">⚠️ Sung in past session, not in dictionary</small>
+                      <% } %>
+                    </div>
+                  </div>
+                </td>
+
+                <td>
+                  <% if (s.gender) { %>
+                    <span class="card-gender-chip" style="font-size:11.5px; font-weight:600; padding:3px 9px;">
+                      <%= s.gender === 'Male' ? '👨 Male' : (s.gender === 'Female' ? '👩 Female' : s.gender) %>
+                    </span>
+                  <% } else { %>
+                    <span style="color:var(--text-light); font-size:12px;">—</span>
+                  <% } %>
+                </td>
+
+                <td style="text-align:center;">
+                  <span class="table-order-badge" style="cursor:default; min-width:32px; height:28px; display:inline-flex;">
+                    <%= s.total_sung %>
+                  </span>
+                </td>
+
+                <td>
+                  <div style="line-height:1.2;">
+                    <span style="font-size:12.5px; font-weight:600; color:var(--text);"><%= s.formattedDate %></span>
+                    <% if (s.last_sung) { %>
+                      <br><small style="color:var(--text-light); font-size:11px;"><%= s.lastSungHuman %></small>
+                    <% } %>
+                  </div>
+                </td>
+
+                <td>
+                  <% if (s.pin) { %>
+                    <span class="diag-chip pass" style="font-size:11px; padding:2px 8px;">
+                      <span>🔒</span> Set
+                    </span>
+                    <% if (s.id) { %>
+                      <form action="/api/admin/reset-singer-pin/<%= s.id %>" method="POST" style="display:inline; margin-left:4px;" onsubmit="return confirm('Reset PIN for <%= s.name.replace(/'/g, "\\'") %>?');">
+                        <button type="submit" class="sec-tool-btn" style="display:inline-flex; min-height:auto; padding:2px 6px; font-size:10px; width:auto;" title="Reset PIN">🔄</button>
+                      </form>
+                    <% } %>
+                  <% } else { %>
+                    <span class="diag-chip warn" style="font-size:11px; padding:2px 8px;">
+                      <span>🔓</span> Not set
+                    </span>
+                  <% } %>
+                </td>
+
+                <td style="text-align:right;">
+                  <div style="display:inline-flex; gap:6px; justify-content:flex-end;">
+                    <% if (s.id) { %>
+                      <button type="button" class="card-touch-btn btn-edit" style="padding:4px 9px; font-size:11.5px;" onclick="openEditModal(<%= s.id %>, '<%= s.name.replace(/'/g, "\\'") %>', '<%= s.gender || '' %>')" title="Edit singer">
+                        ✏️
+                      </button>
+                      <form action="/api/admin/delete-singer/<%= s.id %>" method="POST" onsubmit="return confirm('Delete this singer from the directory?');" style="margin:0; display:inline;">
+                        <button type="submit" class="card-touch-btn btn-delete" style="padding:4px 9px; font-size:11.5px;" title="Delete singer">
+                          🗑️
+                        </button>
+                      </form>
+                    <% } else { %>
+                      <!-- Unrecorded: quick add button -->
+                      <form action="/api/admin/add-singer" method="POST" style="margin:0; display:inline;">
+                        <input type="hidden" name="name" value="<%= s.name %>">
+                        <button type="submit" class="card-touch-btn btn-edit" style="padding:4px 9px; font-size:11px;" title="Register into dictionary">
+                          ➕ Register
+                        </button>
+                      </form>
+                    <% } %>
+                  </div>
+                </td>
+
+              </tr>
+            <% }) %>
+          <% } else { %>
             <tr>
-              <td><strong><%= s.singer_name %></strong></td>
-              <td style="text-align:center;"><span class="badge-count"><%= s.total_sung %></span></td>
-              <td data-sort="<%= s.last_sung %>"><%= s.formattedDate %> <br><small style="color:var(--muted); font-size:11.5px;"><%= s.lastSungHuman %></small></td>
+              <td colspan="7" style="text-align:center; padding:36px; color:var(--text-light);">
+                No singers registered yet. Click "Add Singer" above to register a devotee!
+              </td>
             </tr>
-          <% }) %>
+          <% } %>
         </tbody>
       </table>
     </div>
+
+  </main>
+
+  <!-- ═══ EDIT SINGER MODAL ═══ -->
+  <div id="editSingerModal" class="session-modal-overlay">
+    <div class="session-modal-card">
+      <div class="session-modal-header">
+        <h3>✏️ Edit Singer Details</h3>
+        <button type="button" class="sec-tool-btn" style="width:30px; min-height:30px; padding:0; border-radius:50%;" onclick="closeEditModal()">✕</button>
+      </div>
+      <form id="editSingerForm" method="POST">
+        <div class="session-modal-body" style="display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; margin-bottom:5px; color:var(--text);">Full Name</label>
+            <input type="text" name="name" id="editModalName" required class="workspace-search-input" style="width:100%; max-width:none;">
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; font-weight:700; margin-bottom:5px; color:var(--text);">Gender</label>
+            <select name="gender" id="editModalGender" required class="workspace-search-input" style="width:100%; max-width:none;">
+              <option value="">-- Select Gender --</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="session-modal-footer">
+          <button type="button" class="sec-tool-btn" style="width:auto; min-height:36px; padding:0 14px;" onclick="closeEditModal()">Cancel</button>
+          <button type="submit" class="cmd-btn cmd-btn-share" style="height:36px; padding:0 18px;">Save Changes</button>
+        </div>
+      </form>
+    </div>
   </div>
+
+</div>
+
+<script>
+  let activeGender = 'all';
+
+  function toggleAddSingerDrawer() {
+    const d = document.getElementById('addSingerDrawer');
+    if (d) d.style.display = (d.style.display === 'none' || !d.style.display) ? 'block' : 'none';
+  }
+
+  function setGenderFilter(g) {
+    activeGender = g;
+    document.querySelectorAll('.view-switcher-pill .view-switch-btn').forEach(b => b.classList.remove('active'));
+    if (g === 'male') document.getElementById('btnGenderMale')?.classList.add('active');
+    else if (g === 'female') document.getElementById('btnGenderFemale')?.classList.add('active');
+    else document.getElementById('btnGenderAll')?.classList.add('active');
+    filterSingersTable(document.getElementById('singerSearchInput')?.value || '');
+  }
+
+  function filterSingersTable(query) {
+    const q = (query || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('#singersTableBody tr[data-name]');
+    let count = 0;
+
+    rows.forEach(r => {
+      const name = r.getAttribute('data-name') || '';
+      const gender = r.getAttribute('data-gender') || '';
+      const matchesSearch = !q || name.includes(q) || gender.includes(q);
+      const matchesGender = (activeGender === 'all') || (gender === activeGender);
+      const visible = matchesSearch && matchesGender;
+      r.style.display = visible ? '' : 'none';
+      if (visible) count++;
+    });
+
+    const display = document.getElementById('singerCountDisplay');
+    if (display) {
+      display.textContent = `Showing ${count} of ${rows.length} Singers`;
+    }
+  }
+
+  function openEditModal(id, name, gender) {
+    const modal = document.getElementById('editSingerModal');
+    const form = document.getElementById('editSingerForm');
+    const nameInput = document.getElementById('editModalName');
+    const genderSelect = document.getElementById('editModalGender');
+    if (form) form.action = `/api/admin/edit-singer/${id}`;
+    if (nameInput) nameInput.value = name;
+    if (genderSelect) genderSelect.value = gender;
+    if (modal) modal.classList.add('show');
+  }
+
+  function closeEditModal() {
+    const modal = document.getElementById('editSingerModal');
+    if (modal) modal.classList.remove('show');
+  }
+</script>

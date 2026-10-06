@@ -2,14 +2,16 @@
   <a href="/admin/bulletins" style="color:#e65100; text-decoration:none; font-size:14px;">← Back to Bulletins</a>
 </div>
 
-<h2 style="margin:0 0 20px;"><%= bulletin ? '✏️ Edit Bulletin' : '📝 New Bulletin' %></h2>
+<h2 style="margin:0 0 20px;">
+  <%= bulletin ? '✏️ Edit Bulletin' : '📝 New Bulletin' %>
+</h2>
 
-<form class="admin-bulletin-form" method="POST" action="<%= bulletin ? `/admin/bulletins/${bulletin.id}` : '/admin/bulletins' %>">
+<form class="admin-bulletin-form" method="POST"
+  action="<%= bulletin ? `/admin/bulletins/${bulletin.id}` : '/admin/bulletins' %>">
   <div class="form-group">
     <label for="bulletinTitle">Title *</label>
     <input type="text" id="bulletinTitle" name="title" required maxlength="200"
-      value="<%= bulletin ? bulletin.title : '' %>"
-      placeholder="Enter bulletin title">
+      value="<%= bulletin ? bulletin.title : '' %>" placeholder="Enter bulletin title">
   </div>
 
   <div class="form-group">
@@ -21,19 +23,24 @@
   <div class="form-group">
     <label for="bulletinCategory">Category</label>
     <select id="bulletinCategory" name="category">
-      <% const cats = ['announcement', 'update', 'event', 'bhajan_info']; %>
-      <% cats.forEach(function(c) { %>
-        <% const info = CATEGORY_INFO[c]; %>
-        <option value="<%= c %>" <%= (bulletin && bulletin.category === c) ? 'selected' : (!bulletin && c === 'announcement' ? 'selected' : '') %>><%= info.icon %> <%= info.label %></option>
-      <% }); %>
+      <% const cats=['announcement', 'update' , 'event' , 'bhajan_info' ]; %>
+        <% cats.forEach(function(c) { %>
+          <% const info=CATEGORY_INFO[c]; %>
+            <option value="<%= c %>" <%=(bulletin && bulletin.category===c) ? 'selected' : (!bulletin &&
+              c==='announcement' ? 'selected' : '' ) %>><%= info.icon %>
+                <%= info.label %>
+            </option>
+            <% }); %>
     </select>
   </div>
 
   <div class="form-group">
     <label for="bulletinStatus">Status</label>
     <select id="bulletinStatus" name="status">
-      <option value="draft" <%= (bulletin && bulletin.status === 'draft') ? 'selected' : (!bulletin ? 'selected' : '') %>>📝 Draft</option>
-      <option value="published" <%= (bulletin && bulletin.status === 'published') ? 'selected' : '' %>>✅ Published</option>
+      <option value="draft" <%=(bulletin && bulletin.status==='draft' ) ? 'selected' : (!bulletin ? 'selected' : '' ) %>
+        >📝 Draft</option>
+      <option value="published" <%=(bulletin && bulletin.status==='published' ) ? 'selected' : '' %>>✅ Published
+      </option>
     </select>
   </div>
 
@@ -45,22 +52,25 @@
 
   <div class="form-group">
     <div class="checkbox-group">
-      <input type="checkbox" id="bulletinPinned" name="is_pinned" <%= (bulletin && bulletin.is_pinned) ? 'checked' : '' %>>
+      <input type="checkbox" id="bulletinPinned" name="is_pinned" <%=(bulletin && bulletin.is_pinned) ? 'checked' : ''
+        %>>
       <label for="bulletinPinned" style="margin-bottom:0;">📌 Pin this bulletin</label>
     </div>
   </div>
 
-  <% if (!bulletin || bulletin.status !== 'published') { %>
-  <div class="form-group">
-    <div class="checkbox-group">
-      <input type="checkbox" id="bulletinNotify" name="send_notification">
-      <label for="bulletinNotify" style="margin-bottom:0;">🔔 Also send push notification when publishing</label>
+  <% if (!bulletin || bulletin.status !=='published' ) { %>
+    <div class="form-group">
+      <div class="checkbox-group">
+        <input type="checkbox" id="bulletinNotify" name="send_notification">
+        <label for="bulletinNotify" style="margin-bottom:0;">🔔 Also send push notification when publishing</label>
+      </div>
     </div>
-  </div>
-  <% } %>
+    <% } %>
 
-  <div class="form-actions">
-    <button type="submit" class="btn-save"><%= bulletin ? 'Update Bulletin' : 'Create Bulletin' %></button>
-    <a href="/admin/bulletins" class="btn-cancel">Cancel</a>
-  </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-save">
+          <%= bulletin ? 'Update Bulletin' : 'Create Bulletin' %>
+        </button>
+        <a href="/admin/bulletins" class="btn-cancel">Cancel</a>
+      </div>
 </form>

@@ -7,8 +7,8 @@ const { requireLogin, requireApiLogin, requireSuperAdmin, requireApiSuperAdmin }
 
 router.get("/admin", requireLogin, adminController.dashboard);
 router.get("/admin/missing-bhajans", requireLogin, adminController.showMissingBhajans);
-router.get("/admin/activity-logs", requireSuperAdmin, activityController.showActivityLogs);
-router.get("/api/admin/activity-feed", requireSuperAdmin, activityController.getActivityFeedJson);
+router.get("/admin/activity-logs", requireLogin, activityController.showActivityLogs);
+router.get("/api/admin/activity-feed", requireLogin, activityController.getActivityFeedJson);
 router.post("/admin/activity-logs/purge", requireSuperAdmin, activityController.purgeOldLogs);
 router.get("/admin/date/:date", requireLogin, adminController.sessionView);
 router.get("/admin/edit/:id", requireLogin, adminController.editSubmissionForm);

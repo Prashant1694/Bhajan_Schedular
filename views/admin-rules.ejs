@@ -1,36 +1,283 @@
-<div class="container container-lg">
-  <div class="header">
-    <h1><%= date === 'default' ? '⚙️ Default Deity Rules' : `⚙️ Rules for ${date}` %></h1>
-    <p><%= date === 'default' ? 'Set base limits for all future sessions' : 'Set custom limits for this specific session' %></p>
-  </div>
-  <div style="margin-bottom: 20px;">
-    <a href="<%= date === 'default' ? '/admin' : `/admin/date/${date}` %>" class="button secondary">⬅️ Go Back</a>
-  </div>
+<div class="session-unified-page">
+
+  <!-- ═══ EXECUTIVE HEADER ═══ -->
+  <header class="session-unified-header">
+    <div class="session-header-top-row">
+      <div class="session-header-identity">
+        <div class="session-date-tile" style="background:linear-gradient(135deg, rgba(217, 138, 43, 0.2), rgba(125, 47, 69, 0.15)); border-color:var(--primary);">
+          <span style="font-size:22px;">🎼</span>
+        </div>
+        <div class="session-title-block">
+          <h1><%= date === 'default' ? '⚙️ Default Deity Rules' : `⚙️ Rules for ${date}` %></h1>
+          <div class="session-tags-row">
+            <span class="session-tag <%= date === 'default' ? 'session-tag-festival' : 'session-tag-special' %>">
+              <%= date === 'default' ? '🌐 Global Mandir Defaults' : `📅 Session-Specific: ${date}` %>
+            </span>
+            <span class="session-tag session-tag-regular"><%= rules.length %> Deities Configured</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="session-primary-actions" style="max-width:320px;">
+        <button type="button" class="cmd-btn cmd-btn-share" onclick="saveDeityRules()" id="topSaveBtn">
+          <span>💾</span> Save Rules
+        </button>
+        <a href="<%= date === 'default' ? '/admin' : `/admin/date/${date}` %>" class="sec-tool-btn" style="height:42px; min-height:42px; flex-direction:row; gap:6px;">
+          <span>⬅️</span>
+          <span>Back</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Presets Ribbon -->
+    <div class="session-metrics-deck" style="margin-top:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="font-size:12.5px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:6px;">
+          <span>🎛️</span> Quick Presets:
+        </div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+          <button type="button" class="sec-tool-btn" style="width:auto; min-height:34px; padding:0 12px; flex-direction:row; gap:4px;" onclick="applyPreset('traditional')">
+            <span>🪔</span> Traditional Mandir
+          </button>
+          <button type="button" class="sec-tool-btn" style="width:auto; min-height:34px; padding:0 12px; flex-direction:row; gap:4px;" onclick="applyPreset('open')">
+            <span>🎉</span> Festival Open
+          </button>
+          <button type="button" class="sec-tool-btn" style="width:auto; min-height:34px; padding:0 12px; flex-direction:row; gap:4px;" onclick="applyPreset('strict')">
+            <span>⚖️</span> 1-Per-Deity Strict
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
   <input type="hidden" id="ruleDate" value="<%= date %>">
-  <div class="table-container">
-    <table id="rulesTable">
-      <thead>
-        <tr>
-          <th>Deity</th>
-          <th>Min Required</th>
-          <th>Max Allowed <br><small style="font-weight:normal">(0 = Blocked)</small></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% rules.forEach(r => { %>
+
+  <!-- ═══ MAIN WORKSPACE ═══ -->
+  <main class="session-unified-workspace view-mode-table">
+
+    <!-- Workspace Controls Bar -->
+    <div class="workspace-header-bar">
+      <div class="workspace-filter-box">
+        <input type="text" id="ruleSearchInput" class="workspace-search-input" 
+               placeholder="🔍 Search deity name..." 
+               oninput="filterRulesTable(this.value)" 
+               aria-label="Filter deities">
+        
+        <span class="workspace-meta-text" id="rulesCountDisplay">
+          <%= rules.length %> Deities in Tradition Flow
+        </span>
+      </div>
+    </div>
+
+    <!-- Deity Rules Table -->
+    <div class="workspace-table-scroll">
+      <table class="sequencer-studio-table" id="rulesTable">
+        <thead>
           <tr>
-            <td>
-              <strong><%= r.deity_name %></strong>
-              <input type="hidden" class="rule-deity" value="<%= r.deity_name %>">
-            </td>
-            <td><input type="number" class="rule-min filter-input" value="<%= r.min_required %>" min="0" max="9" style="width:80px; text-align:center;"></td>
-            <td><input type="number" class="rule-max filter-input" value="<%= r.max_allowed %>" min="0" max="99" style="width:80px; text-align:center;"></td>
+            <th width="60" style="text-align:center;">#</th>
+            <th width="35%">Deity</th>
+            <th width="25%" style="text-align:center;">Min Required</th>
+            <th width="25%" style="text-align:center;">Max Allowed</th>
+            <th width="15%" style="text-align:center;">Flow Status</th>
           </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-  <div style="margin-top:20px; text-align:right;">
-    <button class="button" onclick="saveDeityRules()" style="background:#28a745; border:none;">💾 Save Rules</button>
-  </div>
+        </thead>
+        <tbody id="rulesTableBody">
+          <% 
+            const DEITY_ICONS = {
+              ganesha: '🐘', guru: '🙏', mata: '🌸', devi: '🌸', sarvadharma: '🕉️',
+              sai: '🪔', shiva: '🔱', krishna: '🦚', rama: '🏹', narayana: '☀️',
+              vitthala: '🪘', vithala: '🪘', hanuman: '🐵', anjaneya: '🐵'
+            };
+          %>
+          <% rules.forEach((r, idx) => { %>
+            <% 
+              const key = (r.deity_name || '').toLowerCase().trim();
+              const icon = DEITY_ICONS[key] || '🕉️';
+            %>
+            <tr data-deity="<%= key %>" class="rule-row">
+              
+              <td style="text-align:center; color:var(--text-light); font-weight:700;">
+                <%= idx + 1 %>
+              </td>
+
+              <td>
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <span style="font-size:22px;"><%= icon %></span>
+                  <div>
+                    <strong style="font-size:14.5px; color:var(--text);"><%= r.deity_name %></strong>
+                    <input type="hidden" class="rule-deity" value="<%= r.deity_name %>">
+                  </div>
+                </div>
+              </td>
+
+              <td style="text-align:center;">
+                <div style="display:inline-flex; align-items:center; gap:6px;">
+                  <button type="button" class="sec-tool-btn" style="width:28px; min-height:28px; padding:0; font-size:14px; font-weight:800;" onclick="stepValue(this, -1, 0, 9)">−</button>
+                  <input type="number" class="rule-min workspace-search-input" value="<%= r.min_required %>" min="0" max="9" style="width:54px; text-align:center; padding:4px 6px; font-weight:700;" onchange="updateRuleStatus(this)">
+                  <button type="button" class="sec-tool-btn" style="width:28px; min-height:28px; padding:0; font-size:14px; font-weight:800;" onclick="stepValue(this, 1, 0, 9)">+</button>
+                </div>
+              </td>
+
+              <td style="text-align:center;">
+                <div style="display:inline-flex; align-items:center; gap:6px;">
+                  <button type="button" class="sec-tool-btn" style="width:28px; min-height:28px; padding:0; font-size:14px; font-weight:800;" onclick="stepValue(this, -1, 0, 99)">−</button>
+                  <input type="number" class="rule-max workspace-search-input" value="<%= r.max_allowed %>" min="0" max="99" style="width:54px; text-align:center; padding:4px 6px; font-weight:700;" onchange="updateRuleStatus(this)">
+                  <button type="button" class="sec-tool-btn" style="width:28px; min-height:28px; padding:0; font-size:14px; font-weight:800;" onclick="stepValue(this, 1, 0, 99)">+</button>
+                </div>
+              </td>
+
+              <td style="text-align:center;">
+                <span class="rule-status-chip diag-chip <%= r.max_allowed === 0 ? 'warn' : (r.min_required > 0 ? 'pass' : '') %>" style="font-size:11px;">
+                  <%= r.max_allowed === 0 ? '🚫 Blocked' : (r.min_required > 0 ? '✅ Guaranteed' : '✨ Flexible') %>
+                </span>
+              </td>
+
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- ═══ FLOATING SAVE BAR ═══ -->
+  <aside id="rulesSaveBar" class="sequencer-save-bar" role="region" aria-label="Rule changes bar">
+    <div class="save-bar-info">
+      <span>⚠️</span>
+      <span>Unsaved rule changes</span>
+    </div>
+    <div class="save-bar-actions">
+      <button type="button" class="save-bar-btn save-bar-btn-cancel" onclick="location.reload()">
+        <span>↩</span> Discard
+      </button>
+      <button type="button" class="save-bar-btn save-bar-btn-save" onclick="saveDeityRules()">
+        <span>💾</span> Save Deity Rules
+      </button>
+    </div>
+  </aside>
+
 </div>
+
+<script>
+  let isDirty = false;
+
+  function markDirty() {
+    isDirty = true;
+    const bar = document.getElementById('rulesSaveBar');
+    if (bar) bar.classList.add('show');
+  }
+
+  function stepValue(btn, delta, min, max) {
+    const parent = btn.parentElement;
+    const input = parent.querySelector('input');
+    if (!input) return;
+    let val = parseInt(input.value, 10) || 0;
+    val += delta;
+    if (val < min) val = min;
+    if (val > max) val = max;
+    input.value = val;
+    updateRuleStatus(input);
+    markDirty();
+  }
+
+  function updateRuleStatus(input) {
+    const row = input.closest('tr');
+    if (!row) return;
+    const minInput = row.querySelector('.rule-min');
+    const maxInput = row.querySelector('.rule-max');
+    const statusChip = row.querySelector('.rule-status-chip');
+    if (!minInput || !maxInput || !statusChip) return;
+
+    const minVal = parseInt(minInput.value, 10) || 0;
+    const maxVal = parseInt(maxInput.value, 10) || 0;
+
+    if (maxVal === 0) {
+      statusChip.className = 'rule-status-chip diag-chip warn';
+      statusChip.textContent = '🚫 Blocked';
+    } else if (minVal > 0) {
+      statusChip.className = 'rule-status-chip diag-chip pass';
+      statusChip.textContent = '✅ Guaranteed';
+    } else {
+      statusChip.className = 'rule-status-chip diag-chip';
+      statusChip.textContent = '✨ Flexible';
+    }
+    markDirty();
+  }
+
+  function applyPreset(preset) {
+    const rows = document.querySelectorAll('#rulesTableBody tr');
+    rows.forEach(r => {
+      const deity = (r.getAttribute('data-deity') || '').toLowerCase();
+      const minInput = r.querySelector('.rule-min');
+      const maxInput = r.querySelector('.rule-max');
+      if (!minInput || !maxInput) return;
+
+      if (preset === 'traditional') {
+        if (deity === 'ganesha') { minInput.value = 1; maxInput.value = 2; }
+        else if (deity === 'sai') { minInput.value = 1; maxInput.value = 3; }
+        else { minInput.value = 0; maxInput.value = 2; }
+      } else if (preset === 'open') {
+        minInput.value = 0;
+        maxInput.value = 99;
+      } else if (preset === 'strict') {
+        if (deity === 'ganesha') { minInput.value = 1; maxInput.value = 1; }
+        else { minInput.value = 0; maxInput.value = 1; }
+      }
+      updateRuleStatus(minInput);
+    });
+    markDirty();
+  }
+
+  function filterRulesTable(query) {
+    const q = (query || '').toLowerCase().trim();
+    const rows = document.querySelectorAll('#rulesTableBody tr');
+    let visible = 0;
+    rows.forEach(r => {
+      const d = r.getAttribute('data-deity') || '';
+      const match = !q || d.includes(q);
+      r.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    const d = document.getElementById('rulesCountDisplay');
+    if (d) d.textContent = `Showing ${visible} of ${rows.length} Deities`;
+  }
+
+  function saveDeityRules() {
+    const date = document.getElementById('ruleDate').value;
+    const rows = document.querySelectorAll('#rulesTableBody tr');
+    const rules = [];
+
+    rows.forEach(r => {
+      const deityName = r.querySelector('.rule-deity')?.value;
+      const minRequired = parseInt(r.querySelector('.rule-min')?.value, 10) || 0;
+      const maxAllowed = parseInt(r.querySelector('.rule-max')?.value, 10) || 0;
+      if (deityName) {
+        rules.push({ deity_name: deityName, min_required: minRequired, max_allowed: maxAllowed });
+      }
+    });
+
+    const topBtn = document.getElementById('topSaveBtn');
+    if (topBtn) topBtn.textContent = 'Saving...';
+
+    fetch('/api/admin/rules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date, rules })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert('✅ Deity rules saved successfully!');
+        location.reload();
+      } else {
+        alert('⚠️ Error saving rules: ' + (data.message || 'Server error'));
+        if (topBtn) topBtn.innerHTML = '<span>💾</span> Save Rules';
+      }
+    })
+    .catch(() => {
+      alert('Network error saving deity rules.');
+      if (topBtn) topBtn.innerHTML = '<span>💾</span> Save Rules';
+    });
+  }
+</script>

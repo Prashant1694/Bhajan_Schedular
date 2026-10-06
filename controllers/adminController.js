@@ -15,6 +15,9 @@ const {
   deityOrderKey,
   SPEED_ORDER,
   DEITY_ORDER,
+  getWesternScale,
+  getDeityIcon,
+  getNumberEmoji,
 } = require("../services/helpers");
 
 const { findSimilarBhajans, buildMasterIndex, matchWithIndex } = require("../services/fuzzyMatcher");
@@ -260,6 +263,9 @@ exports.sessionView = async (req, res) => {
     const meta = await SessionMeta.findByPk(date);
     const isLocked = meta ? meta.is_locked : false;
 
+    // Fetch session permission (festival, special, or regular)
+    const sessionPerm = await SessionPermission.findByPk(date);
+
     // Enrich submissions with MasterBhajan references (sheet_filename, id)
     const masterBhajans = await MasterBhajan.findAll({
       where: { is_active: true },
@@ -271,21 +277,124 @@ exports.sessionView = async (req, res) => {
       masterMap.set(normalizeTitle(mb.title), mb);
     });
 
-    const enrichedSubmissions = sorted.map(sub => {
+    const enrichedSubmissions = sorted.map((sub, idx) => {
       const plain = sub.get ? sub.get({ plain: true }) : { ...sub };
       const matched = masterMap.get(normalizeTitle(plain.title));
       if (matched) {
         plain.sheet_filename = matched.sheet_filename || null;
         plain.master_id = matched.id;
       }
+      plain.displayOrder = idx + 1;
+      plain.westernScale = getWesternScale(plain.scale);
+      plain.deityIcon = getDeityIcon(plain.deity);
       return plain;
     });
 
+    // Date formatting
+    let humanDate = date;
+    let dayOfWeek = "";
+    try {
+      const [y, m, d] = date.split("-").map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      dayOfWeek = dateObj.toLocaleDateString("en-US", { weekday: "long" });
+      humanDate = dateObj.toLocaleDateString("en-US", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      });
+    } catch (e) {}
+
+    // Analytics & Session Quality
+    const uniqueSingers = new Set(enrichedSubmissions.map(s => String(s.singer_name || '').trim().toLowerCase())).size;
+    const deityCounts = {};
+    const speedCounts = { slow: 0, medium: 0, fast: 0 };
+    
+    enrichedSubmissions.forEach(s => {
+      const d = s.deity || 'Unknown';
+      deityCounts[d] = (deityCounts[d] || 0) + 1;
+      const sp = (s.speed || 'medium').toLowerCase();
+      if (speedCounts[sp] !== undefined) speedCounts[sp]++;
+      else speedCounts.medium++;
+    });
+
+    const ganeshaOpening = enrichedSubmissions.length > 0 && String(enrichedSubmissions[0].deity || '').toLowerCase().includes('ganesh');
+    const saiIncluded = enrichedSubmissions.some(s => String(s.deity || '').toLowerCase().includes('sai'));
+    
+    const consecutiveRepeats = [];
+    for (let i = 0; i < enrichedSubmissions.length - 1; i++) {
+      if (String(enrichedSubmissions[i].deity || '').toLowerCase() === String(enrichedSubmissions[i + 1].deity || '').toLowerCase()) {
+        consecutiveRepeats.push({
+          index1: i + 1,
+          index2: i + 2,
+          deity: enrichedSubmissions[i].deity,
+          song1: enrichedSubmissions[i].title,
+          song2: enrichedSubmissions[i + 1].title
+        });
+      }
+    }
+
+    // WhatsApp Export Pre-generation
+    const protocol = req.protocol || 'http';
+    const host = req.get('host') || 'localhost:8000';
+    const livePlanUrl = `${protocol}://${host}/plan-view?session_date=${date}`;
+
+    const whatsappItems = enrichedSubmissions.map((item, idx) => {
+      const numEmoji = getNumberEmoji(idx + 1);
+      const icon = item.deityIcon || '🕉️';
+      let wa = `${numEmoji} *${item.deity}* ${icon}\n🎵 *${item.title}*\n👤 ${item.singer_name}`;
+      if (item.partner_name) wa += ` (with ${item.partner_name})`;
+      const scaleStr = item.scale ? `${item.scale}${item.westernScale && item.westernScale !== '-' ? ` (${item.westernScale})` : ''}` : 'N/A';
+      const speedStr = item.speed ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1) : 'Medium';
+      wa += `\n🎹 Pitch: ${scaleStr} | 🥁 Tempo: ${speedStr}`;
+      return wa;
+    });
+
+    let whatsappText = `🕉️ *SRI SATHYA SAI SEVA ORGANISATION*\n📅 *BHAJAN PROGRAM – ${humanDate}*\nTotal Bhajans: ${enrichedSubmissions.length}\n──────────────────────────────\n\n`;
+    whatsappText += whatsappItems.length > 0 ? whatsappItems.join('\n\n') + '\n\n' : 'No bhajans scheduled for this date yet.\n\n';
+    whatsappText += `──────────────────────────────\n🙏 *Sai Ram to all Accompanists & Devotees*\n🌐 *Live Plan:* ${livePlanUrl}`;
+    const whatsappEncoded = encodeURIComponent(whatsappText);
+
+    // Recent past sessions for quick copy
+    const recentSessions = await BhajanSubmission.findAll({
+      attributes: [
+        'session_date',
+        [Sequelize.fn('COUNT', Sequelize.col('id')), 'bhajan_count']
+      ],
+      where: {
+        session_date: { [Sequelize.Op.ne]: date }
+      },
+      group: ['session_date'],
+      order: [['session_date', 'DESC']],
+      limit: 12,
+      raw: true
+    });
+
+    const isUpcoming = date >= getLocalDateStr();
+
     res.render("admin-session-view", {
       date,
+      humanDate,
+      dayOfWeek,
+      sessionPerm,
       submissions: enrichedSubmissions,
       isLocked,
-      pageTitle: `Session - ${date}`,
+      isUpcoming,
+      totalBhajans: enrichedSubmissions.length,
+      uniqueSingers,
+      deityCounts,
+      speedCounts,
+      ganeshaOpening,
+      saiIncluded,
+      consecutiveRepeats,
+      whatsappText,
+      whatsappEncoded,
+      livePlanUrl,
+      recentSessions,
+      pageTitle: `Session Sequencer - ${date}`,
+      isAdminPage: true,
+      pageCSS: 'admin.css',
+      page: 'sessions'
     });
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
@@ -369,6 +478,9 @@ exports.showRules = async (req, res) => {
       rules,
       date,
       pageTitle: date === "default" ? "Default Deity Rules" : `Rules for ${date}`,
+      isAdminPage: true,
+      pageCSS: 'admin.css',
+      page: 'rules'
     });
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
@@ -594,6 +706,8 @@ exports.showMissingBhajans = async (req, res) => {
       missingCount: totalMissing,
       currentPage,
       totalPages,
+      hasPrev: currentPage > 1,
+      hasNext: currentPage < totalPages,
       pageSize: PAGE_SIZE,
       startIndex: totalMissing === 0 ? 0 : startIndex + 1,
       endIndex: Math.min(startIndex + pageTitles.length, totalMissing)

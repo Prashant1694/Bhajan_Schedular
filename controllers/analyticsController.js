@@ -92,7 +92,17 @@ exports.showDatabase = async (req, res) => {
       sessions.push({ date: dateStr, heading, bhajans });
     }
 
-    res.render('database', { sessions });
+    const initialSearch = (req.query.search || "").trim();
+    const initialDate = (req.query.date || "").trim();
+    const totalBhajans = rawSubmissions.length;
+
+    res.render('database', { 
+      sessions,
+      initialSearch,
+      initialDate,
+      totalBhajans,
+      pageTitle: 'Bhajan Archives'
+    });
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
   }
@@ -100,22 +110,124 @@ exports.showDatabase = async (req, res) => {
 
 exports.showAnalytics = async (req, res) => {
   try {
+    const DEITY_ICONS = {
+      ganesha: '🐘', guru: '🙏', mata: '🌸', devi: '🌸', sarvadharma: '🕉️',
+      sai: '🪔', shiva: '🔱', krishna: '🦚', rama: '🏹', narayana: '☀️',
+      vitthala: '🪘', vithala: '🪘', hanuman: '🐵', anjaneya: '🐵'
+    };
+
+    // 1. Top 15 Most Sung Bhajans
     const topBhajans = await BhajanSubmission.findAll({
       attributes: [
         "title",
-        [Sequelize.fn("COUNT", Sequelize.col("title")), "count"]
+        "deity",
+        [Sequelize.fn("COUNT", Sequelize.col("title")), "count"],
+        [Sequelize.fn("MAX", Sequelize.col("session_date")), "last_sung"]
       ],
-      group: ["title"],
-      order: [
-        [Sequelize.fn("COUNT", Sequelize.col("title")), "DESC"]
-      ],
+      group: ["title", "deity"],
+      order: [[Sequelize.fn("COUNT", Sequelize.col("title")), "DESC"]],
       limit: 15,
       raw: true
     });
 
-    res.render("analytics", { topBhajans });
+    // 2. High-level KPIs
+    const totalSung = await BhajanSubmission.count();
+    const uniqueSongsCount = await BhajanSubmission.count({
+      distinct: true,
+      col: 'title'
+    });
+    const totalSessions = await BhajanSubmission.count({
+      distinct: true,
+      col: 'session_date'
+    });
+    const uniqueSingers = await BhajanSubmission.count({
+      distinct: true,
+      col: 'singer_name'
+    });
+
+    // 3. Deity Breakdown
+    const rawDeities = await BhajanSubmission.findAll({
+      attributes: [
+        "deity",
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "count"]
+      ],
+      group: ["deity"],
+      order: [[Sequelize.fn("COUNT", Sequelize.col("id")), "DESC"]],
+      raw: true
+    });
+
+    const deityStats = rawDeities.map(d => {
+      const name = d.deity || 'Unknown';
+      const count = parseInt(d.count, 10) || 0;
+      const pct = totalSung > 0 ? Math.round((count / totalSung) * 100) : 0;
+      const icon = DEITY_ICONS[name.toLowerCase().trim()] || '🕉️';
+      return { name, count, pct, icon };
+    });
+
+    // 4. Tempo Breakdown
+    const rawSpeeds = await BhajanSubmission.findAll({
+      attributes: [
+        "speed",
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "count"]
+      ],
+      group: ["speed"],
+      raw: true
+    });
+
+    const tempoStats = {
+      slow: 0,
+      medium: 0,
+      fast: 0
+    };
+    rawSpeeds.forEach(s => {
+      const sp = (s.speed || '').toLowerCase().trim();
+      const count = parseInt(s.count, 10) || 0;
+      if (sp === 'slow') tempoStats.slow += count;
+      else if (sp === 'fast') tempoStats.fast += count;
+      else tempoStats.medium += count;
+    });
+
+    const slowPct = totalSung > 0 ? Math.round((tempoStats.slow / totalSung) * 100) : 0;
+    const medPct = totalSung > 0 ? Math.round((tempoStats.medium / totalSung) * 100) : 0;
+    const fastPct = totalSung > 0 ? Math.round((tempoStats.fast / totalSung) * 100) : 0;
+
+    // 5. Top 10 Most Active Singers
+    const topSingers = await BhajanSubmission.findAll({
+      attributes: [
+        "singer_name",
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "count"],
+        [Sequelize.fn("MAX", Sequelize.col("session_date")), "last_sung"]
+      ],
+      group: ["singer_name"],
+      order: [[Sequelize.fn("COUNT", Sequelize.col("id")), "DESC"]],
+      limit: 10,
+      raw: true
+    });
+
+    res.render("analytics", {
+      topBhajans,
+      kpis: {
+        totalSung,
+        uniqueSongsCount,
+        totalSessions,
+        uniqueSingers,
+        avgPerSession: totalSessions > 0 ? (totalSung / totalSessions).toFixed(1) : '0'
+      },
+      deityStats,
+      tempoStats: {
+        ...tempoStats,
+        slowPct,
+        medPct,
+        fastPct
+      },
+      topSingers,
+      pageTitle: "Mandir Bhajan Analytics",
+      isAdminPage: true,
+      pageCSS: "admin.css",
+      page: "analytics"
+    });
 
   } catch (error) {
-    res.status(500).send(error.message);
+    res.status(500).send(`<h1>Analytics Error</h1><p>${error.message}</p>`);
   }
 };

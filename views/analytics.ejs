@@ -1,37 +1,273 @@
-<div class="container container-lg">
-    <div class="header">
-      <h1>📈 Analytics</h1>
-      <p>Most Popular Bhajans</p>
-    </div>
-    
-    <div style="margin-bottom: 20px;">
-      <a href="/admin" class="button secondary">⬅️ Back to Admin</a>
+<div class="session-unified-page">
+
+  <!-- ═══ EXECUTIVE HEADER ═══ -->
+  <header class="session-unified-header">
+    <div class="session-header-top-row">
+      <div class="session-header-identity">
+        <div class="session-date-tile" style="background:linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(217, 138, 43, 0.15)); border-color:rgba(99, 102, 241, 0.4);">
+          <span style="font-size:22px;">📊</span>
+        </div>
+        <div class="session-title-block">
+          <h1>Mandir Bhajan Analytics</h1>
+          <div class="session-tags-row">
+            <span class="session-tag session-tag-festival"><%= kpis.totalSung %> Total Performances</span>
+            <span class="session-tag session-tag-special"><%= kpis.totalSessions %> Recorded Sessions</span>
+            <span class="session-tag session-tag-regular">Repertoire Intelligence</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Nav Buttons -->
+      <div class="session-primary-actions" style="max-width:320px;">
+        <a href="/admin/singers" class="sec-tool-btn" style="height:42px; min-height:42px; flex-direction:row; gap:6px;">
+          <span>👥</span>
+          <span>Singers</span>
+        </a>
+        <a href="/admin" class="sec-tool-btn" style="height:42px; min-height:42px; flex-direction:row; gap:6px;">
+          <span>🏠</span>
+          <span>Dashboard</span>
+        </a>
+      </div>
     </div>
 
-    <div class="card analytics-card">
-      <h3 style="margin-bottom:16px; display:flex; align-items:center; gap:8px;">
-        <span>🏆 Top 15 Most Sung Bhajans</span>
-      </h3>
-      
-      <div class="table-container">
-        <table class="analytics-table">
+    <!-- 5-Stat KPI Deck -->
+    <div class="session-metrics-deck" style="margin-top:14px;">
+      <div class="metrics-grid" style="grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));">
+        <div class="metric-card">
+          <div class="metric-card-icon">🎵</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= kpis.totalSung %></span>
+            <span class="metric-card-lbl">Bhajans Sung</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-icon">📚</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= kpis.uniqueSongsCount %></span>
+            <span class="metric-card-lbl">Unique Titles</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-icon">📅</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= kpis.totalSessions %></span>
+            <span class="metric-card-lbl">Sessions Held</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-icon">👥</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= kpis.uniqueSingers %></span>
+            <span class="metric-card-lbl">Active Singers</span>
+          </div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-icon">⚡</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= kpis.avgPerSession %></span>
+            <span class="metric-card-lbl">Avg / Session</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ VISUAL BREAKDOWNS ROW (Deities & Tempo) ═══ -->
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:14px; margin-bottom:14px;">
+    
+    <!-- Deity Distribution Chart -->
+    <div class="session-unified-header" style="margin-bottom:0; padding:16px 20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="margin:0; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px;">
+          <span>🕉️</span> Deity Flow Breakdown
+        </h3>
+        <span style="font-size:12px; color:var(--text-light);"><%= deityStats.length %> Deities</span>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <% deityStats.forEach(d => { %>
+          <div style="display:flex; flex-direction:column; gap:3px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:12.5px;">
+              <span style="display:flex; align-items:center; gap:6px; font-weight:600; color:var(--text);">
+                <span><%= d.icon %></span> <%= d.name %>
+              </span>
+              <span style="font-weight:700; color:var(--text-light);">
+                <%= d.count %> <small>(<%= d.pct %>%)</small>
+              </span>
+            </div>
+            <!-- Progress Bar -->
+            <div style="width:100%; height:7px; background:var(--surface-raised); border-radius:10px; overflow:hidden; border:1px solid var(--border-soft);">
+              <div style="width:<%= Math.max(d.pct, 4) %>%; height:100%; background:linear-gradient(90deg, #d97706, #f59e0b); border-radius:10px;"></div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+
+    <!-- Tempo & Rhythm Balance -->
+    <div class="session-unified-header" style="margin-bottom:0; padding:16px 20px; display:flex; flex-direction:column; justify-content:space-between;">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3 style="margin:0; font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px;">
+            <span>🥁</span> Tempo &amp; Rhythm Distribution
+          </h3>
+          <span style="font-size:12px; color:var(--text-light);">Energy Flow</span>
+        </div>
+
+        <!-- Multi-segment Horizontal Energy Bar -->
+        <div style="width:100%; height:16px; background:var(--surface-raised); border-radius:10px; overflow:hidden; display:flex; border:1px solid var(--border); margin-bottom:16px;">
+          <div style="width:<%= tempoStats.slowPct %>%; background:#059669;" title="Slow: <%= tempoStats.slow %> (<%= tempoStats.slowPct %>%)"></div>
+          <div style="width:<%= tempoStats.medPct %>%; background:#2563eb;" title="Medium: <%= tempoStats.medium %> (<%= tempoStats.medPct %>%)"></div>
+          <div style="width:<%= tempoStats.fastPct %>%; background:#d97706;" title="Fast: <%= tempoStats.fast %> (<%= tempoStats.fastPct %>%)"></div>
+        </div>
+
+        <!-- Legend & Stats Cards -->
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:8px;">
+          <div style="background:var(--surface-raised); border:1px solid rgba(5,150,105,0.25); border-radius:10px; padding:10px; text-align:center;">
+            <div style="font-size:18px;">🐢</div>
+            <strong style="color:#059669; font-size:16px; display:block; margin:2px 0;"><%= tempoStats.slow %></strong>
+            <span style="font-size:11px; color:var(--text-light); font-weight:600;">Slow (<%= tempoStats.slowPct %>%)</span>
+          </div>
+
+          <div style="background:var(--surface-raised); border:1px solid rgba(37,99,235,0.25); border-radius:10px; padding:10px; text-align:center;">
+            <div style="font-size:18px;">🎵</div>
+            <strong style="color:#2563eb; font-size:16px; display:block; margin:2px 0;"><%= tempoStats.medium %></strong>
+            <span style="font-size:11px; color:var(--text-light); font-weight:600;">Medium (<%= tempoStats.medPct %>%)</span>
+          </div>
+
+          <div style="background:var(--surface-raised); border:1px solid rgba(217,119,6,0.25); border-radius:10px; padding:10px; text-align:center;">
+            <div style="font-size:18px;">⚡</div>
+            <strong style="color:#d97706; font-size:16px; display:block; margin:2px 0;"><%= tempoStats.fast %></strong>
+            <span style="font-size:11px; color:var(--text-light); font-weight:600;">Fast (<%= tempoStats.fastPct %>%)</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; padding:10px 14px; background:var(--surface-raised); border-radius:10px; border:1px solid var(--border-soft); font-size:12px; color:var(--text-light);">
+        💡 A balanced Bhajan session maintains <strong>~10% Slow opening, ~75% Medium devotional flow, and ~15% Fast ecstatic bhajans</strong>.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ TWO-COLUMN POWER LEADERBOARDS ═══ -->
+  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:14px;">
+
+    <!-- Left: Top 15 Most Sung Bhajans -->
+    <section class="session-unified-workspace view-mode-table">
+      <div class="workspace-header-bar">
+        <h3 style="margin:0; font-size:14.5px; font-weight:700; display:flex; align-items:center; gap:8px;">
+          <span>🏆</span> Top 15 Most Sung Bhajans
+        </h3>
+        <span class="workspace-meta-text">All-Time Repertoire</span>
+      </div>
+
+      <div class="workspace-table-scroll">
+        <table class="sequencer-studio-table" style="min-width:auto;">
           <thead>
             <tr>
-              <th style="width:90px;">Rank</th>
+              <th width="45" style="text-align:center;">Rank</th>
               <th>Bhajan Title</th>
-              <th style="text-align:center; width:130px;">Times Sung</th>
+              <th>Deity</th>
+              <th width="80" style="text-align:center;">Times</th>
             </tr>
           </thead>
           <tbody>
             <% topBhajans.forEach((b, i) => { %>
               <tr>
-                <td><span class="rank-pill <%= i < 3 ? 'rank-top' : '' %>">#<%= i + 1 %></span></td>
-                <td><strong><%= b.title %></strong></td>
-                <td style="text-align:center;"><span class="badge-count"><%= b.count %></span></td>
+                <td style="text-align:center;">
+                  <% if (i === 0) { %>
+                    <span style="font-size:16px;" title="1st Place">🥇</span>
+                  <% } else if (i === 1) { %>
+                    <span style="font-size:16px;" title="2nd Place">🥈</span>
+                  <% } else if (i === 2) { %>
+                    <span style="font-size:16px;" title="3rd Place">🥉</span>
+                  <% } else { %>
+                    <span style="font-weight:800; color:var(--text-light); font-size:12px;">#<%= i + 1 %></span>
+                  <% } %>
+                </td>
+
+                <td>
+                  <strong style="color:var(--text); font-size:13.5px;"><%= b.title %></strong>
+                </td>
+
+                <td>
+                  <span class="card-deity-pill" style="font-size:11px; padding:2px 7px;">
+                    <%= b.deity || 'Devotional' %>
+                  </span>
+                </td>
+
+                <td style="text-align:center;">
+                  <span class="table-order-badge" style="cursor:default; min-width:30px; height:26px; display:inline-flex; font-size:12px;">
+                    <%= b.count %>
+                  </span>
+                </td>
               </tr>
             <% }) %>
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
+
+    <!-- Right: Top Active Singers Leaderboard -->
+    <section class="session-unified-workspace view-mode-table">
+      <div class="workspace-header-bar">
+        <h3 style="margin:0; font-size:14.5px; font-weight:700; display:flex; align-items:center; gap:8px;">
+          <span>🌟</span> Singer Participation Leaderboard
+        </h3>
+        <span class="workspace-meta-text">Top Devotees</span>
+      </div>
+
+      <div class="workspace-table-scroll">
+        <table class="sequencer-studio-table" style="min-width:auto;">
+          <thead>
+            <tr>
+              <th width="45" style="text-align:center;">Rank</th>
+              <th>Singer Devotee</th>
+              <th width="90" style="text-align:center;">Bhajans Sung</th>
+              <th width="110">Last Session</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% topSingers.forEach((s, i) => { %>
+              <tr>
+                <td style="text-align:center;">
+                  <% if (i === 0) { %>
+                    <span style="font-size:16px;">🥇</span>
+                  <% } else if (i === 1) { %>
+                    <span style="font-size:16px;">🥈</span>
+                  <% } else if (i === 2) { %>
+                    <span style="font-size:16px;">🥉</span>
+                  <% } else { %>
+                    <span style="font-weight:800; color:var(--text-light); font-size:12px;">#<%= i + 1 %></span>
+                  <% } %>
+                </td>
+
+                <td>
+                  <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg, rgba(217,138,43,0.15), rgba(125,47,69,0.15)); color:var(--primary); font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                      <%= (s.singer_name || 'S').charAt(0).toUpperCase() %>
+                    </div>
+                    <strong style="color:var(--text); font-size:13.5px;"><%= s.singer_name %></strong>
+                  </div>
+                </td>
+
+                <td style="text-align:center;">
+                  <span class="table-order-badge" style="cursor:default; min-width:30px; height:26px; display:inline-flex; font-size:12px; background:linear-gradient(135deg, rgba(16,185,129,0.15), transparent); color:#059669;">
+                    <%= s.count %>
+                  </span>
+                </td>
+
+                <td>
+                  <span style="font-size:12px; color:var(--text-light); font-weight:600;"><%= s.last_sung || '—' %></span>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </div>
+
+</div>

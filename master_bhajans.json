@@ -458,7 +458,7 @@
   {
     "id": 2,
     "title": "Anjana Nanda Veeram Ashoka Vana Sancharam",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "intermediate",
     "tempo": "fast",
     "language": "sanskrit / hindi",
@@ -471,7 +471,7 @@
   {
     "id": 6,
     "title": "Anjaneya Veera Hanumantha Shoora",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "simple",
     "tempo": "fast",
     "language": "sanskrit / hindi",
@@ -1396,7 +1396,7 @@
   {
     "id": 690,
     "title": "Bolo Narayana Jai Jai Vittala",
-    "deity": "Vittala, Krishna, Narayana",
+    "deity": "Vitthala, Krishna, Narayana",
     "level": "simple",
     "tempo": "medium fast",
     "language": "sanskrit / hindi",
@@ -3958,7 +3958,7 @@
   {
     "id": 820,
     "title": "Hari Naam Gaate Chalo Sai Naam Gaate Chalo",
-    "deity": "Vittala, Krishna",
+    "deity": "Vitthala, Krishna",
     "level": "intermediate",
     "tempo": "medium fast",
     "language": "sanskrit / hindi",
@@ -4444,7 +4444,7 @@
   {
     "id": 8,
     "title": "Hey Rama Dootha Hey Rama Bhaktha Hey Rama Daasa Namo Namo",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "intermediate",
     "tempo": "medium fast",
     "language": "sanskrit / hindi",
@@ -4925,7 +4925,7 @@
   {
     "id": 9,
     "title": "Jai Jai Hanuman Jaya Hanuman (2)",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "intermediate",
     "tempo": "medium fast",
     "language": "sanskrit / hindi",
@@ -5577,7 +5577,7 @@
   {
     "id": 14,
     "title": "Jaya Jaya Pavana Kumara",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "simple",
     "tempo": "fast",
     "language": "sanskrit / hindi",
@@ -5878,7 +5878,7 @@
   {
     "id": 3013,
     "title": "Jaya Pandari Natha Panduranga Pundalika Varada",
-    "deity": "Vittala",
+    "deity": "Vitthala",
     "level": "",
     "tempo": "6 Beat / Dadra",
     "language": "Sanskrit / Hindi",
@@ -6115,7 +6115,7 @@
   {
     "id": 895,
     "title": "Jaya Sri Radhey Jaya Nanda Nandana",
-    "deity": "Krishna, Vittala",
+    "deity": "Krishna, Vitthala",
     "level": "simple",
     "tempo": "medium",
     "language": "sanskrit / hindi",
@@ -6141,7 +6141,7 @@
   {
     "id": 16,
     "title": "Jaya Vijayee Bhava Jaya Vijayee Bhava",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "intermediate",
     "tempo": "medium fast",
     "language": "sanskrit / hindi",
@@ -7471,7 +7471,7 @@
   {
     "id": 988,
     "title": "Mandir Mey Aao Madhava",
-    "deity": "Krishna, Sai, Vittala",
+    "deity": "Krishna, Sai, Vitthala",
     "level": "intermediate",
     "tempo": "medium",
     "language": "sanskrit / hindi",
@@ -7562,7 +7562,7 @@
   {
     "id": 2966,
     "title": "Manuva Bolo Radhey Radhey Radhey Radhey Shyam Naam",
-    "deity": "Vittala",
+    "deity": "Vitthala",
     "level": "",
     "tempo": "8 Beat / Keherwa / Adi",
     "language": "Sanskrit / Hindi",
@@ -8919,7 +8919,7 @@
   {
     "id": 2795,
     "title": "Panduranga Panduranga Vittala Pahe",
-    "deity": "vittala",
+    "deity": "Vitthala",
     "level": "",
     "tempo": "",
     "language": "",
@@ -9154,7 +9154,7 @@
   {
     "id": 20,
     "title": "Pavana Sutha Hanuman Ki Jai",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "intermediate",
     "tempo": "medium",
     "language": "sanskrit / hindi",
@@ -9180,7 +9180,7 @@
   {
     "id": 22,
     "title": "Prabhu Ramachandra Ke Dootha Hanumantha Anjaneya",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "simple",
     "tempo": "fast",
     "language": "sanskrit / hindi",
@@ -10196,7 +10196,7 @@
   {
     "id": 25,
     "title": "Rama Lakshmana Janaki Jai Bolo Hanuman Ki",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "intermediate",
     "tempo": "medium fast",
     "language": "sanskrit / hindi, awadhi",
@@ -10209,7 +10209,7 @@
   {
     "id": 26,
     "title": "Rama Lakshmana Janaki Jai Bolo Hanuman Ki (4)",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "intermediate",
     "tempo": "fast",
     "language": "sanskrit / hindi",
@@ -12444,7 +12444,7 @@
   {
     "id": 31,
     "title": "Sri Rama Dootha Jaya Hanuman",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "intermediate",
     "tempo": "medium fast",
     "language": "sanskrit / hindi",
@@ -13033,7 +13033,7 @@
   {
     "id": 32,
     "title": "Vayu Kumara Vanara Veera",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "simple",
     "tempo": "medium slow",
     "language": "sanskrit / hindi",
@@ -13046,7 +13046,7 @@
   {
     "id": 33,
     "title": "Veera Dheera Shoora Hanuman Ki Jai",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "intermediate",
     "tempo": "medium fast",
     "language": "sanskrit / hindi",
@@ -13059,7 +13059,7 @@
   {
     "id": 36,
     "title": "Veera Maruti Gambhira Maruti",
-    "deity": "Anjaneya",
+    "deity": "Hanuman",
     "level": "intermediate",
     "tempo": "medium fast",
     "language": "sanskrit / hindi",

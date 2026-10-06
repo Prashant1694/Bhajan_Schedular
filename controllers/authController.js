@@ -81,7 +81,7 @@ async function createAdminSession(req, admin) {
 
 exports.showLogin = (req, res) => {
   if (req.session && req.session.adminUserId) {
-    return res.redirect("/admin");
+    return res.redirect("/?tab=admin");
   }
 
   res.render("admin-login", {
@@ -136,7 +136,19 @@ exports.login = async (req, res) => {
         });
       }
 
-      res.redirect("/admin");
+      res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Logging in...</title></head><body>
+      <script>
+        try {
+          localStorage.setItem('bp_is_admin', 'true');
+          localStorage.setItem('bp_admin_name', ${JSON.stringify(admin.display_name || admin.username)});
+          localStorage.setItem('bp_admin_role', ${JSON.stringify(admin.role || 'admin')});
+        } catch(_) {}
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = '/?tab=admin&login_ts=' + Date.now();
+        } else {
+          window.location.href = '/?tab=admin&login_ts=' + Date.now();
+        }
+      </script></body></html>`);
     });
   } catch (error) {
     console.error("Admin login failed:", error);
@@ -262,7 +274,7 @@ exports.googleLogin = async (req, res) => {
 
       res.json({
         success: true,
-        redirect: "/admin"
+        redirect: "/?tab=admin"
       });
     });
   } catch (error) {
@@ -305,10 +317,36 @@ exports.logout = async (req, res) => {
     delete req.session.admin;
     req.session.save((saveErr) => {
       if (saveErr) console.error("Session save error on admin logout:", saveErr);
-      res.redirect("/");
+      res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Logging out...</title></head><body>
+      <script>
+        try {
+          localStorage.removeItem('bp_is_admin');
+          localStorage.removeItem('bp_admin_name');
+          localStorage.removeItem('bp_admin_role');
+        } catch(_) {}
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = '/?logged_out=' + Date.now();
+        } else {
+          window.location.href = '/?logged_out=' + Date.now();
+        }
+      </script>
+      </body></html>`);
     });
   } else {
-    res.redirect("/");
+    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Logging out...</title></head><body>
+    <script>
+      try {
+        localStorage.removeItem('bp_is_admin');
+        localStorage.removeItem('bp_admin_name');
+        localStorage.removeItem('bp_admin_role');
+      } catch(_) {}
+      if (window.top && window.top !== window.self) {
+        window.top.location.href = '/?logged_out=' + Date.now();
+      } else {
+        window.location.href = '/?logged_out=' + Date.now();
+      }
+    </script>
+    </body></html>`);
   }
 };
 exports.showForgotPassword = (req, res) => {

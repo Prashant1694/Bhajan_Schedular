@@ -1,221 +1,499 @@
-<div class="container container-xl">
-  <div class="header">
-    <h1>🗃️ Bhajan History</h1>
-    <p>Session Records - Gandhinagar Bhajan Schedules</p>
-  </div>
-  <div style="margin-bottom: 20px;">
-    <a href="<%= currentAdmin ? '/admin' : '/' %>" class="button secondary">
-      <%= currentAdmin ? '🏠 Dashboard' : '🏠 Home' %>
-    </a>
+<%
+  function getDeityIcon(deity) {
+    if (!deity) return '🕉️';
+    const d = deity.toLowerCase();
+    if (d.includes('ganesh')) return '🐘';
+    if (d.includes('guru')) return '🙏';
+    if (d.includes('shiva')) return '🔱';
+    if (d.includes('devi') || d.includes('amman') || d.includes('durga') || d.includes('saraswati') || d.includes('lakshmi')) return '🌸';
+    if (d.includes('ram')) return '🏹';
+    if (d.includes('krishna') || d.includes('vitthala') || d.includes('vittala')) return '🪈';
+    if (d.includes('sai') || d.includes('baba')) return '🕉️';
+    if (d.includes('subrahmanya') || d.includes('muruga') || d.includes('kartikeya')) return '🪶';
+    if (d.includes('hanuman') || d.includes('anjaneya') || d.includes('maruti')) return '🐒';
+    if (d.includes('sarva') || d.includes('all')) return '🪔';
+    return '✨';
+  }
+%>
+
+<div class="archives-container container container-xl">
+  <!-- Top Hero Banner -->
+  <div class="archives-hero-banner no-print">
+    <div class="archives-top-bar">
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <a href="<%= currentAdmin ? '/admin' : '/' %>" class="button secondary" data-haptic="light" style="padding: 7px 14px; font-size: 13px; border-radius: 10px;">
+          <%= currentAdmin ? '🏠 Dashboard' : '🏠 Home' %>
+        </a>
+        <a href="/plan-view" class="button secondary" data-haptic="light" style="padding: 7px 14px; font-size: 13px; border-radius: 10px;">
+          🗓️ Live Plan
+        </a>
+        <a href="/master-bank" class="button secondary" data-haptic="light" style="padding: 7px 14px; font-size: 13px; border-radius: 10px;">
+          📚 Master Bank
+        </a>
+      </div>
+      <button type="button" class="button secondary" onclick="window.print()" title="Print Session Archives"
+        data-haptic="medium"
+        style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; font-size: 13px; border-radius: 10px;">
+        <span>🖨️</span> <span>Print Archives</span>
+      </button>
+    </div>
+
+    <h1 class="archives-title">🏛️ Bhajan Archives</h1>
+    <p class="archives-subtitle">
+      Explore Gandhinagar bhajan session records, singer sequences, deities, and musical catalogs across past sessions.
+    </p>
+
+    <div class="archives-stats-strip">
+      <span class="archives-stat-pill">
+        <span>🏛️</span> <span><strong><%= sessions.length %></strong> Sessions Cataloged</span>
+      </span>
+      <span class="archives-stat-pill">
+        <span>🎵</span> <span><strong><%= totalBhajans || '0' %></strong> Bhajans Recorded</span>
+      </span>
+      <span class="archives-stat-pill" style="background: rgba(125, 47, 69, 0.08); color: var(--maroon); border-color: rgba(125, 47, 69, 0.2);">
+        <span>⚡</span> <span>Live Real-Time Search</span>
+      </span>
+    </div>
   </div>
 
   <% if (sessions.length === 0) { %>
-    <div class="submitted-bhajans" style="text-align: center; padding: 40px 20px;">
-      <p style="font-size: 16px; color: var(--muted);">No session records found yet.</p>
+    <div class="archive-no-match-card">
+      <div class="archive-no-match-icon">📭</div>
+      <div class="archive-no-match-title">No Session Archives Found</div>
+      <p class="archive-no-match-desc">There are no published or past bhajan session records available right now.</p>
+      <a href="<%= currentAdmin ? '/admin' : '/' %>" class="button primary" style="border-radius: 12px; padding: 10px 22px;">
+        Return to Home
+      </a>
     </div>
   <% } else { %>
-    <%# Date filter bar %>
-    <div class="history-filter-bar">
-      <label for="historyDateFilter">Filter by date</label>
-      <div class="history-filter-controls">
-        <input type="date" id="historyDateFilter" class="filter-input" />
-        <button type="button" id="historyDateClear" class="button secondary" style="padding: 8px 14px; font-size: 13px;">Clear</button>
+
+    <!-- Search & Filter Card -->
+    <div class="archives-filter-card no-print">
+      <div class="archives-filter-grid">
+        <!-- Text Search -->
+        <div class="archive-search-box">
+          <span class="archive-search-icon">🔍</span>
+          <input 
+            type="search" 
+            id="archiveSearchInput" 
+            class="archive-search-input" 
+            placeholder="Search by song title or devotee name..." 
+            value="<%= initialSearch || '' %>" 
+            autocomplete="off"
+            aria-label="Search archived songs and singers"
+          />
+        </div>
+
+        <!-- Date Filter -->
+        <div>
+          <input 
+            type="date" 
+            id="historyDateFilter" 
+            class="archive-date-input" 
+            value="<%= initialDate || '' %>"
+            title="Filter by specific session date"
+            aria-label="Filter by date"
+          />
+        </div>
+
+        <!-- Clear Button -->
+        <div>
+          <button 
+            type="button" 
+            id="archiveClearBtn" 
+            class="button secondary" 
+            data-haptic="pop"
+            style="padding: 10px 16px; border-radius: 12px; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 4px;"
+            title="Reset search and filters">
+            <span>✕</span> <span>Reset</span>
+          </button>
+        </div>
+      </div>
+
+
+
+      <!-- Live Search Results Meta -->
+      <div class="archive-results-info" id="archiveResultsInfo">
+        <span id="archiveResultsText">
+          Showing <strong><%= Math.min(sessions.length, 12) %></strong> of <strong><%= sessions.length %></strong> sessions
+        </span>
+        <span id="archiveActiveFilterTag" style="display: none; background: rgba(217, 138, 43, 0.12); padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 600; color: var(--saffron-dk);">
+          Filter active
+        </span>
       </div>
     </div>
 
-    <div id="historyNoMatch" class="submitted-bhajans" style="text-align: center; padding: 30px 20px; display: none;">
-      <p style="font-size: 15px; color: var(--muted);">No session found for the selected date.</p>
+    <!-- Empty Search State -->
+    <div id="archiveNoMatch" class="archive-no-match-card" style="display: none;">
+      <div class="archive-no-match-icon">🔍</div>
+      <div class="archive-no-match-title">No Matching Bhajan Archives</div>
+      <p class="archive-no-match-desc">
+        We couldn't find any session or song matching your search criteria. Try a different singer name, deity, or song title.
+      </p>
+      <button type="button" id="archiveResetEmptyBtn" class="button secondary" data-haptic="pop" style="border-radius: 12px; padding: 9px 20px;">
+        ✕ Clear All Filters
+      </button>
     </div>
 
-    <% const initialSessions = sessions.slice(0, 12); %>
-    <% initialSessions.forEach((session, sIdx) => { %>
-      <section class="submitted-bhajans history-session" data-date="<%= session.date %>">
-        <div class="submitted-bhajans-heading">
-          <div>
-            <h3>📅 <%= session.heading %></h3>
-            <p><%= session.bhajans.length %> bhajan<%= session.bhajans.length === 1 ? '' : 's' %> in this session</p>
-          </div>
-        </div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Singer</th>
-                <th>Deity</th>
-                <th>Bhajan</th>
-                <th>Speed</th>
-                <th>Scale</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% session.bhajans.forEach((s, i) => { %>
-                <tr>
-                  <td><%= i + 1 %></td>
-                  <td><strong><%= s.singer_name %></strong></td>
-                  <td><span class="deity-pill"><%= s.deity %></span></td>
-                  <td>
-                    <% if (s.master_id) { %>
-                      <a href="/bhajan/<%= s.master_id %>" class="bank-title-link" title="Open lyrics and singing details"><%= s.title %></a>
-                    <% } else { %>
-                      <span class="unlinked-bhajan-title" title="Catalog details not available"><%= s.title %></span>
-                    <% } %>
-                    <% if (s.sheet_filename) { %>
-                      <a href="/sheets/<%= encodeURIComponent(s.sheet_filename) %>" target="_blank" rel="noopener noreferrer" class="sheet-link-pill" style="margin-left:6px; font-size:11px;" title="Open official music sheet (PDF)">📄 Sheet</a>
-                    <% } %>
-                  </td>
-                  <td><%= s.speed || '-' %></td>
-                  <td><%= s.scale || '-' %></td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    <% }) %>
+    <!-- Initial Rendered Sessions (First 12) -->
+    <div id="archiveSessionsList">
+      <% const initialSessions = sessions.slice(0, 12); %>
+      <% initialSessions.forEach((session, sIdx) => { %>
+        <section class="archive-session-card history-session" data-date="<%= session.date %>">
+          <div class="archive-session-header">
+            <div class="archive-session-date-wrap">
+              <h3 class="archive-session-title">
+                <span>📅</span>
+                <span><%= session.heading %></span>
+              </h3>
+              <span class="archive-session-badge">
+                <%= session.bhajans.length %> bhajan<%= session.bhajans.length === 1 ? '' : 's' %>
+              </span>
+            </div>
 
+            <div class="no-print" style="display: flex; gap: 8px; align-items: center;">
+              <a href="/plan-view?session_date=<%= session.date %>" class="archive-session-link" title="Open in Live Plan view" data-haptic="light">
+                <span>🗓️</span> <span>View Plan</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 48px; text-align: center;">#</th>
+                  <th>Singer</th>
+                  <th>Deity</th>
+                  <th>Bhajan Title</th>
+                  <th style="width: 100px;">Speed</th>
+                  <th style="width: 90px;">Scale</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% session.bhajans.forEach((s, i) => { %>
+                  <tr class="archive-bhajan-row" 
+                      data-title="<%= (s.title || '').toLowerCase() %>" 
+                      data-singer="<%= (s.singer_name || '').toLowerCase() %>" 
+                      data-deity="<%= (s.deity || '').toLowerCase() %>">
+                    <td style="text-align: center; font-weight: 700; color: var(--muted);"><%= i + 1 %></td>
+                    <td><strong><%= s.singer_name %></strong></td>
+                    <td>
+                      <span class="deity-pill">
+                        <span><%= getDeityIcon(s.deity) %></span>
+                        <span><%= s.deity %></span>
+                      </span>
+                    </td>
+                    <td>
+                      <% if (s.master_id) { %>
+                        <a href="/bhajan/<%= s.master_id %>" class="bank-title-link" title="Open master catalog entry & lyrics">
+                          <%= s.title %>
+                        </a>
+                      <% } else { %>
+                        <span class="unlinked-bhajan-title" title="Catalog details not available">
+                          <%= s.title %>
+                        </span>
+                      <% } %>
+                      <% if (s.sheet_filename) { %>
+                        <a href="/sheets/<%= encodeURIComponent(s.sheet_filename) %>" target="_blank"
+                          rel="noopener noreferrer" class="sheet-link-pill"
+                          style="margin-left: 6px; font-size: 11px;" title="Open official music sheet (PDF)">
+                          📄 Sheet
+                        </a>
+                      <% } %>
+                    </td>
+                    <td><%= s.speed || '-' %></td>
+                    <td><%= s.scale || '-' %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      <% }) %>
+    </div>
+
+    <!-- Dynamic Container for Loaded More / Dynamically Injected Search Results -->
     <div id="historyDynamicContainer"></div>
 
+    <!-- Load More Past Sessions CTA -->
     <% if (sessions.length > 12) { %>
-      <div id="historyLoadMoreContainer" style="text-align: center; margin: 28px 0 40px;">
-        <button type="button" id="historyLoadMoreBtn" class="button secondary" style="padding: 12px 28px; font-size: 15px; font-weight: 600; border-radius: 10px;">
-          📜 Load More Past Sessions (<span id="historyRemainingCount"><%= sessions.length - 12 %></span> remaining)
+      <div id="historyLoadMoreContainer" class="no-print" style="text-align: center; margin: 32px 0 44px;">
+        <button type="button" id="historyLoadMoreBtn" class="button secondary" data-haptic="medium"
+          style="padding: 13px 32px; font-size: 15px; font-weight: 700; border-radius: 12px; box-shadow: var(--shadow-sm); display: inline-flex; align-items: center; gap: 8px;">
+          <span>📜 Load More Past Sessions</span>
+          <span style="opacity: 0.8; font-weight: 500;">(<span id="historyRemainingCount"><%= sessions.length - 12 %></span> remaining)</span>
         </button>
       </div>
     <% } %>
+
   <% } %>
 </div>
 
+<!-- Raw Unrendered Sessions Data (13th session onwards) -->
 <script id="remainingSessionsData" type="application/json">
   <%- JSON.stringify(sessions.slice(12)) %>
 </script>
 
 <script>
-(function() {
-  var dateInput = document.getElementById('historyDateFilter');
-  var clearBtn = document.getElementById('historyDateClear');
-  var noMatch  = document.getElementById('historyNoMatch');
-  var loadMoreBtn = document.getElementById('historyLoadMoreBtn');
-  var loadMoreContainer = document.getElementById('historyLoadMoreContainer');
-  var remainingCount = document.getElementById('historyRemainingCount');
-  var dynamicContainer = document.getElementById('historyDynamicContainer');
+  (function () {
+    var searchInput = document.getElementById('archiveSearchInput');
+    var dateInput = document.getElementById('historyDateFilter');
+    var clearBtn = document.getElementById('archiveClearBtn');
+    var resetEmptyBtn = document.getElementById('archiveResetEmptyBtn');
+    var noMatch = document.getElementById('archiveNoMatch');
+    var loadMoreBtn = document.getElementById('historyLoadMoreBtn');
+    var loadMoreContainer = document.getElementById('historyLoadMoreContainer');
+    var remainingCount = document.getElementById('historyRemainingCount');
+    var dynamicContainer = document.getElementById('historyDynamicContainer');
+    var sessionsList = document.getElementById('archiveSessionsList');
+    var resultsText = document.getElementById('archiveResultsText');
+    var activeFilterTag = document.getElementById('archiveActiveFilterTag');
 
-  var remainingSessions = [];
-  try {
-    var rawData = document.getElementById('remainingSessionsData');
-    if (rawData) remainingSessions = JSON.parse(rawData.textContent);
-  } catch (e) {}
+    var remainingSessions = [];
+    try {
+      var rawData = document.getElementById('remainingSessionsData');
+      if (rawData) remainingSessions = JSON.parse(rawData.textContent);
+    } catch (e) {
+      console.warn('Failed to parse remaining session records:', e);
+    }
 
-  var currentIndex = 0;
-  var BATCH_SIZE = 12;
+    var currentIndex = 0;
+    var BATCH_SIZE = 12;
 
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
 
-  function renderSessionHtml(session) {
-    var rows = session.bhajans.map(function(s, i) {
-      var titleHtml = s.master_id
-        ? '<a href="/bhajan/' + s.master_id + '" class="bank-title-link" title="Open lyrics and singing details">' + escapeHtml(s.title) + '</a>'
-        : '<span class="unlinked-bhajan-title" title="Catalog details not available">' + escapeHtml(s.title) + '</span>';
-      if (s.sheet_filename) {
-        titleHtml += ' <a href="/sheets/' + encodeURIComponent(s.sheet_filename) + '" target="_blank" rel="noopener noreferrer" class="sheet-link-pill" style="margin-left:6px; font-size:11px;" title="Open official music sheet (PDF)">📄 Sheet</a>';
-      }
+    function getDeityIconJs(deity) {
+      if (!deity) return '🕉️';
+      var d = deity.toLowerCase();
+      if (d.includes('ganesh')) return '🐘';
+      if (d.includes('guru')) return '🙏';
+      if (d.includes('shiva')) return '🔱';
+      if (d.includes('devi') || d.includes('amman') || d.includes('durga') || d.includes('saraswati') || d.includes('lakshmi')) return '🌸';
+      if (d.includes('ram')) return '🏹';
+      if (d.includes('krishna') || d.includes('vitthala') || d.includes('vittala')) return '🪈';
+      if (d.includes('sai') || d.includes('baba')) return '🕉️';
+      if (d.includes('subrahmanya') || d.includes('muruga') || d.includes('kartikeya')) return '🪶';
+      if (d.includes('sarva') || d.includes('all')) return '🪔';
+      return '✨';
+    }
 
-      return '<tr>' +
-        '<td>' + (i + 1) + '</td>' +
-        '<td><strong>' + escapeHtml(s.singer_name) + '</strong></td>' +
-        '<td><span class="deity-pill">' + escapeHtml(s.deity) + '</span></td>' +
-        '<td>' + titleHtml + '</td>' +
-        '<td>' + escapeHtml(s.speed || '-') + '</td>' +
-        '<td>' + escapeHtml(s.scale || '-') + '</td>' +
-        '</tr>';
-    }).join('');
+    function renderSessionHtml(session) {
+      var rows = session.bhajans.map(function (s, i) {
+        var titleHtml = s.master_id
+          ? '<a href="/bhajan/' + s.master_id + '" class="bank-title-link" title="Open master catalog entry & lyrics">' + escapeHtml(s.title) + '</a>'
+          : '<span class="unlinked-bhajan-title" title="Catalog details not available">' + escapeHtml(s.title) + '</span>';
+        
+        if (s.sheet_filename) {
+          titleHtml += ' <a href="/sheets/' + encodeURIComponent(s.sheet_filename) + '" target="_blank" rel="noopener noreferrer" class="sheet-link-pill" style="margin-left:6px; font-size:11px;" title="Open official music sheet (PDF)">📄 Sheet</a>';
+        }
 
-    return '<section class="submitted-bhajans history-session" data-date="' + escapeHtml(session.date) + '">' +
-      '<div class="submitted-bhajans-heading">' +
-        '<div>' +
-          '<h3>📅 ' + escapeHtml(session.heading) + '</h3>' +
-          '<p>' + session.bhajans.length + ' bhajan' + (session.bhajans.length === 1 ? '' : 's') + ' in this session</p>' +
+        var tLower = (s.title || '').toLowerCase();
+        var sLower = (s.singer_name || '').toLowerCase();
+        var dLower = (s.deity || '').toLowerCase();
+
+        return '<tr class="archive-bhajan-row" data-title="' + escapeHtml(tLower) + '" data-singer="' + escapeHtml(sLower) + '" data-deity="' + escapeHtml(dLower) + '">' +
+          '<td style="text-align: center; font-weight: 700; color: var(--muted);">' + (i + 1) + '</td>' +
+          '<td><strong>' + escapeHtml(s.singer_name) + '</strong></td>' +
+          '<td><span class="deity-pill"><span>' + getDeityIconJs(s.deity) + '</span> <span>' + escapeHtml(s.deity) + '</span></span></td>' +
+          '<td>' + titleHtml + '</td>' +
+          '<td>' + escapeHtml(s.speed || '-') + '</td>' +
+          '<td>' + escapeHtml(s.scale || '-') + '</td>' +
+          '</tr>';
+      }).join('');
+
+      return '<section class="archive-session-card history-session" data-date="' + escapeHtml(session.date) + '">' +
+        '<div class="archive-session-header">' +
+          '<div class="archive-session-date-wrap">' +
+            '<h3 class="archive-session-title"><span>📅</span> <span>' + escapeHtml(session.heading) + '</span></h3>' +
+            '<span class="archive-session-badge">' + session.bhajans.length + ' bhajan' + (session.bhajans.length === 1 ? '' : 's') + '</span>' +
+          '</div>' +
+          '<div class="no-print" style="display: flex; gap: 8px; align-items: center;">' +
+            '<a href="/plan-view?session_date=' + encodeURIComponent(session.date) + '" class="archive-session-link" title="Open in Live Plan view" data-haptic="light">' +
+              '<span>🗓️</span> <span>View Plan</span>' +
+            '</a>' +
+          '</div>' +
         '</div>' +
-      '</div>' +
-      '<div class="table-container">' +
-        '<table>' +
-          '<thead>' +
-            '<tr><th>#</th><th>Singer</th><th>Deity</th><th>Bhajan</th><th>Speed</th><th>Scale</th></tr>' +
-          '</thead>' +
-          '<tbody>' + rows + '</tbody>' +
-        '</table>' +
-      '</div>' +
-    '</section>';
-  }
-
-  function loadNextBatch() {
-    if (currentIndex >= remainingSessions.length) return;
-    var nextBatch = remainingSessions.slice(currentIndex, currentIndex + BATCH_SIZE);
-    var html = nextBatch.map(renderSessionHtml).join('');
-    if (dynamicContainer) dynamicContainer.insertAdjacentHTML('beforeend', html);
-    currentIndex += nextBatch.length;
-
-    var left = remainingSessions.length - currentIndex;
-    if (left > 0) {
-      if (remainingCount) remainingCount.textContent = left;
-    } else {
-      if (loadMoreContainer) loadMoreContainer.style.display = 'none';
+        '<div class="table-container">' +
+          '<table>' +
+            '<thead><tr><th style="width: 48px; text-align: center;">#</th><th>Singer</th><th>Deity</th><th>Bhajan Title</th><th style="width: 100px;">Speed</th><th style="width: 90px;">Scale</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</section>';
     }
-  }
 
-  if (loadMoreBtn) {
-    loadMoreBtn.addEventListener('click', loadNextBatch);
-  }
+    function loadNextBatch() {
+      if (currentIndex >= remainingSessions.length) return;
+      var nextBatch = remainingSessions.slice(currentIndex, currentIndex + BATCH_SIZE);
+      var html = nextBatch.map(renderSessionHtml).join('');
+      if (dynamicContainer) dynamicContainer.insertAdjacentHTML('beforeend', html);
+      currentIndex += nextBatch.length;
 
-  function filterSessions() {
-    var val = (dateInput ? dateInput.value : '').trim(); // YYYY-MM-DD or empty
-    var rendered = document.querySelectorAll('.history-session');
-
-    if (!val) {
-      if (noMatch) noMatch.style.display = 'none';
-      rendered.forEach(function(sec) { sec.style.display = ''; });
       var left = remainingSessions.length - currentIndex;
-      if (loadMoreContainer) loadMoreContainer.style.display = left > 0 ? '' : 'none';
-      return;
-    }
-
-    if (loadMoreContainer) loadMoreContainer.style.display = 'none';
-
-    // Check if the session is already rendered
-    var found = false;
-    rendered.forEach(function(sec) {
-      if (sec.getAttribute('data-date') === val) {
-        sec.style.display = '';
-        found = true;
+      if (left > 0) {
+        if (remainingCount) remainingCount.textContent = left;
       } else {
-        sec.style.display = 'none';
+        if (loadMoreContainer) loadMoreContainer.style.display = 'none';
       }
-    });
+      filterArchives();
+    }
 
-    // If not found in currently rendered DOM, search unrendered remainingSessions
-    if (!found) {
-      var targetSession = remainingSessions.find(function(s) { return s.date === val; });
-      if (targetSession && dynamicContainer) {
-        var html = renderSessionHtml(targetSession);
-        dynamicContainer.insertAdjacentHTML('beforeend', html);
-        found = true;
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', loadNextBatch);
+    }
+
+    // Unified Master Filtering Engine (Text Search + Date)
+    function filterArchives() {
+      var query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+      var dateVal = (dateInput ? dateInput.value : '').trim();
+
+      var isFiltering = (query.length > 0) || (dateVal.length > 0);
+
+      if (activeFilterTag) {
+        activeFilterTag.style.display = isFiltering ? 'inline-block' : 'none';
+      }
+
+      // If active filter is set, make sure we dynamically inject any unrendered session from remainingSessions
+      // that matches the filter, so complete past archives are searchable!
+      if (isFiltering && remainingSessions.length > 0 && currentIndex < remainingSessions.length) {
+        var unrenderedMatches = [];
+        for (var idx = currentIndex; idx < remainingSessions.length; idx++) {
+          var s = remainingSessions[idx];
+          if (dateVal && s.date !== dateVal) continue;
+
+          var sessionMatches = false;
+          if (!query) {
+            sessionMatches = true;
+          } else {
+            for (var bIdx = 0; bIdx < s.bhajans.length; bIdx++) {
+              var b = s.bhajans[bIdx];
+              var bTitle = (b.title || '').toLowerCase();
+              var bSinger = (b.singer_name || '').toLowerCase();
+
+              if (bTitle.includes(query) || bSinger.includes(query)) {
+                sessionMatches = true;
+                break;
+              }
+            }
+          }
+
+          if (sessionMatches) {
+            unrenderedMatches.push(s);
+          }
+        }
+
+        if (unrenderedMatches.length > 0 && dynamicContainer) {
+          var html = unrenderedMatches.map(renderSessionHtml).join('');
+          dynamicContainer.insertAdjacentHTML('beforeend', html);
+        }
+      }
+
+      var allSections = document.querySelectorAll('.history-session');
+      var matchedSessionsCount = 0;
+      var matchedBhajansCount = 0;
+
+      allSections.forEach(function (sec) {
+        var secDate = sec.getAttribute('data-date');
+        if (dateVal && secDate !== dateVal) {
+          sec.style.display = 'none';
+          return;
+        }
+
+        var rows = sec.querySelectorAll('.archive-bhajan-row');
+        var matchingRowsInSession = 0;
+
+        rows.forEach(function (row) {
+          if (!isFiltering) {
+            row.style.display = '';
+            matchingRowsInSession++;
+            return;
+          }
+
+          var title = row.getAttribute('data-title') || '';
+          var singer = row.getAttribute('data-singer') || '';
+
+          var textMatch = !query || title.includes(query) || singer.includes(query);
+
+          if (textMatch) {
+            row.style.display = '';
+            matchingRowsInSession++;
+          } else {
+            row.style.display = 'none';
+          }
+        });
+
+        if (!isFiltering || matchingRowsInSession > 0) {
+          sec.style.display = '';
+          matchedSessionsCount++;
+          matchedBhajansCount += matchingRowsInSession;
+        } else {
+          sec.style.display = 'none';
+        }
+      });
+
+      // Update Load More CTA display
+      if (loadMoreContainer) {
+        if (isFiltering) {
+          loadMoreContainer.style.display = 'none';
+        } else {
+          var left = remainingSessions.length - currentIndex;
+          loadMoreContainer.style.display = left > 0 ? '' : 'none';
+        }
+      }
+
+      // Update Empty State
+      if (noMatch) {
+        noMatch.style.display = (isFiltering && matchedSessionsCount === 0) ? 'block' : 'none';
+      }
+
+      // Update Results Counter Text
+      if (resultsText) {
+        if (isFiltering) {
+          resultsText.innerHTML = 'Found <strong>' + matchedSessionsCount + '</strong> session' + (matchedSessionsCount === 1 ? '' : 's') +
+            ' with <strong>' + matchedBhajansCount + '</strong> matching bhajan' + (matchedBhajansCount === 1 ? '' : 's');
+        } else {
+          var totalRendered = allSections.length;
+          resultsText.innerHTML = 'Showing <strong>' + totalRendered + '</strong> archived sessions';
+        }
       }
     }
 
-    if (noMatch) noMatch.style.display = !found ? '' : 'none';
-  }
+    // Debounce Helper
+    var searchTimer = null;
+    if (searchInput) {
+      searchInput.addEventListener('input', function () {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () {
+          filterArchives();
+        }, 160);
+      });
+    }
 
-  if (dateInput) {
-    dateInput.addEventListener('change', filterSessions);
-  }
-  if (clearBtn) {
-    clearBtn.addEventListener('click', function() {
+    if (dateInput) {
+      dateInput.addEventListener('change', filterArchives);
+    }
+
+    function resetAllFilters() {
+      if (searchInput) searchInput.value = '';
       if (dateInput) dateInput.value = '';
-      filterSessions();
-    });
-  }
-})();
+      filterArchives();
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', resetAllFilters);
+    }
+
+    if (resetEmptyBtn) {
+      resetEmptyBtn.addEventListener('click', resetAllFilters);
+    }
+
+    // Run initial filter on load if query or date was passed
+    if ((searchInput && searchInput.value) || (dateInput && dateInput.value)) {
+      filterArchives();
+    }
+  })();
 </script>

@@ -1,4 +1,5 @@
 const { Sequelize } = require("sequelize");
+const sequelize = require("../config/database");
 
 const MasterBhajan = require("../models/MasterBhajan");
 const BhajanSubmission = require("../models/BhajanSubmission");
@@ -21,10 +22,26 @@ exports.showMasterBank = async (req, res) => {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
   }
 };
+function normalizeDeityString(str) {
+  if (!str) return str;
+  return str.split(',').map(s => {
+    const trimmed = s.trim();
+    const lower = trimmed.toLowerCase();
+    if (lower === 'vittala' || lower === 'vithhala' || lower === 'vithala' || lower === 'vitthala') {
+      return 'Vitthala';
+    }
+    if (lower === 'anjaneya' || lower === 'aanjaneya' || lower === 'hanuman' || lower === 'maruti' || lower === 'maruthi') {
+      return 'Hanuman';
+    }
+    return trimmed;
+  }).join(', ');
+}
+
 exports.addMasterBhajan = async (req, res) => {
   try {
     const { title, deity, raga, raga_notes, tempo, level, shruti, shruti_female, lyrics, sheet_filename } = req.body;
-    await MasterBhajan.create({ title, deity, raga, raga_notes, tempo, level, shruti, shruti_female, lyrics, sheet_filename, is_active: true });
+    const cleanDeity = normalizeDeityString(deity);
+    await MasterBhajan.create({ title, deity: cleanDeity, raga, raga_notes, tempo, level, shruti, shruti_female, lyrics, sheet_filename, is_active: true });
     invalidateMissingCount();
     res.json({ success: true });
   } catch (error) {
@@ -35,7 +52,7 @@ exports.updateMasterBhajan = async (req, res) => {
   try {
     const { title, deity, level, tempo, raga, raga_notes, shruti, shruti_female, language, lyrics, sheet_filename } = req.body;
 
-    const updateFields = { title, deity, level, tempo, raga, raga_notes, shruti, shruti_female, language, lyrics };
+    const updateFields = { title, deity: normalizeDeityString(deity), level, tempo, raga, raga_notes, shruti, shruti_female, language, lyrics };
     if (sheet_filename !== undefined) {
       updateFields.sheet_filename = sheet_filename || null;
     }
@@ -76,18 +93,24 @@ exports.exportMaster = async (req, res) => {
 
 exports.showArchivedMasterBank = async (req, res) => {
   try {
-    const isAdmin = !!(req.session && req.session.adminUserId);
+    const isAdmin = !!(req.session && (req.session.adminUserId || req.session.admin));
     const archivedBhajans = await MasterBhajan.findAll({
       where: { is_active: false },
       order: [['title', 'ASC']]
     });
 
-    const [diwaliRefs] = await sequelize.query(`
-      SELECT master_bhajan_id, COUNT(*) as ref_count
-      FROM diwali_participant_bhajans
-      WHERE master_bhajan_id IS NOT NULL
-      GROUP BY master_bhajan_id
-    `);
+    let diwaliRefs = [];
+    try {
+      const [refs] = await sequelize.query(`
+        SELECT master_bhajan_id, COUNT(*) as ref_count
+        FROM diwali_participant_bhajans
+        WHERE master_bhajan_id IS NOT NULL
+        GROUP BY master_bhajan_id
+      `);
+      diwaliRefs = refs || [];
+    } catch (_) {
+      diwaliRefs = [];
+    }
     const refMap = new Map();
     diwaliRefs.forEach(r => refMap.set(Number(r.master_bhajan_id), r.ref_count));
 
@@ -96,8 +119,14 @@ exports.showArchivedMasterBank = async (req, res) => {
       refCount: refMap.get(b.id) || 0
     }));
 
-    res.render('admin-archived-master', { bhajans: bhajansWithRefs, isAdmin });
+    res.render('admin-archived-master', {
+      pageTitle: 'Archived Master Bhajans',
+      isAdminPage: true,
+      bhajans: bhajansWithRefs,
+      isAdmin
+    });
   } catch (error) {
+    console.error('Error loading archived bhajans:', error);
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
   }
 };

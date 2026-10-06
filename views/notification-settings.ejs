@@ -1,6 +1,6 @@
 <div class="prasanthi-border"></div>
 <div class="notif-settings-container">
-  <a href="/" class="bulletin-back-link">← Back to Home</a>
+  <a href="<%= (typeof _embed !== 'undefined' && _embed) ? '/?_embed=1' : '/' %>" class="bulletin-back-link" onclick="handleSettingsBack(event)">← Back to Home</a>
 
   <div class="notif-settings-card">
     <h2>🔔 Notification Settings</h2>
@@ -97,6 +97,74 @@
 
     <div style="margin-top:20px; font-size:12px; color:#aaa; text-align:center;">
       Protected by 4-digit singer PIN. No username or password required.
+    </div>
+  </div>
+
+  <!-- Premium Haptic Feedback & Tactile Engine Card -->
+  <div class="notif-settings-card" style="margin-top: 24px;">
+    <h2>📳 Haptic Feedback & Tactile Engine</h2>
+    <p class="subtitle">Experience native Apple Taptic & Android Linear Actuator tactile sensations across tabs, buttons, and submissions</p>
+
+    <!-- Toggles Row -->
+    <div style="display: flex; flex-direction: column; gap: 14px; margin: 20px 0 24px 0;">
+      <!-- Toggle 1: Vibration -->
+      <div style="display: flex; align-items: center; justify-content: space-between; background: var(--surface); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border);">
+        <div>
+          <div style="font-weight: 700; font-size: 14.5px; color: var(--ink);">Tactile Vibration Motor</div>
+          <div style="font-size: 12px; color: var(--ink-soft); margin-top: 2px;">Linear actuator micro-pulses on supported mobile devices</div>
+        </div>
+        <label style="position: relative; display: inline-block; width: 48px; height: 26px; cursor: pointer;">
+          <input type="checkbox" id="hapticVibeToggle" style="opacity: 0; width: 0; height: 0;" checked>
+          <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--saffron); transition: .3s; border-radius: 34px;" id="hapticVibeTrack"></span>
+          <span style="position: absolute; content: ''; height: 20px; width: 20px; left: 24px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" id="hapticVibeThumb"></span>
+        </label>
+      </div>
+
+      <!-- Toggle 2: Acoustic Transient -->
+      <div style="display: flex; align-items: center; justify-content: space-between; background: var(--surface); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border);">
+        <div>
+          <div style="font-weight: 700; font-size: 14.5px; color: var(--ink);">Acoustic Tactile Click (iOS & Audio Feel)</div>
+          <div style="font-size: 12px; color: var(--ink-soft); margin-top: 2px;">Sub-bass speaker transient for physical mechanical feel on iPhones & Android</div>
+        </div>
+        <label style="position: relative; display: inline-block; width: 48px; height: 26px; cursor: pointer;">
+          <input type="checkbox" id="hapticSoundToggle" style="opacity: 0; width: 0; height: 0;" checked>
+          <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--saffron); transition: .3s; border-radius: 34px;" id="hapticSoundTrack"></span>
+          <span style="position: absolute; content: ''; height: 20px; width: 20px; left: 24px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2);" id="hapticSoundThumb"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Live Tactile Test Palette -->
+    <div style="margin-top: 20px;">
+      <div style="font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--saffron-dk); margin-bottom: 12px;">
+        🎮 Test Tactile Profiles
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+        <button type="button" class="button secondary" onclick="testHaptic('selection')" style="padding: 10px 8px; font-size: 12.5px; font-weight: 600;">
+          🔘 Tick (Tabs)
+        </button>
+        <button type="button" class="button secondary" onclick="testHaptic('light')" style="padding: 10px 8px; font-size: 12.5px; font-weight: 600;">
+          🎯 Light Tap
+        </button>
+        <button type="button" class="button secondary" onclick="testHaptic('medium')" style="padding: 10px 8px; font-size: 12.5px; font-weight: 600;">
+          ⚡ Medium Snap
+        </button>
+        <button type="button" class="button secondary" onclick="testHaptic('heavy')" style="padding: 10px 8px; font-size: 12.5px; font-weight: 600;">
+          💥 Rigid Impact
+        </button>
+        <button type="button" class="button secondary" onclick="testHaptic('toggle')" style="padding: 10px 8px; font-size: 12.5px; font-weight: 600;">
+          🔄 Toggle Click
+        </button>
+        <button type="button" class="button secondary" onclick="testHaptic('success')" style="padding: 10px 8px; font-size: 12.5px; font-weight: 600; color: #16a34a; border-color: rgba(22, 163, 74, 0.3);">
+          🎉 Success
+        </button>
+        <button type="button" class="button secondary" onclick="testHaptic('warning')" style="padding: 10px 8px; font-size: 12.5px; font-weight: 600; color: #d97706; border-color: rgba(217, 119, 6, 0.3);">
+          ⚠️ Warning
+        </button>
+        <button type="button" class="button secondary" onclick="testHaptic('error')" style="padding: 10px 8px; font-size: 12.5px; font-weight: 600; color: #dc2626; border-color: rgba(220, 38, 38, 0.3);">
+          🚫 Error Knock
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -379,6 +447,106 @@
       outputArray[i] = rawData.charCodeAt(i);
     }
     return outputArray;
+  }
+})();
+
+function handleSettingsBack(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  if (window.triggerHaptic) window.triggerHaptic('light');
+
+  const inIframe = (window.self !== window.top);
+  const targetEmbed = '/?_embed=1';
+
+  if (inIframe) {
+    if (window.history && window.history.length > 1) {
+      window.history.back();
+      setTimeout(function() {
+        if (window.location.pathname.startsWith('/notification-settings')) {
+          window.location.href = targetEmbed;
+        }
+      }, 300);
+      return;
+    }
+    window.location.href = targetEmbed;
+    return;
+  }
+
+  if (window.history && window.history.length > 1) {
+    window.history.back();
+    setTimeout(function() {
+      if (window.location.pathname.startsWith('/notification-settings')) {
+        window.location.href = '/';
+      }
+    }, 300);
+  } else {
+    window.location.href = '/';
+  }
+}
+
+// ── Tactile Haptic Engine Settings Handlers ──────────────────
+function testHaptic(type) {
+  if (window.BPHaptics && window.BPHaptics.trigger) {
+    window.BPHaptics.trigger(type);
+  } else if (window.triggerHaptic) {
+    window.triggerHaptic(type);
+  }
+}
+
+(function initHapticSettings() {
+  const vibeToggle = document.getElementById('hapticVibeToggle');
+  const vibeTrack = document.getElementById('hapticVibeTrack');
+  const vibeThumb = document.getElementById('hapticVibeThumb');
+
+  const soundToggle = document.getElementById('hapticSoundToggle');
+  const soundTrack = document.getElementById('hapticSoundTrack');
+  const soundThumb = document.getElementById('hapticSoundThumb');
+
+  function updateToggleUI(input, track, thumb, activeColor) {
+    if (!input || !track || !thumb) return;
+    if (input.checked) {
+      track.style.backgroundColor = activeColor || 'var(--saffron)';
+      thumb.style.left = '24px';
+    } else {
+      track.style.backgroundColor = '#cbd5e1';
+      thumb.style.left = '3px';
+    }
+  }
+
+  if (vibeToggle) {
+    const isVibeOn = localStorage.getItem('bp_haptics_enabled') !== 'false';
+    vibeToggle.checked = isVibeOn;
+    updateToggleUI(vibeToggle, vibeTrack, vibeThumb);
+
+    vibeToggle.addEventListener('change', function() {
+      const enabled = vibeToggle.checked;
+      if (window.BPHaptics && window.BPHaptics.setEnabled) {
+        window.BPHaptics.setEnabled(enabled);
+      } else {
+        localStorage.setItem('bp_haptics_enabled', enabled ? 'true' : 'false');
+      }
+      updateToggleUI(vibeToggle, vibeTrack, vibeThumb);
+      if (enabled) testHaptic('light');
+    });
+  }
+
+  if (soundToggle) {
+    const isSoundOn = localStorage.getItem('bp_haptics_sound') !== 'false';
+    soundToggle.checked = isSoundOn;
+    updateToggleUI(soundToggle, soundTrack, soundThumb);
+
+    soundToggle.addEventListener('change', function() {
+      const enabled = soundToggle.checked;
+      if (window.BPHaptics && window.BPHaptics.setSoundEnabled) {
+        window.BPHaptics.setSoundEnabled(enabled);
+      } else {
+        localStorage.setItem('bp_haptics_sound', enabled ? 'true' : 'false');
+      }
+      updateToggleUI(soundToggle, soundTrack, soundThumb);
+      if (enabled) testHaptic('light');
+    });
   }
 })();
 </script>

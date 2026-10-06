@@ -9,12 +9,50 @@ function escapeHtml(unsafe) {
 }
 
 const themeHeadScript = `
+  <link rel="stylesheet" href="/css/app-shell.css?v=3.5">
   <script>
   (function(){
     try {
       var t = localStorage.getItem('bp-theme');
       if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
     } catch(e){}
+
+    // Auto-detect embed mode and apply embed-page and in-iframe class immediately
+    if (window.self !== window.top) {
+      document.documentElement.classList.add('in-iframe');
+    }
+
+    function checkEmbed() {
+      if (window.self !== window.top) {
+        document.body.classList.add('embed-page');
+        var cleanUrl = (function() {
+          try {
+            var u = new URL(window.location.href);
+            u.searchParams.delete('_embed');
+            u.searchParams.delete('embed');
+            var qs = u.searchParams.toString();
+            return u.pathname + (qs ? ('?' + qs) : '');
+          } catch (_) {
+            return window.location.pathname;
+          }
+        })();
+        try { sessionStorage.setItem('bp_current_path', cleanUrl); } catch (_) {}
+        if (window.top && typeof window.top.onFrameNavigated === 'function') {
+          window.top.onFrameNavigated(cleanUrl, window.location.pathname);
+        } else if (window.top && window.top.history && window.top.history.replaceState) {
+          window.top.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+        }
+      } else if (!/^\/(admin-login|forgot-password|logout)/i.test(window.location.pathname) && !window.location.search.includes('_embed=1') && !window.location.search.includes('standalone=1')) {
+        var fullUrl = window.location.pathname + window.location.search;
+        try { sessionStorage.setItem('bp_current_path', fullUrl); } catch (_) {}
+        window.location.replace('/?route=' + encodeURIComponent(fullUrl));
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkEmbed);
+    } else {
+      checkEmbed();
+    }
   })();
   </script>`;
 
@@ -30,6 +68,34 @@ const themeToggleBtnHtml = `
     <span class="icon-moon" aria-hidden="true">🌙</span>
     <span class="icon-sun"  aria-hidden="true">☀️</span>
   </button>`;
+
+const appBottomNavHtml = `
+  <div class="outer-shell-only-bottom-nav">
+  <nav class="app-bottom-nav no-print" id="appBottomNav" aria-label="Main Mobile Navigation">
+    <div class="app-bottom-nav-inner">
+      <a href="/" class="nav-tab" data-route="/" id="navTabHome">
+        <div class="tab-icon-box"><span class="tab-icon">🏠</span></div>
+        <span class="tab-label">Home</span>
+      </a>
+      <a href="/submit-form" class="nav-tab" data-route="/submit-form" id="navTabSinger">
+        <div class="tab-icon-box"><span class="tab-icon">🎤</span></div>
+        <span class="tab-label">Singer Zone</span>
+      </a>
+      <a href="/master-bank" class="nav-tab" data-route="/master-bank" id="navTabBank">
+        <div class="tab-icon-box"><span class="tab-icon">📖</span></div>
+        <span class="tab-label">Songbook</span>
+      </a>
+      <a href="/plan-view" class="nav-tab" data-route="/plan-view" id="navTabPlan">
+        <div class="tab-icon-box"><span class="tab-icon">📊</span></div>
+        <span class="tab-label">Live Plan</span>
+      </a>
+      <a href="/my-hub" class="nav-tab" data-route="/my-hub" id="navTabHub">
+        <div class="tab-icon-box"><span class="tab-icon">👤</span><span class="tab-badge-dot" id="hubBadgeDot" style="display:none;"></span></div>
+        <span class="tab-label">My Hub</span>
+      </a>
+    </div>
+  </nav>
+  </div>`;
 
 function generateSubmitFormHtml(
   sessionDate,
@@ -73,7 +139,6 @@ function generateSubmitFormHtml(
   <div class="container">
     
     <div class="header">
-      <a href="${isAdminBool ? '/admin' : '/'}" class="home-btn" title="${isAdminBool ? 'Back to Dashboard' : 'Return to Homepage'}">${isAdminBool ? '🏠 Dashboard' : '🏠 Home'}</a>
       <h1>📋 Bhajan Scheduler</h1>
       <p>Sri Sathya Sai Seva Organisation - Gandhinagar</p>
     </div>
@@ -153,12 +218,12 @@ function generateSubmitFormHtml(
             🎶 Details for <span id="deityDisplay">---</span>
           </h3>
           
-          <div class="form-row">
-            <div class="form-group" style="flex: 2;">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div class="form-row form-row-title-speed">
+            <div class="form-group form-group-title">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; flex-wrap:wrap; gap:6px;">
                 <label style="margin-bottom:0;">Bhajan Title <span class="required">*</span></label>
                 ${currentSinger ? `
-                  <button type="button" id="openSongbookPickerBtn" style="background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe; border-radius:6px; padding:3px 9px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+                  <button type="button" id="openSongbookPickerBtn" style="background:#f5f3ff; color:#7c3aed; border:1px solid #ddd6fe; border-radius:6px; padding:3px 9px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px; white-space:nowrap;">
                     <span>📖</span> Pick from My Songbook
                   </button>
                 ` : ''}
@@ -183,14 +248,14 @@ function generateSubmitFormHtml(
               <div id="cooldownWarning" style="display:none; color:#d32f2f; background:#ffebee; padding:8px; border-radius:6px; font-size:12px; margin-top:8px; font-weight:500;"></div>
             </div>
             
-            <div class="form-group" style="flex: 1;">
+            <div class="form-group form-group-speed">
               <label>Speed / Tempo</label>
               <input type="text" name="speed" id="speedInput" readonly placeholder="Auto-filled..." class="input-readonly" />
             </div>
           </div>
           
-          <div class="form-row">
-             <div class="form-group" style="flex: 1;">
+          <div class="form-row form-row-scale-raag">
+             <div class="form-group form-group-scale">
                 <label>🎵 Scale / Shruti</label>
                 <input type="text" name="scale" id="scaleInput" placeholder="e.g., 1.5P or C#" />
                 <div id="scaleSuggestionsContainer" style="margin-top:6px; display:flex; flex-direction:column; gap:4px;">
@@ -202,7 +267,7 @@ function generateSubmitFormHtml(
                   </div>
                 </div>
              </div>
-            <div class="form-group" style="flex: 1;">
+            <div class="form-group form-group-raag">
                <label>🎼 Raag</label>
                <input type="text" name="raga" id="ragaInput" readonly placeholder="Auto-filled..." class="input-readonly" />
             </div>
@@ -236,6 +301,7 @@ function generateSubmitFormHtml(
   
   <div id="detailsModal" class="modal">
     <div class="modal-content">
+      <div class="sheet-drag-handle"></div>
       <div class="modal-header">
         <h3 id="modalDeityName">Deity Details</h3>
         <button class="close-btn" onclick="closeModal()">&times;</button>
@@ -256,11 +322,15 @@ function generateSubmitFormHtml(
         <div class="detail-label">Speed</div>
         <div class="detail-value" id="modalSpeed">---</div>
       </div>
+      <div class="modal-actions-row">
+        <button type="button" class="button secondary btn-modal-edit" onclick="closeModal()">Close</button>
+      </div>
     </div>
   </div>
 
   <div id="confirmSubmitModal" class="modal">
     <div class="modal-content">
+      <div class="sheet-drag-handle"></div>
       <div class="modal-header">
         <h3 style="color:#2f9e44;">Review Your Submission</h3>
         <button class="close-btn" onclick="closeConfirmModal()">&times;</button>
@@ -281,15 +351,16 @@ function generateSubmitFormHtml(
         <div class="detail-label">Scale/Shruti</div>
         <div class="detail-value" id="modScale">---</div>
       </div>
-      <div style="display:flex; gap:12px; margin-top:24px; justify-content: flex-end;">
-        <button type="button" id="editBtn" class="button secondary">Edit</button>
-        <button type="button" id="confirmBtn" class="button button-confirm">Confirm</button>
+      <div class="modal-actions-row">
+        <button type="button" id="editBtn" class="button secondary btn-modal-edit">✏️ Edit</button>
+        <button type="button" id="confirmBtn" class="button button-confirm btn-modal-confirm">✨ Confirm &amp; Offer</button>
       </div>
     </div>
   </div>
   
   <div id="selectBhajanModal" class="modal">
     <div class="modal-content select-bhajan-modal-content">
+      <div class="sheet-drag-handle"></div>
       <div class="modal-music-icon">🎵</div>
       <h3 class="modal-warning-title">
         Select Bhajan from Suggestions
@@ -306,7 +377,8 @@ function generateSubmitFormHtml(
   </div>
 
   <div id="songbookPickerModal" class="modal">
-    <div class="modal-content" style="max-width:540px; width:92%; max-height:85vh; display:flex; flex-direction:column; padding:24px;">
+    <div class="modal-content songbook-picker-sheet" style="max-width:540px; width:92%; max-height:85vh; display:flex; flex-direction:column; padding:24px;">
+      <div class="sheet-drag-handle"></div>
       <div class="modal-header" style="padding-bottom:12px; border-bottom:1px solid var(--border);">
         <h3 style="color:#7c3aed; margin:0; display:flex; align-items:center; gap:8px;">
           <span>📖</span> Pick from My Songbook
@@ -322,7 +394,8 @@ function generateSubmitFormHtml(
     </div>
   </div>
   
-  <script src="/js/script.js"></script>
+  ${appBottomNavHtml}
+  <script src="/js/script.js?v=2.9"></script>
 </body>
 </html>`;
 }
@@ -332,62 +405,129 @@ function generatePlanViewHtml(
   rowsHtml,
   whatsappText,
   whatsappEncoded,
+  opts
 ) {
+  opts = opts || {};
+  const {
+    sessionDateHuman = sessionDate,
+    timelineCardsHtml = '',
+    dateOptionsList = [],
+    submissionsCount = 0,
+    isUpcoming = false,
+    isAdmin = false
+  } = opts;
+
+  const dateOptionsHtml = dateOptionsList.map(opt =>
+    `<option value="${opt.date}"${opt.isCurrent ? ' selected' : ''}>${escapeHtml(opt.label)}</option>`
+  ).join('');
+
+  const statusBadge = isUpcoming
+    ? `<span class="plan-status-badge">🟢 Upcoming</span>`
+    : `<span class="plan-status-badge" style="background:rgba(100,116,139,0.12); color:#475569; border-color:rgba(100,116,139,0.25);">📁 Past Session</span>`;
+
   return `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Bhajan Plan - ${sessionDate}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Live Plan – ${escapeHtml(sessionDateHuman)} | Bhajan Scheduler</title>
+  <meta name="description" content="Live bhajan sequence plan for ${escapeHtml(sessionDateHuman)}. View singer order, deity, pitch scale and tempo for accompanists.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   ${themeHeadScript}
-  <style>
-    @media print {
-      .no-print { display: none !important; }
-      .container { box-shadow: none; max-width: 100%; margin: 0; border-radius: 0; }
-      body { background: white; padding: 0; }
-      table { border-collapse: collapse; width: 100%; font-family: 'Segoe UI', sans-serif; }
-      th { background-color: #f1f3f5 !important; color: #000 !important; -webkit-print-color-adjust: exact; border: 1px solid #ccc; padding: 12px; font-size: 14px; }
-      td { border: 1px solid #ccc; padding: 10px; font-size: 15px; color: #000; }
-      .deity-pill { background: transparent !important; color: #000 !important; font-weight: bold; border: none; padding: 0; }
-      h1 { font-size: 28px; color: #000; margin-bottom: 0; border-bottom: 2px solid #000; padding-bottom: 10px; }
-      .header p { font-size: 18px; color: #333; margin-top: 5px; }
-      .header { border-radius: 0; margin: 0 0 20px 0; background: none !important; padding: 0; text-align: left; }
-    }
-  </style>
 </head>
 <body>
   ${themeToggleBtnHtml}
-  <div class="container container-lg">
-    <div class="header" style="border-radius: 16px 16px 0 0; margin: -20px -20px 20px -20px;">
-      <h1>🕉️ Bhajan Plan</h1>
-      <p>${sessionDate}</p>
-    </div>
 
-    <div class="no-print plan-filter-box" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:20px; padding:16px; border-radius:12px;">
-      <form method="get" action="/plan-view" style="display:flex; align-items:center; gap:10px; margin:0; flex-grow:1;">
-        <label style="font-weight:600; white-space:nowrap;">📅 Date:</label>
-        <input type="date" name="session_date" value="${sessionDate}" required style="padding:8px 12px; border-radius:8px; font-family:inherit;" />
-        <button type="submit" class="button" style="padding:8px 16px; font-size:14px;">Go</button>
-      </form>
-      <div style="display:flex; gap:8px;">
-        <button onclick="window.print()" class="button secondary" style="padding:8px 16px; font-size:14px;">🖨️ Print</button>
-        <a href="/admin" class="button secondary" style="padding:8px 16px; font-size:14px;">🏠 Dashboard</a>
+  <div class="plan-page-shell">
+
+    <!-- ═══ UNIVERSAL SSSO GANDHINAGAR PRINT LETTERHEAD ═══ -->
+    <div class="universal-print-letterhead" aria-hidden="true">
+      <div class="letterhead-top-row">
+        <div class="letterhead-logo-wrap">
+          <img src="/images/logo.png" alt="Sri Sathya Sai Seva Organisation" class="letterhead-logo" />
+        </div>
+        <div class="letterhead-center-text">
+          <div class="letterhead-invoc">|| AUM SRI SAI RAM ||</div>
+          <div class="letterhead-org-title">SRI SATHYA SAI SEVA ORGANISATION, GANDHINAGAR</div>
+          <div class="letterhead-samiti-address">Satyadeep, 20, Gayatri Society, Vasna Hadmatiya, Sargasan, Gandhinagar - 382015</div>
+          <div class="letterhead-contact-line">Email: ssso.gandhinagar@gmail.com &bull; Helpline: +91 9265056242</div>
+        </div>
+        <div class="letterhead-spacer" aria-hidden="true"></div>
+      </div>
+      <div class="letterhead-divider">
+        <div class="divider-primary"></div>
+        <div class="divider-secondary"></div>
       </div>
     </div>
 
-    <div class="table-container">
+    <!-- Print Session Banner -->
+    <div class="print-session-banner">
+      <div class="print-banner-title">BHAJAN SCHEDULE &bull; ${escapeHtml(sessionDateHuman)}</div>
+      <div class="print-banner-meta">Official Order of Offerings &bull; Total Scheduled Bhajans: ${submissionsCount}</div>
+    </div>
+
+    <!-- ═══ APP-FIRST PLAN HEADER ═══ -->
+    <div class="plan-header-card no-print">
+      <div class="plan-header-top">
+        <div class="plan-title-group">
+          <div class="plan-icon-bubble">📊</div>
+          <div class="plan-header-titles">
+            <h1>Live Bhajan Plan</h1>
+            <p>
+              <span>${escapeHtml(sessionDateHuman)}</span>
+              &nbsp;·&nbsp;
+              <strong>${submissionsCount}</strong> bhajan${submissionsCount !== 1 ? 's' : ''}
+            </p>
+          </div>
+        </div>
+        ${statusBadge}
+      </div>
+
+      <div class="plan-switcher-row">
+        <form method="get" action="/plan-view" class="plan-date-select-wrap">
+          <label style="font-size:13px; font-weight:600; white-space:nowrap; color:var(--ink-soft);">📅 Session:</label>
+          <select name="session_date" class="plan-date-select" onchange="this.form.submit()" aria-label="Select bhajan session date">
+            ${dateOptionsHtml}
+          </select>
+        </form>
+
+        <div class="plan-actions-bar">
+          ${isAdmin ? `
+          <button id="planShareBtn" type="button" class="plan-btn plan-btn-whatsapp" onclick="sharePlan()" title="Share schedule via WhatsApp or native share">
+            <span>📤</span> <span>Share</span>
+          </button>` : ''}
+          <button type="button" class="plan-btn plan-btn-secondary" onclick="printPlanSchedule()" title="Print as PDF or paper">
+            <span>🖨️</span> <span>Print</span>
+          </button>
+          <div class="plan-view-tabs" id="planViewTabs">
+            <button type="button" class="plan-view-tab active" id="tabTimeline" onclick="switchPlanView('timeline')">
+              <span>📋</span> Timeline
+            </button>
+            <button type="button" class="plan-view-tab" id="tabTable" onclick="switchPlanView('table')">
+              <span>📊</span> Table
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MOBILE TIMELINE VIEW ═══ -->
+    <div class="plan-timeline active-view" id="planTimeline">
+      ${timelineCardsHtml}
+    </div>
+
+    <!-- ═══ DESKTOP / PRINT TABLE VIEW ═══ -->
+    <div class="plan-table-container" id="planTable">
       <table>
         <thead>
           <tr>
-            <th width="5%">#</th>
+            <th width="4%">#</th>
             <th width="20%">Singer</th>
-            <th width="15%">Partner</th>
-            <th width="25%">Bhajan</th>
-            <th width="15%">Deity</th>
-            <th width="10%">Scale</th>
-            <th width="10%">Speed</th>
+            <th width="28%">Bhajan</th>
+            <th width="24%">Deity</th>
+            <th width="13%">Pitch / Scale</th>
+            <th width="11%">Tempo</th>
           </tr>
         </thead>
         <tbody>
@@ -395,21 +535,187 @@ function generatePlanViewHtml(
         </tbody>
       </table>
     </div>
-    
-    <div class="no-print whatsapp-share-box" style="margin-top:30px; padding:20px; border-radius:12px;">
-      <h3 style="margin-bottom:10px; display:flex; align-items:center; gap:8px;">
-        <span style="font-size:24px;">📱</span> WhatsApp Share
-      </h3>
-      <p style="font-size:13px; margin-bottom:12px; opacity:0.8;">Copy the text below or click the button to share directly.</p>
-      <textarea readonly style="width:100%; min-height:120px; padding:12px; border-radius:8px; font-family:monospace; font-size:13px; resize:vertical;">${whatsappText}</textarea>
-      <div style="margin-top:16px; text-align:right;">
-        <a class="button" href="https://wa.me/?text=${whatsappEncoded}" target="_blank" style="background:#25D366; border:none; display:inline-flex; align-items:center; gap:8px;">
-          <span>Share via WhatsApp</span>
-        </a>
+
+    ${isAdmin ? `
+    <!-- ═══ WHATSAPP SHARE CARD (Admin Only) ═══ -->
+    <div class="plan-share-card no-print" id="planShareCard">
+      <div class="plan-share-header">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:22px;">📱</span>
+          <div>
+            <div style="font-size:15px; font-weight:700; margin-bottom:2px;">Share to Samiti Group</div>
+            <div style="font-size:12.5px; color:var(--ink-soft);">One-tap WhatsApp share or copy formatted schedule</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="plan-btn plan-btn-whatsapp" onclick="sharePlan()" id="planShareBtnBottom">
+            <span>📤</span> <span>Share</span>
+          </button>
+          <button type="button" class="plan-btn plan-btn-secondary" onclick="copyPlanText()" id="planCopyBtn">
+            <span>📋</span> <span>Copy</span>
+          </button>
+        </div>
+      </div>
+      <textarea id="planShareText" readonly class="plan-share-textarea" aria-label="Schedule text for WhatsApp">${whatsappText}</textarea>
+    </div>` : ''}
+
+    <!-- ═══ UNIVERSAL SSSO GANDHINAGAR PRINT FOOTER ═══ -->
+    <div class="universal-print-footer" aria-hidden="true">
+      <div class="print-footer-rule"></div>
+      <div class="print-footer-quote">"Love All, Serve All &bull; Help Ever, Hurt Never"</div>
+      <div class="print-footer-row">
+        <div class="footer-center-text">Sri Sathya Sai Seva Organisation, Gandhinagar</div>
       </div>
     </div>
-  </div>
-  <script src="/js/script.js"></script>
+
+  </div><!-- /.plan-page-shell -->
+
+  ${appBottomNavHtml}
+
+  <script>
+    // ─── PLAN VIEW SCRIPT ───────────────────────────────────────────
+    const _WHATSAPP_ENCODED = ${JSON.stringify(whatsappEncoded)};
+    const _WHATSAPP_TEXT = document.getElementById('planShareText') ? document.getElementById('planShareText').value : '';
+    const _PLAN_DATE = ${JSON.stringify(sessionDate)};
+
+    // Highlight active bottom nav tab
+    (function() {
+      var tabs = document.querySelectorAll('#appBottomNav .nav-tab');
+      tabs.forEach(function(t) {
+        var route = t.getAttribute('data-route') || '';
+        if (window.location.pathname === route || (route === '/plan-view' && window.location.pathname.startsWith('/plan-view'))) {
+          t.classList.add('active');
+        }
+      });
+    })();
+
+    // ─── View mode switcher (desktop) ───────────────────────────────
+    function switchPlanView(mode) {
+      var timeline = document.getElementById('planTimeline');
+      var table = document.getElementById('planTable');
+      var tabTl = document.getElementById('tabTimeline');
+      var tabTb = document.getElementById('tabTable');
+      if (mode === 'timeline') {
+        if (timeline) {
+          timeline.classList.add('active-view');
+          timeline.style.setProperty('display', 'flex', 'important');
+        }
+        if (table) {
+          table.classList.remove('active-view');
+          table.style.setProperty('display', 'none', 'important');
+        }
+        if (tabTl) tabTl.classList.add('active');
+        if (tabTb) tabTb.classList.remove('active');
+      } else {
+        if (table) {
+          table.classList.add('active-view');
+          table.style.setProperty('display', 'block', 'important');
+        }
+        if (timeline) {
+          timeline.classList.remove('active-view');
+          timeline.style.setProperty('display', 'none', 'important');
+        }
+        if (tabTb) tabTb.classList.add('active');
+        if (tabTl) tabTl.classList.remove('active');
+      }
+      try { localStorage.setItem('plan_view_mode', mode); } catch(e) {}
+    }
+
+    // Print Plan helper: forces table mode before opening print dialog
+    function printPlanSchedule() {
+      switchPlanView('table');
+      setTimeout(function() {
+        window.print();
+      }, 50);
+    }
+    window.addEventListener('beforeprint', function() {
+      switchPlanView('table');
+    });
+
+    // Restore last view mode on desktop
+    (function() {
+      if (window.innerWidth > 768) {
+        var saved = null;
+        try { saved = localStorage.getItem('plan_view_mode'); } catch(e) {}
+        if (saved === 'table') switchPlanView('table');
+        else switchPlanView('timeline');
+      }
+    })();
+
+    // Dynamic Admin sync: If admin logged out, immediately hide share controls
+    function syncAdminRights() {
+      try {
+        var isLocalAdmin = localStorage.getItem('bp_is_admin') === 'true';
+        var shareBtn = document.getElementById('planShareBtn');
+        var shareCard = document.getElementById('planShareCard');
+        if (!isLocalAdmin) {
+          if (shareBtn) shareBtn.style.display = 'none';
+          if (shareCard) shareCard.style.display = 'none';
+        }
+      } catch(_) {}
+    }
+    syncAdminRights();
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'bp_is_admin') syncAdminRights();
+    });
+    window.addEventListener('focus', syncAdminRights);
+
+    // ─── One-Tap WhatsApp Share (navigator.share + fallback) ─────────
+    async function sharePlan() {
+      var text = document.getElementById('planShareText') ? document.getElementById('planShareText').value : _WHATSAPP_TEXT;
+      var url = window.location.href;
+      var title = '🕉️ Live Bhajan Plan – ' + _PLAN_DATE;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: title, text: text, url: url });
+          return;
+        } catch(e) {
+          if (e.name === 'AbortError') return; // User cancelled
+        }
+      }
+      // Fallback: open WhatsApp web link
+      window.open('https://wa.me/?text=' + _WHATSAPP_ENCODED, '_blank', 'noopener');
+    }
+
+    // ─── Copy Schedule Text ─────────────────────────────────────────
+    async function copyPlanText() {
+      var text = document.getElementById('planShareText') ? document.getElementById('planShareText').value : '';
+      var btn = document.getElementById('planCopyBtn');
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          var ta = document.getElementById('planShareText');
+          ta.select();
+          document.execCommand('copy');
+        }
+        if (btn) {
+          var orig = btn.innerHTML;
+          btn.innerHTML = '<span>✅</span> <span>Copied!</span>';
+          btn.style.background = 'rgba(34,197,94,0.15)';
+          btn.style.borderColor = 'rgba(34,197,94,0.4)';
+          btn.style.color = '#16a34a';
+          setTimeout(function() {
+            btn.innerHTML = orig;
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            btn.style.color = '';
+          }, 2000);
+        }
+      } catch(e) {
+        alert('Copy failed. Please select and copy manually.');
+      }
+    }
+
+    // ─── Lyrics Quick View ──────────────────────────────────────────
+    function openPlanLyrics(bhajanId) {
+      // Redirect to bhajan details page
+      window.location.href = '/bhajan/' + bhajanId;
+    }
+  </script>
+
+  <script src="/js/script.js?v=2.10"></script>
 </body>
 </html>`;
 }

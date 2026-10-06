@@ -1,92 +1,51 @@
-<div class="container container-xl">
+<div class="container container-xl admin-dashboard-container">
 
-    <div class="header">
-        <h1>🗓️ Admin Calendar</h1>
-        <p>Manage Sessions</p>
+    <!-- ═══ ADMIN PAGE HERO ═══ -->
+    <div class="admin-page-hero">
+        <div class="admin-hero-content">
+            <div class="admin-hero-title-group">
+                <div class="admin-hero-icon-bubble">🗓️</div>
+                <div>
+                    <h1>Session Calendar</h1>
+                    <p>Schedule devotional sessions, set festival bhajans, and manage singer line-ups</p>
+                </div>
+            </div>
+            <div class="admin-hero-actions">
+                <a href="/submit-form?admin=true" class="button primary admin-hero-btn">
+                    <span>➕</span> New Entry
+                </a>
+                <a href="/plan-view" class="button secondary admin-hero-btn">
+                    <span>📤</span> Live Plan
+                </a>
+            </div>
+        </div>
     </div>
 
-    <nav class="admin-dashboard-actions" aria-label="Admin actions" style="display:none;">
-
-        <a href="/" class="button secondary">
-            🌐 Public Home
-        </a>
-
-        <a href="/submit-form?admin=true" class="button secondary">
-            ➕ New Entry (Any Date)
-        </a>
-
-        <a href="/admin/rules" class="button secondary">
-            ⚙️ Default Deity Rules
-        </a>
-
-        <a
-            href="/admin/singers"
-            class="button secondary"
-            style="background:#e6fcf5;color:#099268;border-color:#c3fae8;"
-        >
-            👤 Singer Directory
-        </a>
-
-        <a
-            href="/admin/singer-dictionary"
-            class="button secondary"
-            style="background:#e3f2fd;color:#0277bd;border-color:#90caf9;"
-        >
-            📖 Singer Dictionary
-        </a>
-
-        <a
-            href="/master-bank"
-            class="button secondary"
-            style="background:#fff3cd;color:#e67700;border-color:#ffe066;"
-        >
-            📚 Edit Master Bank
-        </a>
-
-        <a
-            href="/admin/analytics"
-            class="button secondary"
-            style="background:#f3f0ff;color:#6741d9;border-color:#e5dbff;"
-        >
-            📈 Analytics
-        </a>
-
-        <% if (currentAdmin && currentAdmin.role === "super_admin") { %>
-        <a
-            href="/admin/diwali"
-            class="button secondary"
-            style="background:#fff9db;color:#d9480f;border-color:#ffe066;"
-        >
-            🪔 Diwali Bhajans
-        </a>
-        <% } %>
-
-    </nav>
-
-
+    <!-- ═══ CALENDAR WRAPPER ═══ -->
     <div class="calendar-wrapper">
         <div class="calendar-header">
-
             <a
                 href="/admin?month=<%= prevMonth %>&year=<%= prevYear %>"
                 class="calendar-nav-btn"
                 aria-label="Previous month"
+                title="Previous month"
             >
-                ←
+                ‹
             </a>
 
-            <div class="calendar-title">
-                <%= currentMonthName %> <%= year %>
+            <div class="calendar-title-wrap">
+                <h2 class="calendar-title"><%= currentMonthName %> <%= year %></h2>
+                <a href="/admin" class="calendar-today-btn" title="Jump to current month">Today</a>
             </div>
 
             <a
                 href="/admin?month=<%= nextMonth %>&year=<%= nextYear %>"
                 class="calendar-nav-btn"
                 aria-label="Next month"
+                title="Next month"
             >
-                →
+                ›
             </a>
-
         </div>
 
         <div class="calendar-weekdays">
@@ -97,15 +56,16 @@
             <%- calendarCells %>
         </div>
 
+        <!-- ═══ CALENDAR LEGEND ═══ -->
         <div class="calendar-legend">
             <div class="legend-item">
-                <span class="legend-color day-thursday"></span> Thursday
+                <span class="legend-color day-thursday"></span> Regular Thursday
             </div>
             <div class="legend-item">
-                <span class="legend-color day-special"></span> Special
+                <span class="legend-color day-special"></span> Special Bhajan
             </div>
             <div class="legend-item">
-                <span class="legend-color day-festival"></span> Festival
+                <span class="legend-color day-festival"></span> Festival Session
             </div>
             <div class="legend-item">
                 <span class="legend-color day-today"></span> Today
@@ -113,206 +73,110 @@
         </div>
 
         <div class="calendar-hint">
-            💡 Tap any date to configure sessions, view song line-ups, or set Special/Festival status.
+            💡 Tap any date cell to configure session type, view scheduled line-ups, or add Special/Festival status.
         </div>
     </div>
 </div>
 
-
-
 <!-- ===========================
      ADMIN DATE MODAL
 =========================== -->
-
 <div id="adminDateModal" class="modal">
-
-    <div
-        class="modal-content"
-        style="text-align:center;max-width:350px;"
-    >
-
+    <div class="modal-content admin-modal-card" style="max-width:380px;">
         <div class="modal-header">
-
-            <h3 id="adminModalDate">
-                Manage Date
-            </h3>
-
-            <button
-                class="close-btn"
-                onclick="closeAdminModal()"
-            >
-                &times;
-            </button>
-
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📅</span>
+                <h3 id="adminModalDate" style="margin:0; font-size:17px; font-weight:700;">Manage Date</h3>
+            </div>
+            <button class="close-btn" onclick="closeAdminModal()" aria-label="Close modal">&times;</button>
         </div>
 
-        <div
-            style="
-                margin-bottom:15px;
-                text-align:left;
-            "
-        >
+        <div class="modal-body" style="padding:16px 0 0 0;">
+            <div class="modal-field" style="margin-bottom:16px;">
+                <label for="permDescription" style="display:block; margin-bottom:6px; font-size:12.5px; font-weight:600; color:var(--text);">
+                    Session Description / Occasion <span style="color:var(--danger, #ef4444);">*</span>
+                </label>
+                <input
+                    type="text"
+                    id="permDescription"
+                    placeholder="e.g. Mahashivratri, New Year, Akhand Bhajan"
+                    maxlength="100"
+                    style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-input, var(--surface)); color:var(--text); font-family:inherit; font-size:13.5px;"
+                >
+            </div>
 
-            <label
-                style="
-                    display:block;
-                    margin-bottom:5px;
-                    font-size:12px;
-                    font-weight:600;
-                    color:#495057;
-                "
-            >
-                Description
-                <span style="color:#e03131;">*</span>
-            </label>
+            <div class="admin-modal-action-grid" style="display:grid; gap:10px;">
+                <button
+                    onclick="updatePermission('special')"
+                    class="button"
+                    style="background:#0284c7; color:#fff; border:none; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:600; padding:11px;"
+                >
+                    <span>✨</span> Mark Special Bhajan
+                </button>
 
-            <input
-                type="text"
-                id="permDescription"
-                placeholder="Reason (e.g. Mahashivratri)"
-                maxlength="100"
-                style="
-                    width:100%;
-                    padding:10px;
-                    border:1px solid #dee2e6;
-                    border-radius:8px;
-                    font-family:inherit;
-                "
-            >
+                <button
+                    onclick="updatePermission('festival')"
+                    class="button"
+                    style="background:#ea580c; color:#fff; border:none; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:600; padding:11px;"
+                >
+                    <span>🪔</span> Mark Festival Bhajan
+                </button>
 
+                <button
+                    onclick="updatePermission('clear')"
+                    class="button secondary"
+                    style="display:flex; align-items:center; justify-content:center; gap:8px; padding:10px;"
+                >
+                    <span>❌</span> Clear Special Status
+                </button>
+
+                <div style="border-top:1px solid var(--border-soft); margin:6px 0;"></div>
+
+                <button
+                    onclick="viewAdminDate()"
+                    class="button primary"
+                    style="display:flex; align-items:center; justify-content:center; gap:8px; padding:11px; font-weight:700;"
+                >
+                    <span>📋</span> View &amp; Edit Session Plan
+                </button>
+            </div>
         </div>
-
-        <div
-            style="
-                display:grid;
-                gap:12px;
-            "
-        >
-
-            <button
-                onclick="updatePermission('special')"
-                class="button"
-                style="background:#4dabf7;border:none;"
-            >
-                ✨ Add Special Bhajan
-            </button>
-
-            <button
-                onclick="updatePermission('festival')"
-                class="button"
-                style="background:#ff922b;border:none;"
-            >
-                🪔 Add Festival Bhajan
-            </button>
-
-            <button
-                onclick="updatePermission('clear')"
-                class="button secondary"
-            >
-                ❌ Clear Permission
-            </button>
-
-            <hr
-                style="
-                    width:100%;
-                    border:0;
-                    border-top:1px solid #eee;
-                    margin:8px 0;
-                "
-            >
-
-            <button
-                onclick="viewAdminDate()"
-                class="button secondary"
-            >
-                📅 View / Edit Plan
-            </button>
-
-        </div>
-
     </div>
-
 </div>
 
 <!-- ===========================
      MISSING BHAJAN MODAL
 =========================== -->
-
 <div id="missingBhajanModal" class="modal">
-
-    <div
-        class="modal-content"
-        style="max-width:400px;text-align:left;"
-    >
-
+    <div class="modal-content admin-modal-card" style="max-width:440px;">
         <div class="modal-header">
-
-            <h3>Add to Master Database</h3>
-
-            <button
-                class="close-btn"
-                onclick="closeMissingBhajanModal()"
-            >
-                &times;
-            </button>
-
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📚</span>
+                <h3 style="margin:0; font-size:17px; font-weight:700;">Add to Master Database</h3>
+            </div>
+            <button class="close-btn" onclick="closeMissingBhajanModal()" aria-label="Close modal">&times;</button>
         </div>
 
-        <div
-            style="
-                display:flex;
-                flex-direction:column;
-                gap:12px;
-                margin-top:15px;
-            "
-        >
-
+        <div style="display:flex; flex-direction:column; gap:14px; margin-top:16px;">
             <div>
-                <label
-                    style="
-                        font-size:12px;
-                        font-weight:600;
-                        color:#495057;
-                    "
-                >
-                    Title
+                <label style="font-size:12px; font-weight:600; color:var(--text-light); text-transform:uppercase;">
+                    Bhajan Title
                 </label>
-
                 <input
                     type="text"
                     id="mbTitle"
                     readonly
-                    style="
-                        width:100%;
-                        padding:8px;
-                        border:1px solid #ddd;
-                        background:#f5f5f5;
-                        border-radius:4px;
-                    "
+                    style="width:100%; padding:9px 12px; border:1px solid var(--border); background:var(--bg); color:var(--text); border-radius:8px; font-weight:600;"
                 >
             </div>
 
-
             <div>
-
-                <label
-                    style="
-                        font-size:12px;
-                        font-weight:600;
-                        color:#495057;
-                    "
-                >
+                <label style="font-size:12px; font-weight:600; color:var(--text-light); text-transform:uppercase;">
                     Deity
                 </label>
-
                 <select
                     id="mbDeity"
-                    style="
-                        width:100%;
-                        padding:8px;
-                        border:1px solid #ddd;
-                        border-radius:4px;
-                    "
+                    style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-input, var(--surface)); color:var(--text);"
                 >
                     <option value="Ganesha">Ganesha</option>
                     <option value="Guru">Guru</option>
@@ -326,188 +190,111 @@
                     <option value="Vitthala">Vitthala</option>
                     <option value="Hanuman">Hanuman</option>
                 </select>
-
             </div>
 
-
             <div>
-
-                <label
-                    style="
-                        font-size:12px;
-                        font-weight:600;
-                        color:#495057;
-                    "
-                >
+                <label style="font-size:12px; font-weight:600; color:var(--text-light); text-transform:uppercase;">
                     Tempo (Speed)
                 </label>
-
                 <select
                     id="mbTempo"
-                    style="
-                        width:100%;
-                        padding:8px;
-                        border:1px solid #ddd;
-                        border-radius:4px;
-                    "
+                    style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-input, var(--surface)); color:var(--text);"
                 >
                     <option value="Slow">Slow</option>
                     <option value="Medium">Medium</option>
                     <option value="Fast">Fast</option>
                 </select>
-
             </div>
 
-
             <div>
-
-                <label
-                    style="
-                        font-size:12px;
-                        font-weight:600;
-                        color:#495057;
-                    "
-                >
+                <label style="font-size:12px; font-weight:600; color:var(--text-light); text-transform:uppercase;">
                     Raga
                 </label>
-
                 <input
                     type="text"
                     id="mbRaga"
-                    placeholder="e.g., Yaman Kalyani"
-                    style="
-                        width:100%;
-                        padding:8px;
-                        border:1px solid #ddd;
-                        border-radius:4px;
-                    "
+                    placeholder="e.g. Yaman Kalyani, Bhairavi"
+                    style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-input, var(--surface)); color:var(--text);"
                 >
-
             </div>
 
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div>
+                    <label style="font-size:12px; font-weight:600; color:var(--text-light); text-transform:uppercase;">
+                        Shruti (Male)
+                    </label>
+                    <input
+                        type="text"
+                        id="mbShrutiMale"
+                        placeholder="e.g. C#"
+                        style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-input, var(--surface)); color:var(--text);"
+                    >
+                </div>
 
-            <div>
-
-                <label
-                    style="
-                        font-size:12px;
-                        font-weight:600;
-                        color:#495057;
-                    "
-                >
-                    Shruti (Male Scale)
-                </label>
-
-                <input
-                    type="text"
-                    id="mbShrutiMale"
-                    placeholder="e.g., C#"
-                    style="
-                        width:100%;
-                        padding:8px;
-                        border:1px solid #ddd;
-                        border-radius:4px;
-                    "
-                >
-
+                <div>
+                    <label style="font-size:12px; font-weight:600; color:var(--text-light); text-transform:uppercase;">
+                        Shruti (Female)
+                    </label>
+                    <input
+                        type="text"
+                        id="mbShrutiFemale"
+                        placeholder="e.g. G#"
+                        style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-input, var(--surface)); color:var(--text);"
+                    >
+                </div>
             </div>
 
-
             <div>
-
-                <label
-                    style="
-                        font-size:12px;
-                        font-weight:600;
-                        color:#495057;
-                    "
-                >
-                    Shruti (Female Scale)
-                </label>
-
-                <input
-                    type="text"
-                    id="mbShrutiFemale"
-                    placeholder="e.g., G#"
-                    style="
-                        width:100%;
-                        padding:8px;
-                        border:1px solid #ddd;
-                        border-radius:4px;
-                    "
-                >
-
-            </div>
-
-
-            <div>
-
-                <label
-                    style="
-                        font-size:12px;
-                        font-weight:600;
-                        color:#495057;
-                    "
-                >
+                <label style="font-size:12px; font-weight:600; color:var(--text-light); text-transform:uppercase;">
                     Level
                 </label>
-
                 <select
                     id="mbLevel"
-                    style="
-                        width:100%;
-                        padding:8px;
-                        border:1px solid #ddd;
-                        border-radius:4px;
-                    "
+                    style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-input, var(--surface)); color:var(--text);"
                 >
                     <option value="">Unknown</option>
                     <option value="Easy">Easy</option>
                     <option value="Medium">Medium</option>
                     <option value="Advanced">Advanced</option>
                 </select>
-
             </div>
 
-
             <button
-                class="button"
+                class="button primary"
                 onclick="saveMissingBhajan()"
-                style="
-                    margin-top:10px;
-                    background:#28a745;
-                    border:none;
-                "
+                style="margin-top:6px; padding:11px; font-weight:700;"
             >
                 Save to Master DB
             </button>
-
         </div>
-
     </div>
-
 </div>
+
 <!-- ===========================
      COPY SESSION MODAL
 =========================== -->
 <div id="copySessionModal" class="modal">
-  <div class="modal-content" style="max-width:400px;">
-    <div class="modal-header">
-      <h3>📋 Copy Session</h3>
-      <button class="close-btn" onclick="closeCopySessionModal()">&times;</button>
+    <div class="modal-content admin-modal-card" style="max-width:400px;">
+        <div class="modal-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:20px;">📋</span>
+                <h3 style="margin:0; font-size:17px; font-weight:700;">Copy Session Plan</h3>
+            </div>
+            <button class="close-btn" onclick="closeCopySessionModal()" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body" style="padding:16px 0 0 0; display:flex; flex-direction:column; gap:14px;">
+            <div class="modal-field">
+                <label style="display:block; margin-bottom:6px; font-size:12px; font-weight:600; color:var(--text-light); text-transform:uppercase;">Copy FROM Date</label>
+                <input type="date" id="copySourceDate" style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-input, var(--surface)); color:var(--text);">
+            </div>
+            <div class="modal-field">
+                <label style="display:block; margin-bottom:6px; font-size:12px; font-weight:600; color:var(--text-light); text-transform:uppercase;">Copy TO Date</label>
+                <input type="date" id="copyTargetDate" style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg-input, var(--surface)); color:var(--text);">
+            </div>
+            <div class="modal-actions" style="display:flex; gap:10px; margin-top:8px;">
+                <button class="button primary" onclick="submitCopySession()" style="flex:1; padding:10px; font-weight:600;">Copy Bhajans</button>
+                <button class="button secondary" onclick="closeCopySessionModal()" style="padding:10px;">Cancel</button>
+            </div>
+        </div>
     </div>
-    <div class="modal-field">
-      <label>Copy FROM date</label>
-      <input type="date" id="copySourceDate">
-    </div>
-    <div class="modal-field">
-      <label>Copy TO date</label>
-      <input type="date" id="copyTargetDate">
-    </div>
-    <div class="modal-actions">
-      <button class="button" onclick="submitCopySession()">Copy Bhajans</button>
-      <button class="button secondary" onclick="closeCopySessionModal()">Cancel</button>
-    </div>
-  </div>
 </div>
-<script src="/script.js"></script>

@@ -20,7 +20,7 @@
       </div>
     <% } %>
 
-    <form method="post" action="/admin-login">
+    <form method="post" action="/admin-login" target="_top">
 
       <div class="form-group">
         <label for="username">User ID</label>
@@ -99,7 +99,11 @@ async function handleGoogleCredential(response) {
       errorEl.textContent = data.error || 'Google login failed.';
       return;
     }
-    window.location.href = data.redirect || '/admin';
+    if (window.top && window.top !== window) {
+      window.top.location.href = data.redirect || '/?tab=admin';
+    } else {
+      window.location.href = data.redirect || '/?tab=admin';
+    }
   } catch (err) {
     console.error(err);
     errorEl.textContent = 'Google login failed. Please try again.';

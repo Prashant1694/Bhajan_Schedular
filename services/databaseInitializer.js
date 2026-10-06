@@ -100,10 +100,20 @@ async function syncMasterBhajans() {
 
     // 2. Synchronize / upsert authoritative 1,024 Prashanti Mandir bhajans
     for (const item of data) {
+      let deityClean = item.deity;
+      if (deityClean) {
+        deityClean = deityClean.split(',').map(s => {
+          const t = s.trim();
+          const l = t.toLowerCase();
+          if (l === 'anjaneya' || l === 'aanjaneya' || l === 'hanuman' || l === 'maruti' || l === 'maruthi') return 'Hanuman';
+          if (l === 'vittala' || l === 'vithhala' || l === 'vithala' || l === 'vitthala') return 'Vitthala';
+          return t;
+        }).join(', ');
+      }
       await MasterBhajan.upsert({
         id: item.id,
         title: item.title,
-        deity: item.deity,
+        deity: deityClean,
         level: item.level || null,
         tempo: item.tempo || null,
         raga: item.raga || null,
@@ -214,8 +224,42 @@ async function normalizeDeityNames() {
       { deity: "SarvaDharma" },
       { where: { deity: "Sarva dharma" } }
     );
+
+    // Normalize Vittala / Vithhala / Vithala -> Vitthala
+    const [mbRows] = await sequelize.query(`
+      SELECT id, deity FROM master_bhajans 
+      WHERE LOWER(deity) LIKE '%vitt%' OR LOWER(deity) LIKE '%vith%'
+    `);
+    for (const r of mbRows) {
+      const parts = (r.deity || '').split(',').map(s => s.trim()).filter(Boolean);
+      const normalized = parts.map(p => {
+        const low = p.toLowerCase();
+        if (low === 'vittala' || low === 'vithhala' || low === 'vithala' || low === 'vitthala') {
+          return 'Vitthala';
+        }
+        return p;
+      }).join(', ');
+      if (normalized !== r.deity) {
+        await sequelize.query(`UPDATE master_bhajans SET deity = :deity WHERE id = :id`, {
+          replacements: { deity: normalized, id: r.id }
+        });
+      }
+    }
+
+    const [subRows] = await sequelize.query(`
+      SELECT id, deity FROM bhajans_submitted_v2 
+      WHERE LOWER(deity) LIKE '%vitt%' OR LOWER(deity) LIKE '%vith%'
+    `);
+    for (const r of subRows) {
+      const low = (r.deity || '').toLowerCase().trim();
+      if (low === 'vittala' || low === 'vithhala' || low === 'vithala') {
+        await sequelize.query(`UPDATE bhajans_submitted_v2 SET deity = 'Vitthala' WHERE id = :id`, {
+          replacements: { id: r.id }
+        });
+      }
+    }
   } catch (error) {
-    console.error("Error normalizing SarvaDharma:", error);
+    console.error("Error normalizing deities:", error);
   }
 }
 

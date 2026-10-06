@@ -8,8 +8,10 @@ const DeityRule = require("../models/DeityRule");
 // deity. Keep this mapping at the API boundary so the form never hides an
 // otherwise relevant bhajan merely because its imported category differs.
 const DEITY_ALIASES = {
-  Vitthala: ["Vitthala", "Vittala"],
-  Vittala: ["Vitthala", "Vittala"],
+  Vitthala: ["Vitthala", "Vittala", "Vithhala", "Vithala"],
+  Vittala: ["Vitthala", "Vittala", "Vithhala", "Vithala"],
+  Vithhala: ["Vitthala", "Vittala", "Vithhala", "Vithala"],
+  Vithala: ["Vitthala", "Vittala", "Vithhala", "Vithala"],
   Mata: ["Mata", "Devi"],
   Devi: ["Devi", "Mata"],
   Hanuman: ["Hanuman", "Anjaneya"],
@@ -19,8 +21,10 @@ const DEITY_ALIASES = {
 };
 
 const DEITY_TITLE_MATCHERS = {
-  Vitthala: /vitt?hala|vithoba|pandurang/i,
-  Vittala: /vitt?hala|vithoba|pandurang/i,
+  Vitthala: /vitt?h?ala|vithoba|pandurang/i,
+  Vittala: /vitt?h?ala|vithoba|pandurang/i,
+  Vithhala: /vitt?h?ala|vithoba|pandurang/i,
+  Vithala: /vitt?h?ala|vithoba|pandurang/i,
   Hanuman: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i,
   Anjaneya: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i
 };
@@ -28,6 +32,8 @@ const DEITY_TITLE_MATCHERS = {
 const DEITY_TITLE_SEARCH_TERMS = {
   Vitthala: ["Pandurang", "Vitt", "Vith"],
   Vittala: ["Pandurang", "Vitt", "Vith"],
+  Vithhala: ["Pandurang", "Vitt", "Vith"],
+  Vithala: ["Pandurang", "Vitt", "Vith"],
   Hanuman: ["Hanuman", "Anjaneya", "Maruthi", "Maruti", "Pavana Suta", "Bajrang"],
   Anjaneya: ["Hanuman", "Anjaneya", "Maruthi", "Maruti", "Pavana Suta", "Bajrang"]
 };
@@ -262,23 +268,6 @@ exports.recordHeartbeat = async (req, res) => {
       ip_address: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "127.0.0.1",
       last_seen_at: new Date()
     });
-
-    if (duration > 0) {
-      await ActivityLog.create({
-        session_id: sessionId,
-        user_type: userType,
-        admin_id: adminId,
-        username: username,
-        action: `TIME_SPENT_${section.replace(/\s+/g, "_").toUpperCase()}`,
-        section: section,
-        page_url: pageUrl,
-        method: "BEACON",
-        ip_address: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "127.0.0.1",
-        user_agent: (req.headers["user-agent"] || "").slice(0, 250),
-        duration_seconds: duration,
-        details: `Active on ${section} for ${duration}s`
-      });
-    }
 
     res.json({ success: true });
   } catch (error) {

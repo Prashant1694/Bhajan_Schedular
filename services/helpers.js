@@ -6,7 +6,10 @@ const DEITY_ORDER = [
 const SPEED_ORDER = { "slow": 0, "medium": 1, "fast": 2 };
 
 function deityOrderKey(deity) {
-  const index = DEITY_ORDER.findIndex(d => d.toLowerCase() === deity.toLowerCase());
+  let d = (deity || '').toLowerCase().trim();
+  if (d === 'vittala' || d === 'vithhala' || d === 'vithala') d = 'vitthala';
+  if (d === 'anjaneya' || d === 'aanjaneya' || d === 'maruti' || d === 'maruthi') d = 'hanuman';
+  const index = DEITY_ORDER.findIndex(o => o.toLowerCase() === d);
   return index !== -1 ? index : DEITY_ORDER.length;
 }
 
@@ -57,24 +60,71 @@ function getThursdaySubmissionStatus(now = new Date(), timeZone = TIMEZONE) {
   const hourStr = timeZone === TIMEZONE ? HOUR_FORMATTER.format(now) : new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', hour12: false }).format(now);
   const hour = parseInt(hourStr, 10);
 
+  const minStr = new Intl.DateTimeFormat('en-US', { timeZone, minute: 'numeric' }).format(now);
+  const minute = parseInt(minStr, 10);
+  const currentMinutes = hour * 60 + minute;
+
   const daysUntilNextThu = (4 - day + 7) % 7 || 7;
   const [y, m, d] = todayStr.split('-').map(Number);
   const nextThuObj = new Date(y, m - 1, d + daysUntilNextThu);
   const nextThuStr = getLocalDateStr(nextThuObj, timeZone);
 
+  // Mandir Bhajan on Thursday runs 7:30 PM - 8:30 PM (20:30 IST = 1230 mins).
+  // Submissions lock at 00:00 Thursday morning.
+  // The Live Plan view should show today's Thursday session until 8:30 PM (20:30).
+  const isTodayThursday = (day === 4);
+  const isThursdayLiveActive = isTodayThursday && (currentMinutes <= 20 * 60 + 30);
+  const activeLiveThursday = isThursdayLiveActive ? todayStr : nextThuStr;
+
   if (day === 4 && hour < 20) {
     return {
       openThursday: null,
       opensAt8pmToday: true,
-      nextThursdayDate: nextThuStr
+      nextThursdayDate: nextThuStr,
+      activeLiveThursday,
+      isThursdayLiveActive,
+      todayStr
     };
   }
 
   return {
     openThursday: nextThuStr,
     opensAt8pmToday: false,
-    nextThursdayDate: nextThuStr
+    nextThursdayDate: nextThuStr,
+    activeLiveThursday,
+    isThursdayLiveActive,
+    todayStr
   };
+}
+
+function parseSessionEndTime(desc) {
+  if (!desc || typeof desc !== 'string') return { hour: 20, minute: 30 };
+  const match = desc.match(/(?:to|-|till|until)\s*(\d{1,2})(?::|\.)?(\d{2})?\s*(am|pm)?/i) ||
+                desc.match(/(\d{1,2})(?::|\.)?(\d{2})?\s*(am|pm)/i);
+  if (match) {
+    let h = parseInt(match[1], 10);
+    const m = match[2] ? parseInt(match[2], 10) : 0;
+    const meridiem = (match[3] || '').toLowerCase();
+    if (meridiem === 'pm' && h < 12) h += 12;
+    if (meridiem === 'am' && h === 12) h = 0;
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+      return { hour: h, minute: m };
+    }
+  }
+  return { hour: 20, minute: 30 };
+}
+
+function isSessionActiveOrUpcoming(dateStr, desc = '', now = new Date(), timeZone = TIMEZONE) {
+  const todayStr = getLocalDateStr(now, timeZone);
+  if (dateStr > todayStr) return true;
+  if (dateStr < todayStr) return false;
+  // If date is today, session is active until scheduled end time (default 8:30 PM / 20:30 IST)
+  const hourStr = timeZone === TIMEZONE ? HOUR_FORMATTER.format(now) : new Intl.DateTimeFormat('en-US', { timeZone, hour: 'numeric', hour12: false }).format(now);
+  const minStr = new Intl.DateTimeFormat('en-US', { timeZone, minute: 'numeric' }).format(now);
+  const currentMinutes = parseInt(hourStr, 10) * 60 + parseInt(minStr, 10);
+  const { hour: endH, minute: endM } = parseSessionEndTime(desc);
+  const endMinutes = endH * 60 + endM;
+  return currentMinutes <= endMinutes;
 }
 
 function getNextThursday() {
@@ -161,6 +211,42 @@ function invalidateMissingCount() {
   cachedMissingCount = null;
 }
 
+function getWesternScale(indianScale) {
+  if (!indianScale || indianScale === '-' || indianScale === 'Not specified') return '-';
+  const match = indianScale.toString().trim().match(/^([\d\.]+)\s*([PMpm])?.*$/);
+  if (!match) return '-';
+  const numMap = {'1':0, '1.5':1, '2':2, '2.5':3, '3':4, '4':5, '4.5':6, '5':7, '5.5':8, '6':9, '6.5':10, '7':11};
+  if (numMap[match[1]] === undefined) return '-';
+  let index = numMap[match[1]];
+  if ((match[2] || '').toUpperCase() === 'M') index = (index + 5) % 12;
+  return ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"][index];
+}
+
+function getDeityIcon(deity) {
+  if (!deity) return '🕉️';
+  const d = deity.toLowerCase();
+  if (d.includes('ganesh')) return '🐘';
+  if (d.includes('guru')) return '🙏';
+  if (d.includes('shiva')) return '🔱';
+  if (d.includes('devi') || d.includes('amman') || d.includes('durga') || d.includes('saraswati') || d.includes('lakshmi') || d.includes('mata')) return '🌸';
+  if (d.includes('ram')) return '🏹';
+  if (d.includes('krishna')) return '🪈';
+  if (d.includes('sai') || d.includes('baba')) return '🪔';
+  if (d.includes('subrahmanya') || d.includes('muruga') || d.includes('kartikeya')) return '🪶';
+  if (d.includes('hanuman') || d.includes('anjaneya') || d.includes('maruti')) return '🐒';
+  if (d.includes('narayana') || d.includes('vishnu') || d.includes('vitthal') || d.includes('panduranga')) return '🦚';
+  if (d.includes('sarva') || d.includes('all')) return '🕊️';
+  return '🕉️';
+}
+
+function getNumberEmoji(num) {
+  const map = {
+    1: '1️⃣', 2: '2️⃣', 3: '3️⃣', 4: '4️⃣', 5: '5️⃣',
+    6: '6️⃣', 7: '7️⃣', 8: '8️⃣', 9: '9️⃣', 10: '🔟'
+  };
+  return map[num] || `${num}.`;
+}
+
 module.exports = {
   DEITY_ORDER,
   SPEED_ORDER,
@@ -172,5 +258,10 @@ module.exports = {
   formatDateHuman,
   timeSince,
   getCachedMissingCount,
-  invalidateMissingCount
+  invalidateMissingCount,
+  getWesternScale,
+  getDeityIcon,
+  getNumberEmoji,
+  parseSessionEndTime,
+  isSessionActiveOrUpcoming
 };

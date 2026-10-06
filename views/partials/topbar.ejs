@@ -1,38 +1,61 @@
-<header class="topbar">
+<header class="native-top-bar admin-topbar" id="adminTopBar" role="banner">
 
-    <button type="button" id="mobileSidebarToggle" class="mobile-menu-btn" aria-label="Open navigation menu">☰</button>
+    <div class="native-top-left" style="display:flex; align-items:center; gap:8px;">
+        <button type="button" id="mobileSidebarToggle" class="native-action-btn admin-sidebar-toggle-btn" aria-label="Open Admin Menu" title="Admin Navigation Menu" style="margin-right:2px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
 
-    <div class="page-title">
-        <%= pageTitle || "Dashboard" %>
+        <a href="/admin" class="native-top-brand-link" style="display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit;">
+            <div class="native-top-logo-wrap">
+                <img src="/images/logo.png" alt="Sri Sathya Sai Emblem" class="native-top-logo">
+            </div>
+            <div class="native-top-brand">
+                <div class="native-top-title-row">
+                    <span class="native-top-title">Bhajan Planner</span>
+                </div>
+                <span class="native-top-subtitle">SSSO - GANDHINAGAR</span>
+            </div>
+        </a>
     </div>
 
-    <div class="admin-info">
+    <div class="native-top-actions">
+        <!-- Quick Public Devotee View Link -->
+        <a href="/?home=true" target="_blank" class="topbar-quick-link" title="Open Public Devotee Portal">
+            <span>🌐</span>
+            <span class="quick-link-text">Public App</span>
+            <span class="quick-link-arrow">↗</span>
+        </a>
 
+        <!-- Topbar Theme Toggle Button -->
         <button
             type="button"
-            class="theme-toggle topbar-theme-toggle"
+            class="native-action-btn theme-toggle"
+            id="topbarThemeToggle"
             aria-label="Toggle dark mode"
-            aria-pressed="false"
-            data-tooltip="Switch to Dark"
+            title="Toggle Theme"
         >
             <span class="icon-moon" aria-hidden="true">🌙</span>
             <span class="icon-sun" aria-hidden="true">☀️</span>
         </button>
 
-        <span class="admin-name">
-
-            <%= currentAdmin.displayName %>
-
-        </span>
-
-        <span class="role-badge">
-
-            <%= currentAdmin.role === "super_admin"
-                ? "Super Admin"
-                : "Admin" %>
-
-        </span>
-
+        <!-- Admin Profile Badge -->
+        <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
+        <div class="admin-profile-badge">
+            <div class="admin-avatar-bubble" title="<%= currentAdmin.displayName || currentAdmin.username %>">
+                <%= (currentAdmin.displayName || currentAdmin.username || "A").charAt(0).toUpperCase() %>
+            </div>
+            <div class="admin-profile-info">
+                <span class="admin-name"><%= currentAdmin.displayName || currentAdmin.username %></span>
+                <span class="role-badge <%= currentAdmin.role === 'super_admin' ? 'role-super' : 'role-admin' %>">
+                    <%= currentAdmin.role === "super_admin" ? "Super Admin" : "Admin" %>
+                </span>
+            </div>
+        </div>
+        <% } %>
     </div>
 
 </header>

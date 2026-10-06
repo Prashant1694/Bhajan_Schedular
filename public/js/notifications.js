@@ -51,12 +51,15 @@
         const count = data.count || 0;
         if (count > 0) {
           badge.textContent = count > 99 ? '99+' : count;
+          badge.classList.add('has-unread');
           badge.style.display = 'flex';
         } else {
+          badge.textContent = '';
+          badge.classList.remove('has-unread');
           badge.style.display = 'none';
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 
   // Initial count check + periodic refresh
@@ -95,8 +98,9 @@
   // ── Mark all as read silently ────────────────────────────
   function markAllAsReadSilently() {
     if (badge) {
+      badge.textContent = '';
+      badge.classList.remove('has-unread');
       badge.style.display = 'none';
-      badge.textContent = '0';
     }
 
     fetch('/api/notifications/mark-all-read', {
@@ -107,7 +111,7 @@
       .then(() => {
         updateUnreadCount();
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 
   // ── Load notifications ───────────────────────────────────
@@ -175,7 +179,7 @@
         }
         updateUnreadCount();
       })
-      .catch(() => {});
+      .catch(() => { });
   };
 
   // ── Panel open/close ─────────────────────────────────────
@@ -190,6 +194,7 @@
   function closePanel() {
     panel.classList.remove('open');
     overlay.classList.remove('show');
+    markAllAsReadSilently();
   }
 
   function handleBellToggle(e) {
@@ -290,9 +295,9 @@
               setTimeout(() => promptOverlay.classList.add('show'), 10);
             }, 1500);
           })
-          .catch(() => {});
+          .catch(() => { });
       })
-      .catch(() => {});
+      .catch(() => { });
 
     // Singer selection queries PIN status and displays the PIN box
     singerSelect.addEventListener('change', async () => {

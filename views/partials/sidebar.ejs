@@ -1,172 +1,161 @@
-<aside class="sidebar">
+<aside class="sidebar" id="adminSidebar">
 
     <div class="sidebar-header">
-
-        <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Collapse sidebar">☰</button>
-
-        <div>
-
-            <h2>Bhajan Planner</h2>
-
-            <small>Administration</small>
-
-        </div>
-
+        <a href="/admin" class="sidebar-brand-link" title="Bhajan Planner Administration">
+            <div class="sidebar-logo-wrap">
+                <img src="/images/logo.png" alt="Sri Sathya Sai Emblem" class="sidebar-logo-img">
+            </div>
+            <div class="sidebar-brand-text">
+                <h2>Bhajan Planner</h2>
+                <div class="sidebar-brand-sub">
+                    <span class="sidebar-admin-pill">Admin Portal</span>
+                </div>
+            </div>
+        </a>
+        <button type="button" id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar collapse" title="Collapse sidebar">
+            <span>☰</span>
+        </button>
     </div>
 
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav" aria-label="Admin Navigation">
 
-        <a href="/admin" class="<%= page === 'dashboard' ? 'active' : '' %>">
+        <!-- ═══ 1. SCHEDULE & SESSIONS ═══ -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Schedule &amp; Sessions</div>
 
-            <span>🏠</span>
+            <a href="/admin" class="<%= page === 'dashboard' ? 'active' : '' %>">
+                <span>🏠</span>
+                Dashboard
+            </a>
 
-            Dashboard
+            <a href="/submit-form?admin=true">
+                <span>📅</span>
+                New Entry
+            </a>
 
-        </a>
+            <a href="/plan-view">
+                <span>📤</span>
+                Plan &amp; Share
+            </a>
 
-        <a href="/submit-form?admin=true">
+            <a href="/admin?copy=true">
+                <span>📋</span>
+                Copy Session
+            </a>
 
-            <span>📅</span>
+            <a href="/admin/import-sessions" class="<%= page === 'import-sessions' ? 'active' : '' %>">
+                <span>📥</span>
+                Import Sessions
+            </a>
+        </div>
 
-            New Entry
+        <!-- ═══ 2. DATABASE & CONTENT ═══ -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Database &amp; Content</div>
 
-        </a>
+            <a href="/master-bank" class="<%= page === 'bank' ? 'active' : '' %>">
+                <span>📚</span>
+                Master Bank
+            </a>
 
-        <a href="/admin/rules" class="<%= page === 'rules' ? 'active' : '' %>">
+            <a href="/admin/rules" class="<%= page === 'rules' ? 'active' : '' %>">
+                <span>🎼</span>
+                Deity Rules
+            </a>
 
-
-            <span>🎼</span>
-
-            Deity Rules
-
-        </a>
-
-        <a href="/admin/singers" class="<%= page === 'singers' ? 'active' : '' %>">
-
-            <span>👥</span>
-
-            Singers
-
-        </a>
-
-        <a href="/admin/singer-dictionary" class="<%= page === 'singer-dict' ? 'active' : '' %>">
-
-            <span>📖</span>
-
-            Singer Dictionary
-
-        </a>
-
-        <a href="/admin/analytics" class="<%= page === 'analytics' ? 'active' : '' %>">
-
-            <span>📊</span>
-
-            Analytics
-
-        </a>
-
-        <a href="/master-bank" class="<%= page === 'bank' ? 'active' : '' %>">
-            <span>📚</span>
-            Master Bank
-        </a>
-
-        <% if (currentAdmin && currentAdmin.role === "super_admin") { %>
-        <a href="/admin/diwali" class="<%= page === 'diwali' ? 'active' : '' %>">
-            <span>🪔</span>
-            Diwali Bhajans
-        </a>
-        <% } %>
-
-        <a href="/admin/missing-bhajans" class="<%= page === 'missing-bhajans' ? 'active' : '' %>">
-            <span class="nav-icon-wrap">
-                🚨
-                <% if (typeof missingCount !=='undefined' && missingCount> 0) { %>
-                    <b class="sidebar-badge-dot"></b>
+            <a href="/admin/missing-bhajans" class="<%= page === 'missing-bhajans' ? 'active' : '' %>">
+                <span class="nav-icon-wrap">
+                    🚨
+                    <% if (typeof missingCount !== 'undefined' && missingCount > 0) { %>
+                        <b class="sidebar-badge-dot"></b>
                     <% } %>
-            </span>
-            Missing Catcher
-            <% if (typeof missingCount !=='undefined' && missingCount> 0) { %>
-                <b class="sidebar-badge-count missing-catcher-badge">
-                    <%= missingCount %>
-                </b>
+                </span>
+                Missing Catcher
+                <% if (typeof missingCount !== 'undefined' && missingCount > 0) { %>
+                    <b class="sidebar-badge-count missing-catcher-badge"><%= missingCount %></b>
                 <% } %>
-        </a>
+            </a>
 
-        <a href="/admin/reports" class="<%= page === 'reports' ? 'active' : '' %>">
-            <span class="nav-icon-wrap">
-                🚩
+            <a href="/admin/reports" class="<%= page === 'reports' ? 'active' : '' %>">
+                <span class="nav-icon-wrap">
+                    🚩
+                    <% if (typeof pendingReportCount !== 'undefined' && pendingReportCount > 0) { %>
+                        <b class="sidebar-badge-dot" style="background:#ef4444;"></b>
+                    <% } %>
+                </span>
+                Bhajan Reports
                 <% if (typeof pendingReportCount !== 'undefined' && pendingReportCount > 0) { %>
-                    <b class="sidebar-badge-dot" style="background:#e53e3e;"></b>
+                    <b class="sidebar-badge-count" style="background:#ef4444; color:#fff;"><%= pendingReportCount %></b>
                 <% } %>
-            </span>
-            Bhajan Reports
-            <% if (typeof pendingReportCount !== 'undefined' && pendingReportCount > 0) { %>
-                <b class="sidebar-badge-count" style="background:#e53e3e; color:#fff;">
-                    <%= pendingReportCount %>
-                </b>
+            </a>
+
+            <a href="/admin/bulletins" class="<%= page === 'bulletins' ? 'active' : '' %>">
+                <span>📢</span>
+                Bulletins
+            </a>
+        </div>
+
+        <!-- ═══ 3. PEOPLE & COMMUNITY ═══ -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Singers &amp; Community</div>
+
+            <a href="/admin/singers" class="<%= page === 'singers' ? 'active' : '' %>">
+                <span>👥</span>
+                Singers Directory
+            </a>
+
+            <% if (currentAdmin && currentAdmin.role === "super_admin") { %>
+            <a href="/admin/diwali" class="<%= page === 'diwali' ? 'active' : '' %>">
+                <span>🪔</span>
+                Diwali Bhajans
+            </a>
             <% } %>
-        </a>
+        </div>
 
-        <a href="/admin/import-sessions" class="<%= page === 'import-sessions' ? 'active' : '' %>"><span>📥</span>Import
-            Past Sessions</a>
-        <a href="/admin?copy=true"><span>📋</span>Copy Session</a>
-        <a href="/plan-view"><span>📤</span>Plan &amp; Share</a>
+        <!-- ═══ 4. SYSTEM & AUDIT ═══ -->
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">System &amp; Audit</div>
 
-        <a href="/admin/bulletins" class="<%= page === 'bulletins' ? 'active' : '' %>">
-            <span>📢</span>
-            Bulletins
-        </a>
+            <a href="/admin/analytics" class="<%= page === 'analytics' ? 'active' : '' %>">
+                <span>📊</span>
+                Analytics
+            </a>
 
-        <a href="/admin/notifications" class="<%= page === 'notifications' ? 'active' : '' %>">
-            <span>🔔</span>
-            Notifications
-        </a>
+            <a href="/admin/notifications" class="<%= page === 'notifications' ? 'active' : '' %>">
+                <span>🔔</span>
+                Notifications
+            </a>
 
-        <% if(currentAdmin.role==="super_admin" ){ %>
-
+            <% if (currentAdmin && currentAdmin.role === "super_admin") { %>
             <a href="/admin/admin-users" class="<%= page === 'admins' ? 'active' : '' %>">
-
                 <span>👨‍💼</span>
-
                 Administrators
-
             </a>
 
             <a href="/admin/activity-logs" class="<%= page === 'activity' ? 'active' : '' %>">
-
                 <span>🕵️</span>
-
                 Activity Monitor
-
             </a>
 
+            <a href="/admin/danger-reset-history">
+                <span>⚠️</span>
+                Reset History
+            </a>
             <% } %>
-
-                <% if(currentAdmin.role==="super_admin" ){ %>
-                    <a href="/admin#calendar"><span>🔐</span>Permissions</a>
-                    <a href="/admin/danger-reset-history"><span>⚠️</span>Reset History</a>
-                    <% } %>
+        </div>
 
     </nav>
 
     <div class="sidebar-footer">
-
-        <a href="/?home=true">
-
+        <a href="/?home=true" target="_blank" title="Open Public Devotee View">
             <span>🌐</span>
-
-            Home Page
-
+            Public Home ↗
         </a>
 
-        <a href="/logout">
-
+        <a href="/logout" target="_top" class="logout-link" title="Sign out of Admin Session" onclick="try{localStorage.removeItem('bp_is_admin');localStorage.removeItem('bp_admin_name');localStorage.removeItem('bp_admin_role');}catch(_){}">
             <span>🚪</span>
-
             Logout
-
         </a>
-
     </div>
 
 </aside>

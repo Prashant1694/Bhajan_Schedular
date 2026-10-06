@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const singerHubController = require("../controllers/singerHubController");
+const activityController = require("../controllers/activityController");
 const { requireSingerAuth } = require("../middleware/singerAuth");
 const { singerLoginLimit, singerPinChangeLimit } = require("../middleware/security");
 
@@ -12,6 +13,7 @@ router.get("/api/singer/:id/pin-status", singerHubController.checkSingerPinStatu
 // Protected Singer Hub
 router.get("/singer/hub", requireSingerAuth, singerHubController.showHub);
 router.get("/my-hub", requireSingerAuth, singerHubController.showHub);
+router.get("/my-activity", activityController.showMyActivity);
 router.post("/api/singer/change-pin", requireSingerAuth, singerPinChangeLimit, singerHubController.changePin);
 router.post("/api/singer/profile/scale", requireSingerAuth, singerHubController.updatePreferredScale);
 

@@ -1,72 +1,83 @@
 <div class="container singer-hub-container" style="max-width: 960px; margin: 30px auto; padding: 24px 20px 32px 20px;">
 
-  <!-- Navigation Bar -->
-  <div class="singer-hub-top-nav" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; padding: 4px 0 2px 0; flex-wrap: wrap; gap: 12px;">
-    <a href="/" style="display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); text-decoration: none; font-size: 14px; font-weight: 600; padding: 4px 0;">
-      <span>←</span> Back to Home
-    </a>
-    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+  <!-- Profile Actions Bar -->
+  <div class="singer-hub-top-nav">
+    <div class="singer-hub-actions-group">
       <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-        <a href="/admin" class="button secondary" style="padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border-color: #f59e0b; color: #d97706; font-weight: 700;">
-          ⚙️ Admin Tower
-        </a>
-        <button type="button" onclick="openAdminSwitchModal()" class="button secondary" style="padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; border-color: #a855f7; color: #7e22ce; font-weight: 700;">
-          🔄 Switch Singer
+        <button type="button" onclick="openAdminSwitchModal()" class="singer-hub-action-btn btn-switch-singer" data-haptic="light" title="Switch to another singer profile">
+          <span class="hub-btn-icon">🔄</span>
+          <span class="hub-btn-text">Switch Singer</span>
         </button>
       <% } %>
-      <button type="button" onclick="openChangePinModal()" class="button secondary" style="padding: 8px 14px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
-        🔑 Change PIN
+      <button type="button" onclick="openChangePinModal()" class="singer-hub-action-btn btn-change-pin" data-haptic="light" title="Change your 4-digit security PIN">
+        <span class="hub-btn-icon">🔑</span>
+        <span class="hub-btn-text">Change PIN</span>
       </button>
-      <a href="/singer/logout" class="button secondary" style="padding: 8px 14px; font-size: 13px; color: #dc2626; border-color: #fca5a5; display: inline-flex; align-items: center; gap: 6px;">
-        🚪 Logout
-      </a>
+      <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+        <a href="/logout" target="_top" class="singer-hub-action-btn btn-logout" data-haptic="medium" title="Logout from Admin Mode" onclick="try{localStorage.removeItem('bp_is_admin');localStorage.removeItem('bp_admin_name');localStorage.removeItem('bp_admin_role');}catch(_){}">
+          <span class="hub-btn-icon">🚪</span>
+          <span class="hub-btn-text">Admin Logout</span>
+        </a>
+      <% } else { %>
+        <a href="/singer/logout" target="_top" class="singer-hub-action-btn btn-logout" data-haptic="medium" title="Logout" onclick="try{localStorage.removeItem('bp_singer_id');localStorage.removeItem('bp_singer_name');localStorage.removeItem('bp_is_admin');}catch(_){}">
+          <span class="hub-btn-icon">🚪</span>
+          <span class="hub-btn-text">Logout</span>
+        </a>
+      <% } %>
     </div>
   </div>
 
   <!-- Profile Hero Header -->
-  <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #fff; padding: 28px 26px; border-radius: 20px; margin-bottom: 24px; box-shadow: 0 4px 14px rgba(0,0,0,0.12); position: relative; overflow: hidden;">
-    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+  <div class="singer-hub-hero">
+    <div class="singer-hub-hero-inner">
       
       <!-- Avatar -->
-      <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #ea580c 0%, #f59e0b 100%); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; color: #fff; box-shadow: 0 4px 10px rgba(234,88,12,0.4);">
-        <%= singer.name.charAt(0).toUpperCase() %>
+      <div class="singer-hub-avatar-wrap">
+        <div class="singer-hub-avatar">
+          <%= singer.name.charAt(0).toUpperCase() %>
+        </div>
+        <div class="singer-hub-avatar-badge" title="Verified Devotee">🪔</div>
       </div>
 
       <!-- Info -->
-      <div style="flex: 1; min-width: 220px;">
-        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <h1 style="font-size: 24px; font-weight: 800; margin: 0; color: #f8fafc;"><%= singer.name %></h1>
+      <div class="singer-hub-info">
+        <div class="singer-hub-title-row">
+          <h1 class="singer-hub-name"><%= singer.name %></h1>
           <% if (singer.gender) { %>
-            <span style="background: rgba(255,255,255,0.15); font-size: 12px; padding: 2px 10px; border-radius: 999px; font-weight: 600;">
+            <span class="singer-hub-gender-badge">
               <%= singer.gender %>
             </span>
           <% } %>
           <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-            <span style="background: linear-gradient(135deg, #9333ea 0%, #6366f1 100%); color: #fff; font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 700; box-shadow: 0 2px 6px rgba(147, 51, 234, 0.3);">
+            <span class="singer-hub-admin-badge">
               👑 Admin Linked
             </span>
           <% } %>
         </div>
-        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; font-size: 13px; color: #94a3b8;">
-          <span style="display: flex; align-items: center; gap: 5px;">
+
+        <div class="singer-hub-meta-row">
+          <span class="singer-hub-meta-item">
             <span>🛡️</span> 4-Digit PIN Protected
           </span>
           <span>•</span>
-          <span style="display: flex; align-items: center; gap: 5px; color: #38bdf8;">
+          <span class="singer-hub-meta-item" style="color: #38bdf8;">
             <span>⏳</span> <strong><%= daysRemaining %> days</strong> active on this device
           </span>
         </div>
-        <div style="margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); padding: 4px 12px; border-radius: 999px; font-size: 12.5px;">
-          <span>🎵 Default Singing Scale:</span>
-          <strong id="displayPreferredScale" style="color: #fbbf24;"><%= singer.preferred_scale || 'Not configured' %></strong>
-          <button type="button" onclick="openPreferredScaleModal()" style="background: none; border: none; color: #93c5fd; cursor: pointer; text-decoration: underline; font-size: 12px; padding: 0 4px; font-weight: 600;">Edit</button>
+
+        <div class="singer-hub-scale-card">
+          <span>🎵 Singing Scale:</span>
+          <strong id="displayPreferredScale" class="singer-hub-scale-val"><%= singer.preferred_scale || 'Not configured' %></strong>
+          <button type="button" onclick="openPreferredScaleModal()" class="singer-hub-scale-btn" data-haptic="light">
+            ✏️ Change
+          </button>
         </div>
       </div>
 
-      <!-- Quick Action -->
+      <!-- Quick Action CTA -->
       <div>
-        <a href="/submit-form" class="button primary" style="background: #ea580c; border-color: #ea580c; text-decoration: none; padding: 10px 18px; font-size: 13.5px; font-weight: 700;">
-          🎤 Submit for Thursday
+        <a href="/submit-form" class="singer-hub-hero-cta" data-haptic="medium">
+          <span>🎤</span> Mark Bhajan Slot
         </a>
       </div>
 
@@ -74,38 +85,50 @@
   </div>
 
   <!-- Key Metrics Row -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 26px;">
+  <div class="singer-metrics-grid">
     
-    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow);">
-      <div style="font-size: 12px; color: var(--ink-soft); font-weight: 700; text-transform: uppercase;">Upcoming Slots</div>
-      <div style="font-size: 26px; font-weight: 800; color: #ea580c; margin-top: 4px;">
+    <div class="singer-metric-card">
+      <div class="metric-card-header">
+        <span class="metric-card-title">Upcoming Slots</span>
+        <div class="metric-card-icon metric-icon-slots">📅</div>
+      </div>
+      <div class="metric-card-val metric-val-slots">
         <%= upcomingSubmissions.length %>
       </div>
-      <div style="font-size: 12px; color: var(--ink-soft); margin-top: 2px;">Scheduled in next session</div>
+      <div class="metric-card-sub">Scheduled in next session</div>
     </div>
 
-    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow);">
-      <div style="font-size: 12px; color: var(--ink-soft); font-weight: 700; text-transform: uppercase;">My Songbook</div>
-      <div style="font-size: 26px; font-weight: 800; color: #8b5cf6; margin-top: 4px;">
+    <div class="singer-metric-card">
+      <div class="metric-card-header">
+        <span class="metric-card-title">My Songbook</span>
+        <div class="metric-card-icon metric-icon-songbook">📖</div>
+      </div>
+      <div class="metric-card-val metric-val-songbook">
         <%= songbook.length %>
       </div>
-      <div style="font-size: 12px; color: var(--ink-soft); margin-top: 2px;">Prepared repertoire</div>
+      <div class="metric-card-sub">Prepared repertoire</div>
     </div>
 
-    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow);">
-      <div style="font-size: 12px; color: var(--ink-soft); font-weight: 700; text-transform: uppercase;">Past Bhajans Sung</div>
-      <div style="font-size: 26px; font-weight: 800; color: #16a34a; margin-top: 4px;">
+    <div class="singer-metric-card">
+      <div class="metric-card-header">
+        <span class="metric-card-title">Past Bhajans</span>
+        <div class="metric-card-icon metric-icon-history">🪔</div>
+      </div>
+      <div class="metric-card-val metric-val-history">
         <%= pastHistory.length %>
       </div>
-      <div style="font-size: 12px; color: var(--ink-soft); margin-top: 2px;">In Samiti records</div>
+      <div class="metric-card-sub">In Samiti records</div>
     </div>
 
-    <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: var(--shadow);">
-      <div style="font-size: 12px; color: var(--ink-soft); font-weight: 700; text-transform: uppercase;">Correction Tickets</div>
-      <div style="font-size: 26px; font-weight: 800; color: #0284c7; margin-top: 4px;">
+    <div class="singer-metric-card">
+      <div class="metric-card-header">
+        <span class="metric-card-title">Correction Tickets</span>
+        <div class="metric-card-icon metric-icon-tickets">🎫</div>
+      </div>
+      <div class="metric-card-val metric-val-tickets">
         <%= myReportsCount %>
       </div>
-      <a href="/my-reports" style="font-size: 12px; color: #0284c7; text-decoration: none; margin-top: 2px; display: inline-block; font-weight: 600;">
+      <a href="/my-reports" class="metric-card-sub" style="color: #0284c7; text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
         Track reports →
       </a>
     </div>
@@ -113,18 +136,18 @@
   </div>
 
   <!-- Interactive Hub Tabs -->
-  <div style="display: flex; gap: 8px; border-bottom: 2px solid var(--border); margin-bottom: 24px; overflow-x: auto; padding-bottom: 2px;">
-    <button type="button" class="hub-tab-btn active" onclick="switchHubTab('upcoming', this)">
-      📅 Upcoming Schedule (<%= upcomingSubmissions.length %>)
+  <div class="hub-tabs-nav-bar">
+    <button type="button" class="hub-tab-btn active" onclick="switchHubTab('upcoming', this)" data-haptic="light">
+      <span>📅</span> Upcoming Schedule (<%= upcomingSubmissions.length %>)
     </button>
-    <button type="button" class="hub-tab-btn" onclick="switchHubTab('songbook', this)">
-      📖 My Songbook & Scales (<%= songbook.length %>)
+    <button type="button" class="hub-tab-btn" onclick="switchHubTab('songbook', this)" data-haptic="light">
+      <span>📖</span> My Songbook & Scales (<%= songbook.length %>)
     </button>
-    <button type="button" class="hub-tab-btn" onclick="switchHubTab('history', this)">
-      📜 Singing History (<%= pastHistory.length %>)
+    <button type="button" class="hub-tab-btn" onclick="switchHubTab('history', this)" data-haptic="light">
+      <span>📜</span> Singing History (<%= pastHistory.length %>)
     </button>
-    <button type="button" class="hub-tab-btn" onclick="switchHubTab('reports', this)">
-      🎫 My Reports & Tickets (<%= myReportsCount %>)
+    <button type="button" class="hub-tab-btn" onclick="switchHubTab('reports', this)" data-haptic="light">
+      <span>🎫</span> My Reports (<%= myReportsCount %>)
     </button>
   </div>
 
@@ -589,27 +612,7 @@
 </div>
 <% } %>
 
-<style>
-.hub-tab-btn {
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  padding: 10px 18px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink-soft);
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-}
-.hub-tab-btn:hover {
-  color: var(--ink);
-}
-.hub-tab-btn.active {
-  color: #ea580c;
-  border-bottom-color: #ea580c;
-}
-</style>
+
 
 <script>
 function switchHubTab(tabName, btn) {

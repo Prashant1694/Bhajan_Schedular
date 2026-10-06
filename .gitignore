@@ -84,7 +84,10 @@ tmp/
 temp/
 coverage/
 scratch/
+scratch/*
 test_*.js
+test-*.js
+*.tmp
 *.tsbuildinfo
 
 # ============================================================

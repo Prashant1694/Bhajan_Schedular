@@ -1,6 +1,7 @@
 // ============================================================
 // BHAJAN SCHEDULER - Node.js + Express + SQLite
 // Sri Sathya Sai Seva Organisation - Gandhinagar
+// Native App Shell & Persistent Tabs v3.5
 // ============================================================
 
 require('dotenv').config();
@@ -48,6 +49,7 @@ app.use(express.json({ limit: "100kb" }));
 app.use(sanitizeInputs);
 app.use(blockCrossSiteWrites);
 app.use((req, res, next) => {
+  if (req.path.startsWith("/api/activity/")) return next();
   if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return generalWriteLimit(req, res, next);
   next();
 });
@@ -106,6 +108,8 @@ app.use(async (req, res, next) => {
   res.locals.pageCSS = null;
   res.locals.pageJS = null;
   res.locals.showLoader = false;
+  // Embed mode: page is rendered inside the app shell iframe — suppress chrome
+  res.locals._embed = req.query._embed === '1' || req.query.embed === '1' || req.headers['sec-fetch-dest'] === 'iframe';
   res.locals.isAdminPage = ADMIN_PATH_PREFIXES.some((prefix) =>
     req.path === prefix || req.path.startsWith(prefix + "/")
   );

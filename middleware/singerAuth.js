@@ -48,8 +48,22 @@ async function resolveSingerForAdmin(adminId, displayName, username) {
         name: { [Op.like]: `%${nameToMatch}%` }
       }
     });
-    if (singer && adminId) {
-      AdminUser.update({ singer_id: singer.id }, { where: { id: adminId } }).catch(() => {});
+    if (singer) {
+      if (adminId) {
+        AdminUser.update({ singer_id: singer.id }, { where: { id: adminId } }).catch(() => {});
+      }
+      return singer;
+    }
+
+    // 5. Auto-create Singer profile for the Admin so their user login is seamless
+    const singerName = nameToMatch;
+    singer = await Singer.create({
+      name: singerName,
+      gender: "Male",
+      is_active: true
+    });
+    if (adminId) {
+      await AdminUser.update({ singer_id: singer.id }, { where: { id: adminId } }).catch(() => {});
     }
     return singer;
   } catch (err) {
@@ -127,7 +141,8 @@ async function requireSingerAuth(req, res, next) {
     // 90 days have elapsed — re-verify PIN for regular devotee
     delete req.session.singer;
     const returnTo = encodeURIComponent(req.originalUrl || "/submit-form");
-    return res.redirect(`/singer/login?expired=true&redirect=${returnTo}`);
+    const embedParam = req.query._embed === "1" ? "&_embed=1" : "";
+    return res.redirect(`/singer/login?expired=true&redirect=${returnTo}${embedParam}`);
   }
 
   if (isAdmin) {
@@ -153,7 +168,8 @@ async function requireSingerAuth(req, res, next) {
 
   // Not logged in
   const returnTo = encodeURIComponent(req.originalUrl || "/submit-form");
-  return res.redirect(`/singer/login?redirect=${returnTo}`);
+  const embedParam = req.query._embed === "1" ? "&_embed=1" : "";
+  return res.redirect(`/singer/login?redirect=${returnTo}${embedParam}`);
 }
 
 module.exports = {

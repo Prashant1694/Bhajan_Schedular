@@ -23,7 +23,7 @@ function normalizeDeity(deity) {
   const d = deity.trim();
   if (["Devi", "Durga", "Mata"].includes(d)) return "Mata";
   if (["Anjaneya", "Maruti", "Hanuman"].includes(d)) return "Hanuman";
-  if (["Vittala", "Vitthala", "Panduranga"].includes(d)) return "Vitthala";
+  if (["Vittala", "Vitthala", "Vithhala", "Vithala", "Panduranga"].includes(d)) return "Vitthala";
   if (["Subrahmanya"].includes(d)) return "Guru";
   if (["Ganesha", "Guru", "Mata", "SarvaDharma", "Sai", "Shiva", "Krishna", "Rama", "Narayana", "Vitthala", "Hanuman"].includes(d)) {
     return d;

@@ -7,6 +7,13 @@
   const loader = document.getElementById("loader-overlay");
   if (!loader) return;
 
+  // Never run splash loader inside an embedded tab iframe
+  if (window.self !== window.top) {
+    document.body.classList.remove("loading-lock");
+    if (loader.parentNode) loader.parentNode.removeChild(loader);
+    return;
+  }
+
   // Session guard: if already shown in this tab/session, dismiss immediately with 0 delay
   try {
     if (sessionStorage.getItem("mandir_splash_seen") === "1") {
@@ -29,7 +36,7 @@
 
   // Normal loading time (1.8 seconds)
   const MIN_TIME = 1800;
-  const HARD_TIMEOUT = 4500;
+  const HARD_TIMEOUT = 2000;
   const startTime = Date.now();
 
   // Devotional Milestones
@@ -214,8 +221,7 @@
   // Fallback safety timeout
   setTimeout(dismissLoader, HARD_TIMEOUT);
 
-  // Handle bfcache
-  window.addEventListener("pageshow", (e) => {
-    if (e.persisted) dismissLoader();
-  });
+  // Handle bfcache, back button, and popstate navigation
+  window.addEventListener("pageshow", () => dismissLoader());
+  window.addEventListener("popstate", () => dismissLoader());
 })();

@@ -1,131 +1,316 @@
-<div class="admin-users-wrapper">
+<div class="session-unified-page">
 
-    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
-        <div>
-            <h1 style="font-size:24px; font-weight:700; margin:0 0 6px 0;">👥 Admin Management</h1>
-            <p class="page-subtitle" style="margin:0;">Manage administrator accounts, permissions and login access.</p>
+  <!-- ═══ EXECUTIVE HEADER ═══ -->
+  <%
+    const totalCount = admins.length;
+    const superCount = admins.filter(a => ['SUPER_ADMIN', 'super_admin', 'superadmin'].includes(a.role)).length;
+    const standardCount = totalCount - superCount;
+    const activeCount = admins.filter(a => a.is_active).length;
+    const disabledCount = totalCount - activeCount;
+    const googleCount = admins.filter(a => a.google_sub).length;
+  %>
+
+  <header class="session-unified-header">
+    <div class="session-header-top-row">
+      <div class="session-header-identity">
+        <div class="session-date-tile" style="background:linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(147, 51, 234, 0.15)); border-color:#6366f1;">
+          <span style="font-size:22px;">🛡️</span>
         </div>
-        <a href="/admin/admin-users/new" class="button primary">➕ Create Admin</a>
+        <div class="session-title-block">
+          <h1>Admin Management</h1>
+          <div class="session-tags-row">
+            <span class="session-tag session-tag-regular">Access Control</span>
+            <span class="session-tag session-tag-festival"><%= totalCount %> Registered Admins</span>
+            <span class="session-tag session-tag-special"><%= activeCount %> Active Logins</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="session-primary-actions" style="max-width:320px;">
+        <a href="/admin/admin-users/new" class="cmd-btn cmd-btn-add" style="text-decoration:none;">
+          <span class="cmd-btn-icon">➕</span>
+          <span class="cmd-btn-text">Create Admin</span>
+        </a>
+        <a href="/admin" class="sec-tool-btn" style="height:42px; min-height:42px; flex-direction:row; gap:6px;">
+          <span>🏠</span>
+          <span>Dashboard</span>
+        </a>
+      </div>
     </div>
 
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-title">Total Admins</div>
-            <div class="stat-value"><%= admins.length %></div>
+    <!-- Executive Metrics Grid -->
+    <div class="session-metrics-deck" style="margin-top:14px;">
+      <div class="metrics-grid">
+        <div class="metric-card" onclick="setAdminFilter('all')" style="cursor:pointer;" title="Show all administrators">
+          <div class="metric-card-icon">👥</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= totalCount %></span>
+            <span class="metric-card-lbl">Total Admins</span>
+          </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-title">Active</div>
-            <div class="stat-value"><%= admins.filter(a => a.is_active).length %></div>
+
+        <div class="metric-card" onclick="setAdminFilter('super')" style="cursor:pointer;" title="Show Super Admins only">
+          <div class="metric-card-icon">👑</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= superCount %></span>
+            <span class="metric-card-lbl">Super Admins</span>
+          </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-title">Disabled</div>
-            <div class="stat-value"><%= admins.filter(a => !a.is_active).length %></div>
+
+        <div class="metric-card" onclick="setAdminFilter('active')" style="cursor:pointer;" title="Show active accounts">
+          <div class="metric-card-icon">✅</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= activeCount %></span>
+            <span class="metric-card-lbl">Active Logins</span>
+          </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-title">Google Linked</div>
-            <div class="stat-value"><%= admins.filter(a => a.google_sub).length %></div>
+
+        <div class="metric-card" onclick="setAdminFilter('google')" style="cursor:pointer;" title="Show Google linked accounts">
+          <div class="metric-card-icon">🔗</div>
+          <div class="metric-card-data">
+            <span class="metric-card-val"><%= googleCount %></span>
+            <span class="metric-card-lbl">Google Linked</span>
+          </div>
         </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN WORKSPACE ═══ -->
+  <main class="session-unified-workspace view-mode-table">
+
+    <!-- Workspace Controls Bar -->
+    <div class="workspace-header-bar">
+      <div class="workspace-filter-box">
+        <input 
+          type="text" 
+          id="adminSearchInput" 
+          class="workspace-search-input" 
+          placeholder="🔍 Search admin name, username, title, singer..." 
+          oninput="filterAdmins()" 
+          aria-label="Filter administrators"
+        />
+        
+        <span class="workspace-meta-text" id="adminCountDisplay">
+          Showing <%= totalCount %> Administrators
+        </span>
+      </div>
+
+      <div class="workspace-view-controls">
+        <div class="view-switcher-pill" role="group" aria-label="Role & Status Filter">
+          <button type="button" class="view-switch-btn active" data-filter="all" onclick="setAdminFilter('all')">
+            All (<%= totalCount %>)
+          </button>
+          <button type="button" class="view-switch-btn" data-filter="super" onclick="setAdminFilter('super')">
+            👑 Super (<%= superCount %>)
+          </button>
+          <button type="button" class="view-switch-btn" data-filter="standard" onclick="setAdminFilter('standard')">
+            🛡️ Standard (<%= standardCount %>)
+          </button>
+          <button type="button" class="view-switch-btn" data-filter="active" onclick="setAdminFilter('active')">
+            ✅ Active (<%= activeCount %>)
+          </button>
+          <% if (disabledCount > 0) { %>
+          <button type="button" class="view-switch-btn" data-filter="disabled" onclick="setAdminFilter('disabled')">
+            ⛔ Disabled (<%= disabledCount %>)
+          </button>
+          <% } %>
+        </div>
+      </div>
     </div>
 
-    <div class="table-card">
-        <div class="table-header">
-            <div>
-                <h2 style="margin:0; font-size:18px; font-weight:700;">Administrator Accounts</h2>
-                <p style="margin:4px 0 0 0; color:var(--muted); font-size:13px;"><%= admins.length %> account(s) registered</p>
-            </div>
-            <input
-                type="text"
-                class="search-box filter-input"
-                id="adminUserSearchInput"
-                placeholder="Search admin name, title or username..."
-                onkeyup="filterAdminUsersTable()"
+    <!-- Administrators Table -->
+    <div class="workspace-table-scroll">
+      <table class="sequencer-studio-table" id="adminUsersTable">
+        <thead>
+          <tr>
+            <th width="45" style="text-align:center;">#</th>
+            <th width="32%">Administrator</th>
+            <th width="16%">Username</th>
+            <th width="14%">Role</th>
+            <th width="15%">Google SSO</th>
+            <th width="11%">Status</th>
+            <th width="12%" style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (admins.length > 0) { %>
+            <% admins.forEach((admin, idx) => { 
+              const isSuper = ['SUPER_ADMIN', 'super_admin', 'superadmin'].includes(admin.role);
+              const roleKey = isSuper ? 'super' : 'standard';
+              const statusKey = admin.is_active ? 'active' : 'disabled';
+            %>
+            <tr 
+              class="admin-table-row"
+              data-role="<%= roleKey %>"
+              data-status="<%= statusKey %>"
+              data-google="<%= admin.google_sub ? 'google' : 'none' %>"
+              data-search="<%= ((admin.display_name||'') + ' ' + (admin.username||'') + ' ' + (admin.title||'') + ' ' + (admin.singer ? admin.singer.name : '')).toLowerCase() %>"
             >
-        </div>
+              <!-- Index -->
+              <td style="text-align:center; color:var(--text-light); font-weight:700;">
+                <%= idx + 1 %>
+              </td>
 
-        <div class="table-responsive-wrapper" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-            <table class="admin-table" id="adminUsersTable">
-                <thead>
-                    <tr>
-                        <th>Name &amp; Title</th>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Google</th>
-                        <th>Status</th>
-                        <th class="actions-column">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% admins.forEach(admin => { %>
-                    <tr>
-                        <td>
-                            <div class="admin-user" style="display:flex; align-items:center; gap:10px;">
-                                <div class="admin-avatar">
-                                    <%= admin.display_name ? admin.display_name.charAt(0).toUpperCase() : "A" %>
-                                </div>
-                                <div>
-                                    <div class="admin-name" style="font-weight:600;">
-                                        <%= admin.display_name %>
-                                        <% if (admin.title) { %>
-                                            <span class="badge badge-title" style="font-size:10px; padding:2px 8px; margin-left:4px; font-weight:700;"><%= admin.title %></span>
-                                        <% } %>
-                                    </div>
-                                    <div class="admin-id" style="font-size:12px; color:var(--muted);">
-                                        ID #<%= admin.id %> <%= admin.title ? '• ' + admin.title : '' %>
-                                        <% if (admin.singer) { %>
-                                            <span style="color:#9333ea; font-weight:600; margin-left:4px;">🎤 Linked: <%= admin.singer.name %></span>
-                                        <% } %>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <code><%= admin.username %></code>
-                        </td>
-                        <td>
-                            <% if (admin.role === "SUPER_ADMIN" || admin.role === "super_admin" || admin.role === "superadmin") { %>
-                                <span class="badge badge-purple">Super Admin</span>
-                            <% } else { %>
-                                <span class="badge badge-blue">Admin</span>
-                            <% } %>
-                        </td>
-                        <td>
-                            <% if (admin.google_sub) { %>
-                                <span class="badge badge-green">Linked</span>
-                            <% } else { %>
-                                <span class="badge badge-gray">Not Linked</span>
-                            <% } %>
-                        </td>
-                        <td>
-                            <% if (admin.is_active) { %>
-                                <span class="badge badge-green">Active</span>
-                            <% } else { %>
-                                <span class="badge badge-red">Disabled</span>
-                            <% } %>
-                        </td>
-                        <td>
-                            <div class="table-actions">
-                                <a href="/admin/admin-users/<%= admin.id %>/edit" class="table-btn">✏ Edit</a>
-                                <a href="/admin/admin-users/<%= admin.id %>/reset-password" class="table-btn">🔑 Reset</a>
-                                <form method="POST" action="/admin/admin-users/<%= admin.id %>/toggle-active">
-                                    <button type="submit" class="table-btn"><%= admin.is_active ? "Disable" : "Enable" %></button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    <% }) %>
-                </tbody>
-            </table>
-        </div>
+              <!-- Administrator Details -->
+              <td>
+                <div class="admin-user-cell">
+                  <div class="admin-avatar-pill <%= isSuper ? 'admin-avatar-super' : 'admin-avatar-std' %>">
+                    <%= admin.display_name ? admin.display_name.charAt(0).toUpperCase() : 'A' %>
+                  </div>
+                  <div>
+                    <div class="admin-name-title">
+                      <span><%= admin.display_name %></span>
+                      <% if (admin.title) { %>
+                        <span class="session-tag session-tag-regular" style="font-size:10.5px; padding:1px 6px;">
+                          <%= admin.title %>
+                        </span>
+                      <% } %>
+                    </div>
+                    <div class="admin-meta-sub">
+                      <span>ID #<%= admin.id %></span>
+                      <% if (admin.singer) { %>
+                        <span style="color:#9333ea; font-weight:700; background:rgba(147,51,234,0.08); padding:1px 6px; border-radius:4px;">
+                          🎤 Linked: <%= admin.singer.name %>
+                        </span>
+                      <% } %>
+                    </div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Username -->
+              <td>
+                <span class="admin-code-badge"><%= admin.username %></span>
+              </td>
+
+              <!-- Role -->
+              <td>
+                <% if (isSuper) { %>
+                  <span class="diag-chip warn" style="font-size:11px; font-weight:700;">
+                    👑 Super Admin
+                  </span>
+                <% } else { %>
+                  <span class="diag-chip info" style="font-size:11px; font-weight:600;">
+                    🛡️ Administrator
+                  </span>
+                <% } %>
+              </td>
+
+              <!-- Google SSO -->
+              <td>
+                <% if (admin.google_sub) { %>
+                  <span class="diag-chip ok" style="font-size:11px;" title="<%= admin.google_email || 'Google SSO linked' %>">
+                    <span>🔗</span> Linked
+                  </span>
+                <% } else { %>
+                  <span class="diag-chip" style="font-size:11px; background:var(--surface-raised); color:var(--text-light); border:1px solid var(--border);">
+                    <span>🔒</span> Password
+                  </span>
+                <% } %>
+              </td>
+
+              <!-- Status -->
+              <td>
+                <% if (admin.is_active) { %>
+                  <span class="diag-chip ok" style="font-size:11px;">
+                    <span class="session-pulse-indicator" style="background:#10b981;"></span> Active
+                  </span>
+                <% } else { %>
+                  <span class="diag-chip danger" style="font-size:11px;">
+                    <span class="session-pulse-indicator" style="background:#ef4444;"></span> Disabled
+                  </span>
+                <% } %>
+              </td>
+
+              <!-- Actions -->
+              <td style="text-align:right;">
+                <div style="display:inline-flex; gap:6px; justify-content:flex-end; align-items:center;">
+                  <a href="/admin/admin-users/<%= admin.id %>/edit" class="card-touch-btn btn-edit" style="padding:4px 9px; font-size:11.5px; text-decoration:none;" title="Edit Administrator">
+                    ✏️
+                  </a>
+                  <a href="/admin/admin-users/<%= admin.id %>/reset-password" class="card-touch-btn" style="padding:4px 9px; font-size:11.5px; text-decoration:none; background:var(--surface-raised); border:1px solid var(--border); border-radius:8px;" title="Reset Password">
+                    🔑
+                  </a>
+                  <form method="POST" action="/admin/admin-users/<%= admin.id %>/toggle-active" style="margin:0; display:inline;">
+                    <button type="submit" class="card-touch-btn <%= admin.is_active ? 'btn-delete' : 'btn-edit' %>" style="padding:4px 9px; font-size:11.5px;" title="<%= admin.is_active ? 'Disable account' : 'Enable account' %>">
+                      <%= admin.is_active ? '⛔' : '✅' %>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            <% }) %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" style="text-align:center; padding:36px; color:var(--text-light);">
+                No administrator accounts registered yet.
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
     </div>
+
+    <!-- Empty Filter Result State -->
+    <div id="adminEmptyState" class="sequencer-empty-state" style="display:none;">
+      <div style="font-size:36px; margin-bottom:8px;">🔍</div>
+      <h3 style="margin:0 0 4px 0; font-size:16px; font-weight:700; color:var(--text);">No administrators found</h3>
+      <p style="margin:0; font-size:13px; color:var(--text-light);">No accounts match your current filter or search query.</p>
+    </div>
+  </main>
+
 </div>
 
 <script>
-function filterAdminUsersTable() {
-  const q = (document.getElementById('adminUserSearchInput')?.value || '').toLowerCase();
-  const rows = document.querySelectorAll('#adminUsersTable tbody tr');
-  rows.forEach(r => {
-    const text = r.innerText.toLowerCase();
-    r.style.display = text.includes(q) ? '' : 'none';
+let currentAdminFilter = 'all';
+
+function setAdminFilter(filterKey) {
+  currentAdminFilter = filterKey;
+  document.querySelectorAll('.view-switch-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filterKey);
   });
+  filterAdmins();
+}
+
+function filterAdmins() {
+  const query = (document.getElementById('adminSearchInput')?.value || '').trim().toLowerCase();
+  const rows = document.querySelectorAll('#adminUsersTable tbody tr.admin-table-row');
+  let visibleCount = 0;
+
+  rows.forEach(row => {
+    const role = row.getAttribute('data-role');
+    const status = row.getAttribute('data-status');
+    const isGoogle = row.getAttribute('data-google') === 'google';
+    const searchHaystack = row.getAttribute('data-search') || '';
+
+    let matchesFilter = false;
+    if (currentAdminFilter === 'all') matchesFilter = true;
+    else if (currentAdminFilter === 'super') matchesFilter = (role === 'super');
+    else if (currentAdminFilter === 'standard') matchesFilter = (role === 'standard');
+    else if (currentAdminFilter === 'active') matchesFilter = (status === 'active');
+    else if (currentAdminFilter === 'disabled') matchesFilter = (status === 'disabled');
+    else if (currentAdminFilter === 'google') matchesFilter = isGoogle;
+
+    const matchesSearch = !query || searchHaystack.includes(query);
+
+    if (matchesFilter && matchesSearch) {
+      row.style.display = '';
+      visibleCount++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  const emptyState = document.getElementById('adminEmptyState');
+  if (emptyState) {
+    emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+  }
+
+  const countDisplay = document.getElementById('adminCountDisplay');
+  if (countDisplay) {
+    countDisplay.textContent = `Showing ${visibleCount} Administrator${visibleCount === 1 ? '' : 's'}`;
+  }
 }
 </script>

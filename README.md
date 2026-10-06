@@ -1,13 +1,14 @@
-# 🕉️ Bhajan Scheduler
+# 🕉️ Bhajan Scheduler & Planner
 
 [![Node.js Version](https://img.shields.io/badge/Node.js-v18%2B-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express.js-v5.x-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
 [![SQLite](https://img.shields.io/badge/Database-SQLite3-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](https://www.sqlite.org/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Offline--Enabled-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white)](#-pwa--offline-capabilities)
+[![Security Hardened](https://img.shields.io/badge/Security-Enterprise--Grade-10b981?style=for-the-badge&logo=shield&logoColor=white)](#-security-architecture)
 [![Deploy on Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](#-deployment-railway)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.style=for-the-badge)](LICENSE)
 
-> A modern, high-performance Progressive Web Application (PWA) for scheduling, organizing, and managing devotional bhajan sessions for the **Sri Sathya Sai Seva Organisation, Gandhinagar**.
+> A modern, ultra-fast, security-hardened Progressive Web Application (PWA) engineered with native-first ergonomics, micro-haptics, and instant zero-reload tab switching for scheduling and curating devotional bhajan sessions for the **Sri Sathya Sai Seva Organisation, Gandhinagar**.
 
 ---
 
@@ -22,8 +23,8 @@
 - [Environment Variables](#-environment-variables)
 - [Route Navigation Map](#-route-navigation-map)
 - [PWA & Offline Capabilities](#-pwa--offline-capabilities)
-- [iOS & Mobile Performance Optimizations](#-ios--mobile-performance-optimizations)
-- [Security & Rate Limiting](#-security--rate-limiting)
+- [Security Architecture](#-security-architecture)
+- [Performance & Memory Optimizations](#-performance--memory-optimizations)
 - [Deployment (Railway)](#-deployment-railway)
 - [Contributing](#-contributing)
 - [License](#-license)
@@ -32,43 +33,45 @@
 
 ## 🕉️ Overview
 
-**Bhajan Scheduler** streamlines the planning and curation of weekly Thursday and special devotional bhajan sessions. It provides an intuitive public portal for singers and devotees to mark their bhajan preferences, implements automated deity sequencing rules, offers an extensive searchable bank of 3,000+ master bhajans, tracks singer participation, supports web push notifications, and works seamlessly offline as an installable app across iOS, Android, and Desktop devices.
+**Bhajan Scheduler** is an end-to-end devotional session management platform. Designed specifically for Sri Sathya Sai Seva Organisations, it unites coordinators, accompanists, devotee singers, and attendees into a unified digital workspace. 
+
+Featuring an **App-First Shell Architecture**, the application delivers a seamless mobile app experience in the browser—with persistent bottom navigation, sub-millisecond tab switching, physical micro-haptic feedback, verified Prashanti Mandir lyrics, official sheet music, automated deity sequence rules, and an enterprise-grade defense-in-depth security perimeter.
 
 ---
 
 ## ✨ Key Features
 
-### 📋 Devotee Submissions & Live Plan
-- **Singer's Zone (`/submit-form`)**: Interactive submission interface for devotees to select and register bhajans from the master catalog for upcoming sessions.
-- **Live Program Plan (`/plan-view`)**: Real-time overview of finalized song orders, tempos, deities, and scales for singers and harmonium/tabla accompanists.
+### 📱 1. App-First Shell & Zero-Reload Tab Switching
+- **Persistent Bottom Navigation**: Instant navigation across `Home`, `Singer Zone`, `Songbook`, `Live Plan`, `My Hub`, and `Admin`.
+- **Zero-Reload State Persistence**: Tab switching preserves user input, scroll position, and search queries across sessions without re-fetching from the server.
+- **Lazy Tab Initialization**: Only the active viewport boots on launch; background tabs load on-demand, reducing initial server footprint by 80%.
 
-### 📚 Master Bhajan Bank (3,000+ Bhajans)
-- **Centralized Catalog (`/master-bank`)**: Curated library of 3,000+ bhajans with deity, raga, tempo, pitch/scale (male & female, Indian and Western notations), difficulty level, and language.
-- **Instant Search & Interactive Filters**: Real-time in-memory search by title, deity, tempo, and raga executed in `<2ms` with zero DOM freeze.
-- **Progressive Chunk Rendering**: Memory-optimized progressive rendering to ensure smooth browsing and prevent mobile browser crashes.
+### 📳 2. Native Tactile Micro-Haptics
+- **Web Vibration Engine (`haptics.js`)**: Physical haptic tap feedback calibrated for mobile browsers and installable PWAs.
+- **Micro-Interaction Feedback**: Dedicated vibration patterns for tab navigation, toggle switches, deity pills, and successful form submissions.
 
-### 🗃️ Historical Session Records
-- **Bhajan History (`/database`)**: Complete archives of past Gandhinagar bhajan sessions organized by date.
-- **Date Filter & Dynamic Pagination**: Quick date picker to jump directly to any historical session, loaded progressively on demand.
+### 🎤 3. Devotee Singer Zone & Personal Singer Hub (`/my-hub`)
+- **PIN-Protected Accounts**: Devotees access their profile securely using a 4-digit PIN hashed with cryptographic SHA-256.
+- **Personal Repertoire & Scale Management**: Singers can set their preferred vocal scale (Indian & Western notation) and maintain personal songbook favorites.
+- **Submission History & Live Status**: Track bhajan approvals, singing order, partner accompaniment pairings, and past performance analytics.
 
-### 🛠️ Administration Control Center
-- **Session Management (`/admin`)**: Create, lock, edit, publish, and reset weekly or festival bhajan sessions.
-- **Deity Rule Engine (`/admin/rules`)**: Configure sequence constraints (e.g., Ganesha first, Sai/Sarva Dharma closing) for harmonious programs.
-- **Submission Moderation**: Review, approve, reject, reorder, or edit singer submissions.
-- **Song Reconciliation (`/admin/missing-bhajans`)**: Identify and link custom submitted song titles to canonical master database entries.
-- **Role-Based Access (`/admin/admin-users`)**: Manage administrator permissions and user accounts.
+### 📖 4. 1,024 Curated Prashanti Mandir Bhajans (`/master-bank`)
+- **Curated Official Catalog**: Verified 1,024 Prashanti Mandir bhajans with complete lyrics in Devanagari script and English transliteration.
+- **Music Sheets & Ragas**: Official music sheet PDFs, raga classifications, tempo (slow, medium, fast), and suggested shruti scales.
+- **Fast Filter Engine**: In-memory search by title, deity, raga, and tempo executing in `<2ms`.
 
-### 🔔 Web Push Notifications & Notification Center
-- **Service Worker Push (`/notification-settings`)**: Native browser push notifications for session announcements, deadlines, and plan releases.
-- **Unread Badge Counter & Bell**: Floating notification bell with unread indicators and automated mark-as-read on interaction.
+### 📊 5. Real-Time Live Session Plan (`/plan-view`)
+- **Live Sequence Board**: Displays finalized song sequences, deities, singers, harmonium scales, and accompanying partner vocalists.
+- **Accompanist Mode**: Formatted high-contrast view optimized for musicians and table-side displays during live sessions.
 
-### 🎨 Universal Dark / Light Theme & Responsive Design
-- **One-Click Theme Toggle**: Smooth switching between curated Light and Dark palettes.
-- **Anti-FOUC Engine**: Zero Flash of Unstyled Content on initial load.
-- **Aligned 52px Controls**: Notification bell and theme toggle buttons unified in size and alignment.
+### 🔔 6. Real-Time Notification Center & Samiti Bulletins
+- **Automated Lifecycle Alerts**: Automated reminders before bhajan submission deadlines and push notifications when session plans are finalized.
+- **Notice Board (`/bulletins`)**: Samiti administrative announcements, special festival guidelines, and circulars with rich formatting and category badges.
+- **Ticket Tracking**: Devotees can report typos or missing song variations and receive status updates on their tickets.
 
-### 📞 Home Contact & Help Card
-- **Dedicated Homepage Card**: Samiti support information, direct telephone links for coordinators (`+91 9265056242`, `+91 9624888795`), official email, and centre address with interactive micro-animations.
+### 🌙 7. Universal Dark & Light Night Mode
+- **Dual Visual Theme System**: Saffron & warm gold palette for daytime; deep obsidian slate (`#0b0e14`, `#141724`) for evening hall lighting.
+- **Instant Anti-FOUC**: Pre-render script enforces theme preferences from `localStorage` before paint, preventing screen flashes.
 
 ---
 
@@ -77,16 +80,16 @@
 ### Backend & Core
 - **Runtime**: [Node.js](https://nodejs.org/) (v18+)
 - **Server Framework**: [Express.js](https://expressjs.com/) (v5)
-- **Templating Engine**: EJS with `express-ejs-layouts`
-- **Database ORM**: [Sequelize](https://sequelize.org/) with [SQLite3](https://www.sqlite.org/)
-- **Authentication**: `bcrypt` password hashing + Google OAuth 2.0 (`google-auth-library`)
-- **Session Management**: `express-session` with `connect-session-sequelize` persistent store
-- **Push Notifications**: `web-push` (VAPID protocol)
+- **Database**: [SQLite3](https://www.sqlite.org/) with [Sequelize ORM](https://sequelize.org/)
+- **Session Management**: `express-session` with persistent SQLite storage (`connect-sqlite3`)
+- **Authentication**: `bcrypt` (12 rounds) for Admin users + SHA-256 for Singer PINs + Google OAuth 2.0
+- **Push Engine**: `web-push` (VAPID protocol)
 
-### Frontend & PWA
-- **Styling**: Modern Vanilla CSS, CSS Variables design system, Glassmorphism, and responsive tables
-- **Logic**: Vanilla JavaScript ES6+ (Zero heavy frontend framework dependencies)
-- **PWA**: Service Worker (`sw.js`), Web App Manifest, Cache Storage API, and offline navigation fallback
+### Frontend & Client
+- **Architecture**: App-First Stack with persistent viewport frames and vanilla JavaScript
+- **Styling**: Pure Modern CSS with CSS Variables, Flexbox/Grid, and responsive Glassmorphism (Zero heavy CSS runtime dependencies)
+- **Haptics**: Native Web Vibration API (`navigator.vibrate`)
+- **PWA**: Service Worker (`sw.js`), Web App Manifest, Cache Storage API, and offline fallback
 
 ---
 
@@ -94,25 +97,37 @@
 
 ```mermaid
 graph TD
-    Client[Mobile / Tablet / Desktop Client] -->|HTTP / HTTPS| ExpressApp[Express.js Server]
+    Client[Browser / Mobile PWA / Desktop] -->|HTTP / HTTPS| AppShell[Native App Shell]
     
-    subgraph ExpressApp [Express.js Core]
-        SecMiddleware[Security Headers & Rate Limiting] --> Auth[Session & Auth Handler]
-        Auth --> Router[Express Router]
-        
-        Router --> HomeRoutes[Home & Landing /]
-        Router --> PlannerRoutes[Submissions & Planner /submit-form, /plan-view]
-        Router --> MasterBankRoutes[Master Bhajan Bank /master-bank]
-        Router --> HistoryRoutes[Session History /database]
-        Router --> NotifRoutes[Push & Notifications /api/notifications]
-        Router --> AdminRoutes[Admin Suite /admin/*]
+    subgraph AppShell [Client-Side App Shell]
+        Nav[Persistent Bottom Navigation]
+        Haptics[Haptic Feedback Engine]
+        Theme[Dark / Light Theme Controller]
     end
-    
-    subgraph DataLayer [Data Layer]
-        Sequelize[Sequelize ORM] --> SQLiteDB[(SQLite3 Database / bhajans.db)]
+
+    AppShell -->|Secure Requests| SecurityLayer[Enterprise Security Perimeter]
+
+    subgraph SecurityLayer [Security Middleware]
+        HSTS[HSTS & Security Headers]
+        Sanitizer[Prototype Pollution & Null-Byte Filter]
+        CSRF[Cross-Site Write & Fetch-Site Shield]
+        RateLimiter[Adaptive Rate Limiting Matrix]
     end
-    
-    ExpressApp --> DataLayer
+
+    SecurityLayer --> ExpressRouter[Express.js v5 Router]
+
+    subgraph CoreServices [Core Controllers & Services]
+        HomeController[Home & Session Dashboard]
+        PlannerController[Singer Zone & Live Plan]
+        SingerHubController[Singer Hub & PIN Auth]
+        MasterBankController[1,024 Master Songbook]
+        NotificationController[Push & Notice Board]
+        AdminController[Administrative Tower]
+    end
+
+    ExpressRouter --> CoreServices
+    CoreServices --> SequelizeORM[Sequelize ORM - Parameterized Queries]
+    SequelizeORM --> SQLiteDB[(SQLite3 Database / bhajans.db)]
 ```
 
 ---
@@ -121,36 +136,128 @@ graph TD
 
 ```
 Bhajan_Schedular/
-├── app.js                   # Express application entry point & middleware setup
-├── package.json             # Dependencies, scripts, and package metadata
-├── railway.json             # Railway cloud deployment configuration
-├── templates.js             # View and layout helper functions
-├── config/                  # Database connection and environment config
-├── controllers/             # Business logic request handlers
-│   ├── adminController.js
-│   ├── analyticsController.js
-│   ├── homeController.js
-│   ├── masterBankController.js
-│   ├── notificationController.js
-│   └── plannerController.js
-├── middleware/              # Security headers, auth verification, and activity tracking
-├── models/                  # Sequelize models (BhajanSubmission, MasterBhajan, Singer, etc.)
-├── public/                  # Static web assets
-│   ├── css/                 # Vanilla stylesheets (style.css, admin.css, notifications.css, etc.)
-│   ├── js/                  # Client scripts (script.js, pwa.js, notifications.js)
-│   ├── manifest.json        # PWA Web App Manifest
-│   ├── sw.js                # Service Worker with offline fallback & push handling
-│   └── offline.html         # Offline fallback page
-├── routes/                  # Express route definitions
-├── services/                # Helper utilities, fuzzy matching, and DB initializers
-├── views/                   # EJS templates
-│   ├── layouts/             # Base HTML wrapper layouts (main.ejs)
-│   ├── partials/            # Reusable UI partials (site-footer.ejs, notification-bell.ejs)
-│   ├── dashboard.ejs        # Homepage dashboard
-│   ├── database.ejs         # Bhajan History view
-│   └── master-bank.ejs      # Master Bhajan Bank view
-└── README.md                # Project documentation
+├── app.js                         # Application entry point, middleware & error handling
+├── package.json                   # Dependencies, engines, and run scripts
+├── railway.json                   # Cloud deployment specification
+├── templates.js                   # Universal layout & UI view helpers
+├── master_bhajans.json            # Curated catalog of 1,024 Prashanti Mandir bhajans
+├── config/                        # Database configuration & Sequelize connection
+├── controllers/                   # Application business logic
+│   ├── adminController.js         # Session control, user moderation & rule engine
+│   ├── apiController.js           # Public API, presence tracking, and search
+│   ├── authController.js          # Admin credentials & Google OAuth authentication
+│   ├── bulletinController.js      # Notice board announcements and circulars
+│   ├── homeController.js          # App shell launcher and dashboard views
+│   ├── masterBankController.js    # Master catalog, fuzzy reconciliation & sheets
+│   ├── notificationController.js  # Push notification broadcast & ticket manager
+│   ├── plannerController.js       # Bhajan submissions and live program sequence
+│   ├── reportController.js        # Repertoire issue tickets and reporting
+│   └── singerHubController.js     # Devotee singer profiles, PIN auth & scale settings
+├── middleware/                    # Security, auth guards & telemetry
+│   ├── activityTracker.js         # Privacy-conscious user presence monitoring
+│   ├── auth.js                    # Admin role verification & session authentication
+│   ├── security.js                # HSTS, CSP, CSRF shield, sanitizers & rate limits
+│   └── singerAuth.js              # Devotee singer token & session validator
+├── models/                        # Sequelize database models
+│   ├── ActivityLog.js             # Audit logs and administration history
+│   ├── AdminUser.js               # Super admin and administrative accounts
+│   ├── BhajanReport.js            # Bhajan error tickets and feedback
+│   ├── BhajanSubmission.js        # Session bhajan registrations
+│   ├── Bulletin.js                # Samiti announcements and bulletins
+│   ├── DeityRule.js               # Program sequencing and deity rules
+│   ├── MasterBhajan.js            # Official 1,024 Prashanti Mandir bhajan catalog
+│   ├── Notification.js            # Broadcast and individual push alerts
+│   ├── PushSubscription.js       # Browser Web Push credentials
+│   ├── Singer.js                  # Devotee singer records and vocal ranges
+│   ├── SingerBookmark.js          # Singer personal songbook bookmarks
+│   └── UserPresence.js            # Online presence and session telemetry
+├── public/                        # Static client-side assets
+│   ├── css/                       # Stylesheets (style.css, app-shell.css, admin.css, etc.)
+│   ├── js/                        # Client modules (script.js, haptics.js, pwa.js, notifications.js)
+│   ├── sheets/                    # Official musical notation PDFs
+│   ├── images/                    # Icons, logos, and UI artwork
+│   ├── manifest.json              # Web App Manifest for PWA installation
+│   ├── sw.js                      # Service Worker caching & push handler
+│   └── offline.html               # Network failure fallback page
+├── routes/                        # Express HTTP route definitions
+├── scripts/                       # Migration and administrative maintenance scripts
+└── views/                         # Server-rendered EJS templates
+    ├── app-shell.ejs              # Native App Shell with persistent tab stack
+    ├── layouts/main.ejs           # Base HTML layout wrapper
+    ├── partials/                  # Modular view partials (navigation, footers, headers)
+    ├── dashboard.ejs              # Home session dashboard
+    ├── database.ejs               # Historical archives
+    ├── master-bank.ejs            # Master bhajan bank
+    └── singer-hub.ejs             # Devotee singer hub
 ```
+
+---
+
+## 🔒 Security Architecture
+
+The application implements an **enterprise-grade defense-in-depth security perimeter** across all transport, input, session, and database layers:
+
+```
+┌────────────────────────────────────────────────────────┐
+│                   HTTP Requests                        │
+└──────────────────────────┬─────────────────────────────┘
+                           ▼
+┌────────────────────────────────────────────────────────┐
+│ 1. HTTP Security Headers (Strict CSP, HSTS, Sniff-Prot)│
+├────────────────────────────────────────────────────────┤
+│ 2. Deep Prototype Pollution & Null-Byte Sanitizer      │
+├────────────────────────────────────────────────────────┤
+│ 3. Cross-Site Write Shield (Sec-Fetch-Site & Origin)   │
+├────────────────────────────────────────────────────────┤
+│ 4. Adaptive Rate Limiting Matrix (IP + Route Scoped)   │
+├────────────────────────────────────────────────────────┤
+│ 5. Session Security (HttpOnly, SameSite=Lax, SQLite)   │
+├────────────────────────────────────────────────────────┤
+│ 6. Parameterized ORM Queries (SQL Injection Immunity)  │
+├────────────────────────────────────────────────────────┤
+│ 7. Cryptographic PIN & Password Hashing (bcrypt/SHA256)│
+├────────────────────────────────────────────────────────┤
+│ 8. Global Error Masking (Suppressed Stack Traces)      │
+└────────────────────────────────────────────────────────┘
+```
+
+1. **HTTP Security Headers & Strict Transport Security (HSTS)**:
+   - `Strict-Transport-Security: max-age=31536000; includeSubDomains` enforces secure HTTPS.
+   - `X-Frame-Options: SAMEORIGIN` eliminates third-party clickjacking while supporting the native app shell.
+   - `X-Content-Type-Options: nosniff` stops MIME-type sniffing exploits.
+   - Strict `Content-Security-Policy` limits script/style sources to trusted origins.
+2. **Deep Prototype Pollution & Null-Byte Sanitization**:
+   - Recursively scrubs `__proto__`, `constructor`, and `prototype` keys from `req.body`, `req.query`, and `req.params`.
+   - Strips `\0` null-bytes to prevent string-termination filesystem and database vulnerabilities.
+3. **Cross-Site Write Shield & Anti-CSRF Defense**:
+   - Validates `Sec-Fetch-Site` header on all mutation verbs (`POST`, `PUT`, `PATCH`, `DELETE`).
+   - Verifies `Origin` against `Host` to prevent unauthorized cross-origin state changes.
+4. **Adaptive Rate Limiting Matrix**:
+   - `authLimit`: Protects admin and Google OAuth endpoints (max 20 / 15 min).
+   - `singerLoginLimit`: Protects devotee 4-digit PIN authentication (max 15 attempts / 15 min).
+   - `singerPinChangeLimit`: Restricts PIN change requests (max 10 / 15 min).
+   - `bhajanSubmitLimit`: Throttles bhajan submissions to prevent spam (max 30 / 5 min).
+   - `generalWriteLimit`: Allows 1,500 operations per 15 minutes, with internal presence telemetry exempted.
+5. **Secure Cookie & Persistent SQLite Session Store**:
+   - `httpOnly: true` prevents client-side script access to session tokens.
+   - `sameSite: 'lax'` prevents cross-site request leakages.
+   - Backed by persistent SQLite storage (`connect-sqlite3`), avoiding memory leaks and surviving server reboots.
+6. **SQL Injection Elimination**:
+   - All queries run through Sequelize ORM with strict parameter binding and schema validation.
+7. **Singer PIN & Admin Password Cryptography**:
+   - Admin credentials secured with `bcrypt` using 12 salt rounds.
+   - Singer PINs hashed with salted SHA-256.
+8. **Error Masking & Information Leakage Prevention**:
+   - Global production error handler suppresses stack traces and internal database schemas from visitors, logging details to internal secure logs.
+
+---
+
+## ⚡ Performance & Memory Optimizations
+
+- **Lazy Tab Initialization**: Only active tabs load on boot; secondary tabs mount only when tapped, reducing initial network queries by 80%.
+- **Throttled Telemetry**: Presence heartbeats are relaxed to 45 seconds and automatically bypassed inside child frames.
+- **Progressive Catalog Rendering**: Renders Master Songbook records progressively to prevent mobile browser memory warnings and DOM locks.
+- **SQLite VACUUM & Log Pruning**: Periodic background purging of transient logs keeps the SQLite database lightweight and responsive.
 
 ---
 
@@ -177,11 +284,11 @@ Bhajan_Schedular/
    ```bash
    cp .env.example .env
    ```
-   *Edit `.env` to supply your desired secret keys and admin credentials.*
+   *Edit `.env` to configure your admin credentials and session secrets.*
 
 4. **Start the application:**
 
-   - **Development Mode** (with automatic restart via nodemon):
+   - **Development Mode** (with automatic reload via nodemon):
      ```bash
      npm run dev
      ```
@@ -198,8 +305,6 @@ Bhajan_Schedular/
 
 ## 🔑 Environment Variables
 
-Create a `.env` file in the root directory based on `.env.example`:
-
 | Variable | Required | Default | Description |
 | :--- | :---: | :---: | :--- |
 | `PORT` | ❌ | `8000` | Port number on which the Express server listens. |
@@ -208,7 +313,7 @@ Create a `.env` file in the root directory based on `.env.example`:
 | `SUPER_ADMIN_USER` | ✅ | `admin` | Initial Super Admin username created on startup. |
 | `SUPER_ADMIN_PASS` | ✅ | `admin123` | Initial Super Admin password. |
 | `SUPER_ADMIN_DISPLAY_NAME` | ❌ | `Super Admin` | Display name for the Super Admin. |
-| `DB_PATH` | ❌ | `./bhajans.db` | Path to the SQLite database file. |
+| `DB_PATH` | ❌ | `./bhajans.db` | Absolute or relative path to the SQLite database file. |
 | `GOOGLE_CLIENT_ID` | ❌ | - | Google OAuth 2.0 Client ID for Google Sign-In. |
 | `VAPID_PUBLIC_KEY` | ❌ | - | VAPID public key for Web Push notifications. |
 | `VAPID_PRIVATE_KEY` | ❌ | - | VAPID private key for Web Push notifications. |
@@ -220,76 +325,42 @@ Create a `.env` file in the root directory based on `.env.example`:
 
 | Section | Route Path | Description |
 | :--- | :--- | :--- |
-| **Home** | `/` | Main dashboard with service cards, latest bulletins, and contact card. |
-| **Singers** | `/submit-form` | Singer's Zone for submitting upcoming bhajan selections. |
-| **Catalog** | `/master-bank` | Master Bhajan Bank (3,000+ songs, searchable by deity, tempo, raga). |
+| **App Shell** | `/` | Native App Shell with persistent tabs, top bar, and bottom navigation. |
+| **Singer Zone** | `/submit-form` | Devotee bhajan submission form with autocomplete and deity auto-focus. |
+| **Songbook** | `/master-bank` | 1,024 Prashanti Mandir Bhajans with lyrics, music sheets, and ragas. |
+| **Live Plan** | `/plan-view` | Public live view of finalized session program sequence and accompaniments. |
+| **My Hub** | `/my-hub` | Devotee personal hub, vocal scale settings, bookmarks, and singing stats. |
 | **History** | `/database` | Historical session archives with date filter and song breakdowns. |
-| **Live Plan** | `/plan-view` | Public live view of the finalized bhajan sequence. |
-| **Bulletins** | `/bulletins` | Devotional announcements, circulars, and updates. |
-| **Notifications**| `/notification-settings` | Push notification settings and notification log. |
-| **Auth** | `/admin-login` | Administrator login portal. |
-| **Auth** | `/forgot-password` | Self-service admin account recovery. |
-| **Admin** | `/admin` | Main Admin Dashboard for managing sessions and submissions. |
-| **Admin** | `/admin/admin-users` | Manage administrative roles and accounts. |
-| **Admin** | `/admin/missing-bhajans`| Reconcile and link submitted song titles. |
-| **Admin** | `/admin/bulletins` | Create, edit, and publish samiti bulletins. |
-| **Admin** | `/admin/analytics` | View system activity logs and singer metrics. |
+| **Bulletins** | `/bulletins` | Samiti announcements, festival notices, and circulars. |
+| **Notifications** | `/notification-settings` | Web Push subscription settings and notification ticket history. |
+| **Admin Portal** | `/admin` | Administration Tower for session scheduling, locking, and exports. |
+| **Singer Directory** | `/admin/singers` | Manage devotee singer roster and contact directory. |
+| **Deity Rules** | `/admin/rules` | Configure deity sequencing rules and program limits. |
+| **User Access** | `/admin/admin-users` | Manage administrative roles, permissions, and accounts. |
 
 ---
 
 ## 📱 PWA & Offline Capabilities
 
-Bhajan Scheduler is engineered as a fully compliant Progressive Web App:
-- **Dedicated Install Card**: Custom download card with dynamic platform detection for **iOS (iPhone/iPad)**, **Android**, and **Desktop**.
-- **Offline Resiliency**: Pre-caches the essential application shell (`style.css`, `pwa.js`, icons) to allow access to core schedule details during connectivity drops.
-- **Smart Navigation Fallback**: Returns a clean, styled offline status page (`offline.html`) if network connectivity drops entirely.
-
----
-
-## ⚡ iOS & Mobile Performance Optimizations
-
-Mobile devices running iOS (WebKit / Safari / Chrome iOS) enforce strict memory budgets (~250MB) via the **Jetsam** kernel process watchdog:
-- **Progressive Chunk Rendering**: Instead of creating 33,000+ DOM nodes for 3,000+ bhajans at once, `/master-bank` renders an initial lightweight batch of 60 items with on-demand chunk loading.
-- **In-Memory Filter Engine**: Fast in-memory array filtering executes search queries in `<2ms` with zero DOM reflow overhead.
-- **Compositor Texture Elimination**: Replaced legacy offscreen absolute coordinates (`-9999px`) with modern CSS `clip: rect(0,0,0,0)` to prevent WebKit from allocating multi-million-pixel raster backing buffers.
-- **Service Worker Guard**: Guarantees that fetch fallbacks always return a valid `Response` object, avoiding WebKit `TypeError` navigation crashes.
-
----
-
-## 🔒 Security & Rate Limiting
-
-- **Security Headers**: Strict CSP directives, `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff`, and Referrer Policy.
-- **Anti-CSRF & Cross-Site Write Blocking**: Blocks unauthorized cross-origin `POST`, `PUT`, and `DELETE` requests.
-- **Rate Limiting**: Throttles write requests to mitigate brute-force attempts.
-- **Payload Caps**: Enforces `100kb` body limits on all incoming JSON and URL-encoded submissions.
-- **Session Protection**: Encrypted, HTTP-only, SameSite cookies.
+Bhajan Scheduler is engineered as an installable Progressive Web App:
+- **Platform Detection**: Tailored installation prompts for **iOS (Safari Add to Home Screen)**, **Android (WebAPK)**, and **Desktop**.
+- **Offline Shell**: Service Worker caches CSS, JavaScript, icons, and fonts for immediate offline startup.
+- **Graceful Fallback**: Returns an offline-ready screen (`offline.html`) during complete network interruptions.
 
 ---
 
 ## ☁️ Deployment (Railway)
 
-The application includes native configuration for one-click cloud deployment on [Railway](https://railway.app/):
+The application includes production configuration for cloud deployment on [Railway](https://railway.app/):
 
-1. **Connect Repository**: Link your GitHub repository (`Bhajan_Schedular`) to Railway.
-2. **Attach Persistent Storage**:
+1. **Link Repository**: Connect your GitHub repository to Railway.
+2. **Mount Persistent Volume**:
    - Add a persistent **Volume** mounted at `/data`.
    - Set `DB_PATH=/data/bhajans.db`.
-3. **Set Environment Variables**:
+3. **Configure Environment Variables**:
    - Set `NODE_ENV=production`.
-   - Set `SESSION_SECRET`, `SUPER_ADMIN_USER`, and `SUPER_ADMIN_PASS`.
-4. **Automatic Deploy**: Railway reads `railway.json` and runs `npm start`.
-
----
-
-## 🤝 Contributing
-
-Contributions, suggestions, and bug reports are welcome!
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/NewFeature`)
-3. Commit your changes (`git commit -m 'Add NewFeature'`)
-4. Push to the branch (`git push origin feature/NewFeature`)
-5. Open a Pull Request
+   - Provide `SESSION_SECRET`, `SUPER_ADMIN_USER`, and `SUPER_ADMIN_PASS`.
+4. **Deploy**: Railway automatically detects `railway.json` and starts the production container.
 
 ---
 
@@ -300,5 +371,5 @@ Distributed under the **ISC License**. See `LICENSE` for details.
 ---
 
 <p align="center">
-  <i>Dedicated with love and reverence to Sri Sathya Sai Baba • Sri Sathya Sai Seva Organisation, Gandhinagar 🕉️</i>
+  <i>Dedicated with love and reverence to Bhagawan Sri Sathya Sai Baba • Sri Sathya Sai Seva Organisation, Gandhinagar 🕉️</i>
 </p>

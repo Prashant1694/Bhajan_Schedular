@@ -16,7 +16,10 @@ exports.listAdmins = async (req, res) => {
 
     res.render("admin-users", {
       admins,
-      currentAdmin: req.session.admin
+      currentAdmin: req.session.admin,
+      isAdminPage: true,
+      pageCSS: 'admin.css',
+      page: 'admin-users'
     });
 
   } catch (error) {
@@ -30,14 +33,20 @@ exports.showCreateForm = async (req, res) => {
       pageTitle: "Create Administrator",
       admin: null,
       singers,
-      error: null
+      error: null,
+      isAdminPage: true,
+      pageCSS: 'admin.css',
+      page: 'admin-users'
     });
   } catch (err) {
     res.render("admin-user-form", {
       pageTitle: "Create Administrator",
       admin: null,
       singers: [],
-      error: err.message
+      error: err.message,
+      isAdminPage: true,
+      pageCSS: 'admin.css',
+      page: 'admin-users'
     });
   }
 };
@@ -51,7 +60,10 @@ exports.createAdmin = async (req, res) => {
       pageTitle: "Create Administrator",
       admin: null,
       singers,
-      error: error.message
+      error: error.message,
+      isAdminPage: true,
+      pageCSS: 'admin.css',
+      page: 'admin-users'
     });
   }
 };
@@ -64,7 +76,10 @@ exports.showEditForm = async (req, res) => {
       pageTitle: "Edit Administrator",
       admin,
       singers,
-      error: null
+      error: null,
+      isAdminPage: true,
+      pageCSS: 'admin.css',
+      page: 'admin-users'
     });
   } catch (error) {
     res.status(404).send(error.message);

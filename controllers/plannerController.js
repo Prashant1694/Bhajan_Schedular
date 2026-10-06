@@ -14,7 +14,12 @@ const {
   getLocalDateStr,
   deityOrderKey,
   SPEED_ORDER,
-  normalizeName
+  normalizeName,
+  formatDateHuman,
+  getWesternScale,
+  getDeityIcon,
+  getNumberEmoji,
+  isSessionActiveOrUpcoming
 } = require("../services/helpers");
 
 const {
@@ -33,18 +38,24 @@ const getAvailableDates = async () => {
   const todayStr = getLocalDateStr();
   const status = getThursdaySubmissionStatus();
 
+  // Include special sessions that are today (if not passed) or upcoming
   const specialDays = await SessionPermission.findAll({
-    where: { date: { [Sequelize.Op.gt]: todayStr } },
+    where: { date: { [Sequelize.Op.gte]: todayStr } },
     order: [['date', 'ASC']]
   });
 
   const dates = new Map();
+  if (status.isThursdayLiveActive) {
+    dates.set(status.todayStr, { label: "Today's Thursday Bhajan", desc: 'Active Session (7:30 PM - 8:30 PM)' });
+  }
   if (status.openThursday) {
-    dates.set(status.openThursday, { label: 'Next Thursday', desc: 'Regular Session' });
+    dates.set(status.openThursday, { label: 'Upcoming Thursday', desc: 'Regular Session' });
   }
   specialDays.forEach(p => {
-    const label = p.type === 'festival' ? 'Festival' : 'Special';
-    dates.set(p.date, { label: label, desc: p.description || '' });
+    if (isSessionActiveOrUpcoming(p.date, p.description)) {
+      const label = p.type === 'festival' ? 'Festival' : 'Special';
+      dates.set(p.date, { label: label, desc: p.description || '' });
+    }
   });
   return { dates, status };
 };
@@ -57,7 +68,8 @@ exports.showSubmitForm = async (req, res) => {
     // Devotees must be logged in as a singer to submit bhajans
     if (!isAdmin && (!req.session || !req.session.singer)) {
       const returnTo = encodeURIComponent(req.originalUrl || "/submit-form");
-      return res.redirect(`/singer/login?redirect=${returnTo}`);
+      const embedParam = req.query._embed === "1" ? "&_embed=1" : "";
+      return res.redirect(`/singer/login?redirect=${returnTo}${embedParam}`);
     }
 
     const showSuccess = req.query.success === 'true';
@@ -79,10 +91,9 @@ exports.showSubmitForm = async (req, res) => {
         else btnStyle += ' background: linear-gradient(135deg, #ff9933 0%, #ff7700 100%); color:white;';
         optionsHtml += `<a href="/submit-form?session_date=${date}${adminParam}" class="button" style="${btnStyle}">${displayLabel}</a>`;
       });
-      const homeUrl = isAdmin ? '/admin' : '/';
       const themeHeadScript = `<script>(function(){try{var t=localStorage.getItem('bp-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();</script>`;
       const themeToggleBtn = `<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false" data-tooltip="Switch to Dark"><span class="icon-moon">&#127769;</span><span class="icon-sun">&#9728;&#65039;</span></button>`;
-      return res.send(`<!DOCTYPE html><html><head><title>Select Session</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">ðŸ—“ï¸ Select Session</h2><p style="color:var(--ink-soft); margin-bottom:20px;">${msg}</p><div style="background:var(--surface); padding:20px; border-radius:12px; border:1px solid var(--border);"><div style="display:flex; flex-direction:column; gap:10px;">${optionsHtml}</div></div><div style="margin-top:25px;"><a href="${homeUrl}" class="button secondary">${homeText}</a></div></div><script src="/js/script.js"></script></body></html>`);
+      return res.send(`<!DOCTYPE html><html><head><title>Select Session</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtn}<div class="container" style="text-align:center; padding:40px; max-width:500px;"><h2 style="color:var(--saffron); margin-bottom:20px;">📅 Select Session</h2><p style="color:var(--ink-soft); margin-bottom:20px;">${msg}</p><div style="background:var(--surface); padding:20px; border-radius:12px; border:1px solid var(--border);"><div style="display:flex; flex-direction:column; gap:10px;">${optionsHtml}</div></div></div><script src="/js/script.js"></script></body></html>`);
     };
 
     // If no date provided, check if we should show selection screen or 8pm notice
@@ -285,8 +296,10 @@ exports.submitForm = async (req, res) => {
     }
 
     const DEITY_ALIASES = {
-      Vitthala: ["Vitthala", "Vittala"],
-      Vittala: ["Vitthala", "Vittala"],
+      Vitthala: ["Vitthala", "Vittala", "Vithhala", "Vithala"],
+      Vittala: ["Vitthala", "Vittala", "Vithhala", "Vithala"],
+      Vithhala: ["Vitthala", "Vittala", "Vithhala", "Vithala"],
+      Vithala: ["Vitthala", "Vittala", "Vithhala", "Vithala"],
       Mata: ["Mata", "Devi"],
       Devi: ["Devi", "Mata"],
       Hanuman: ["Hanuman", "Anjaneya"],
@@ -295,8 +308,10 @@ exports.submitForm = async (req, res) => {
       "Sarva Dharma": ["SarvaDharma", "Sarva Dharma"]
     };
     const DEITY_TITLE_MATCHERS = {
-      Vitthala: /vitt?hala|vithoba|pandurang/i,
-      Vittala: /vitt?hala|vithoba|pandurang/i,
+      Vitthala: /vitt?h?ala|vithoba|pandurang/i,
+      Vittala: /vitt?h?ala|vithoba|pandurang/i,
+      Vithhala: /vitt?h?ala|vithoba|pandurang/i,
+      Vithala: /vitt?h?ala|vithoba|pandurang/i,
       Hanuman: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i,
       Anjaneya: /hanuman|anjaneya|maruthi|maruti|pavana suta|bajrang/i
     };
@@ -471,92 +486,253 @@ exports.submitForm = async (req, res) => {
 
 exports.planView = async (req, res) => {
   try {
-    const sessionDate = req.query.session_date;
+    let sessionDate = req.query.session_date;
 
-    if (!sessionDate) {
-      // Show date picker
-      const today = getNextThursday();
-      return res.send(generateDatePickerHtml(today));
+    const { dates: availableDatesMap, status } = await getAvailableDates();
+
+    // Query past session dates that have bhajans submitted
+    const pastSessions = await BhajanSubmission.findAll({
+      attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('session_date')), 'session_date']],
+      order: [['session_date', 'DESC']],
+      limit: 20,
+      raw: true
+    });
+
+    const pastDateSet = new Set(pastSessions.map(p => p.session_date));
+
+    // Build dropdown list of all known dates
+    const dateOptionsList = [];
+    const seenDates = new Set();
+
+    // If today's Thursday session is active (before 8:30 PM), show it first in dropdown
+    if (status.isThursdayLiveActive) {
+      seenDates.add(status.todayStr);
+      dateOptionsList.push({ date: status.todayStr, label: `🔴 ${status.todayStr} (Today's Live Session — 7:30 PM to 8:30 PM)`, isCurrent: false });
     }
 
-    // Fetch and display plan
-    const results = await BhajanSubmission.findAll({
-      where: { session_date: sessionDate }
+    const upcomingThursday = status.openThursday || status.nextThursdayDate;
+    if (upcomingThursday && !seenDates.has(upcomingThursday)) {
+      seenDates.add(upcomingThursday);
+      dateOptionsList.push({ date: upcomingThursday, label: `📅 ${upcomingThursday} (Upcoming Thursday)`, isCurrent: false });
+    }
+
+    availableDatesMap.forEach((meta, d) => {
+      if (!seenDates.has(d)) {
+        seenDates.add(d);
+        dateOptionsList.push({ date: d, label: `✨ ${d} (${meta.label}${meta.desc ? ' - ' + meta.desc : ''})`, isCurrent: false });
+      }
     });
+
+    pastSessions.forEach(p => {
+      const d = p.session_date;
+      if (!seenDates.has(d)) {
+        seenDates.add(d);
+        dateOptionsList.push({ date: d, label: `📁 ${d}`, isCurrent: false });
+      }
+    });
+
+    // Auto-select best default date
+    if (!sessionDate) {
+      // 1. If today is Thursday and before 8:30 PM, default to today's active session!
+      if (status.isThursdayLiveActive) {
+        sessionDate = status.todayStr;
+      } else {
+        // 2. Look for active session today among available special dates, or earliest upcoming date
+        const activeAvailable = Array.from(availableDatesMap.keys()).sort();
+        if (activeAvailable.length > 0) {
+          sessionDate = activeAvailable[0];
+        } else if (upcomingThursday) {
+          sessionDate = upcomingThursday;
+        } else if (pastSessions.length > 0) {
+          sessionDate = pastSessions[0].session_date;
+        } else {
+          sessionDate = getLocalDateStr();
+        }
+      }
+    }
+
+    dateOptionsList.forEach(opt => { opt.isCurrent = (opt.date === sessionDate); });
+    if (!seenDates.has(sessionDate)) {
+      dateOptionsList.unshift({ date: sessionDate, label: `📅 ${sessionDate}`, isCurrent: true });
+    }
+
+    // Fetch submissions for the selected date
+    const results = await BhajanSubmission.findAll({ where: { session_date: sessionDate } });
 
     const masterBhajans = await MasterBhajan.findAll({
       where: { is_active: true },
-      attributes: ['id', 'title', 'sheet_filename']
+      attributes: ['id', 'title', 'sheet_filename', 'lyrics', 'deity', 'raga', 'tempo', 'shruti', 'shruti_female']
     });
     const masterMap = new Map();
-    masterBhajans.forEach(mb => {
-      masterMap.set(normalizeBhajanTitle(mb.title), mb);
-    });
+    masterBhajans.forEach(mb => { masterMap.set(normalizeBhajanTitle(mb.title), mb); });
 
     const sorted = results.sort((a, b) => {
-      // 1. Manual Drag-and-Drop sequence overrides everything else
       if (a.list_order > 0 || b.list_order > 0) {
         if (a.list_order === 0) return 1;
         if (b.list_order === 0) return -1;
         return a.list_order - b.list_order;
       }
-
       const deityCompare = deityOrderKey(a.deity) - deityOrderKey(b.deity);
       if (deityCompare !== 0) return deityCompare;
-
       const speedCompare = (SPEED_ORDER[(a.speed || '').toLowerCase()] || 1) -
         (SPEED_ORDER[(b.speed || '').toLowerCase()] || 1);
       if (speedCompare !== 0) return speedCompare;
-
       return a.singer_name.toLowerCase().localeCompare(b.singer_name.toLowerCase());
     });
 
-    let rowsHtml = "";
-    let whatsappLines = [];
+    let rowsHtml = '';
+    let timelineCardsHtml = '';
+    let whatsappItems = [];
 
     if (sorted.length === 0) {
-      rowsHtml = '<tr><td colspan="7" style="text-align:center;">No bhajans found for this date.</td></tr>';
-      whatsappLines.push("No bhajans found for this date.");
+      rowsHtml = '<tr><td colspan="6" style="text-align:center; padding:36px; color:var(--ink-soft);">No bhajans scheduled for this date yet.</td></tr>';
+      timelineCardsHtml = `<div class="plan-empty-state">
+        <div class="plan-empty-icon">🪔</div>
+        <h3 style="margin:0 0 6px 0; font-size:17px; font-weight:700;">No Bhajans Scheduled Yet</h3>
+        <p style="font-size:13.5px; color:var(--ink-soft); margin:0 0 16px 0;">Be the first to submit a bhajan slot for this session!</p>
+        <a href="/submit-form?session_date=${sessionDate}" class="button" style="display:inline-flex; align-items:center; gap:6px;">🎤 Submit Bhajan Slot</a>
+      </div>`;
     } else {
       sorted.forEach((item, index) => {
+        const stepNum = index + 1;
         const matchedMaster = masterMap.get(normalizeBhajanTitle(item.title));
         const sheetFilename = matchedMaster ? matchedMaster.sheet_filename : null;
+        const westernKey = getWesternScale(item.scale);
+        const deityIcon = getDeityIcon(item.deity);
+        const numEmoji = getNumberEmoji(stepNum);
+
         const sheetBtnHtml = sheetFilename
-          ? `<br><a href="/sheets/${encodeURIComponent(sheetFilename)}" target="_blank" rel="noopener noreferrer" class="sheet-link-pill no-print" title="Open official reference sheet music (PDF)">📄 Music Sheet</a>`
+          ? `<a href="/sheets/${encodeURIComponent(sheetFilename)}" target="_blank" rel="noopener noreferrer" class="sheet-link-pill no-print" title="Open official reference sheet music (PDF)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Sheet</a>`
+          : '';
+        const lyricsBtnHtml = matchedMaster
+          ? `<button type="button" class="btn-quick-lyrics no-print" onclick="openPlanLyrics(${matchedMaster.id})" title="Read full lyrics"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg> Lyrics</button>`
           : '';
         const lyricsLinkHtml = matchedMaster
           ? `<a href="/bhajan/${matchedMaster.id}" style="color:inherit; text-decoration:none;" title="View lyrics & details">${escapeHtml(item.title)}</a>`
           : escapeHtml(item.title);
 
+        const nameParts = (item.singer_name || '').trim().split(/\s+/);
+        const initials = nameParts.length > 1
+          ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+          : (nameParts[0] ? nameParts[0].substring(0, 2).toUpperCase() : 'SB');
+
+        const speedStr = (item.speed || 'Medium').toLowerCase();
+        let speedIcon = '🎵';
+        if (speedStr.includes('fast')) speedIcon = '⚡';
+        if (speedStr.includes('slow')) speedIcon = '🕊️';
+
         rowsHtml += `
           <tr>
-            <td data-label="#">${index + 1}</td>
-            <td data-label="Singer"><strong>${escapeHtml(item.singer_name)}</strong></td>
-            <td data-label="Partner">${escapeHtml(item.partner_name || "-")}</td>
-            <td data-label="Bhajan">
-              <strong>${lyricsLinkHtml}</strong>
-              ${sheetBtnHtml}
+            <td data-label="#"><strong>${stepNum}</strong></td>
+            <td data-label="Singer">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="timeline-avatar no-print" style="width:26px; height:26px; font-size:11px;">${initials}</span>
+                <div>
+                  <strong>${escapeHtml(item.singer_name)}</strong>
+                  ${item.partner_name ? `<br><small style="color:var(--ink-soft); font-weight:500;">w/ ${escapeHtml(item.partner_name)}</small>` : ''}
+                </div>
+              </div>
             </td>
-            <td data-label="Deity"><span class="deity-pill">${escapeHtml(item.deity)}</span></td>
-            <td data-label="Scale">${escapeHtml(item.scale || "-")}</td>
-            <td data-label="Speed">${escapeHtml(item.speed)}</td>
-          </tr>
-        `;
+            <td data-label="Bhajan">
+              <div>
+                <strong>${lyricsLinkHtml}</strong>
+                <div style="display:flex; gap:6px; margin-top:4px;" class="no-print">${sheetBtnHtml}${lyricsBtnHtml}</div>
+              </div>
+            </td>
+            <td data-label="Deity">
+              <span class="deity-pill" style="display:inline-flex; align-items:center; gap:5px;">
+                <span>${deityIcon}</span><span>${escapeHtml(item.deity)}</span>
+              </span>
+            </td>
+            <td data-label="Pitch / Scale">
+              <strong>${escapeHtml(item.scale || '-')}</strong>
+              ${westernKey !== '-' ? `<span class="acc-key-tag">${westernKey}</span>` : ''}
+            </td>
+            <td data-label="Tempo"><span class="speed-pill">${speedIcon} ${escapeHtml(item.speed)}</span></td>
+          </tr>`;
 
-        let line = `${index + 1}) ${item.singer_name}`;
-        if (item.partner_name) line += ` (${item.partner_name})`;
-        line += ` – [${item.deity}] ${item.title} – Scale: ${item.scale || "N/A"}, Speed: ${item.speed ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1) : "N/A"}`;
-        whatsappLines.push(line);
+        timelineCardsHtml += `
+          <div class="timeline-item" id="bhajan-step-${stepNum}">
+            <div class="timeline-spine">
+              <div class="timeline-step-badge">${stepNum}</div>
+              <div class="timeline-line"></div>
+            </div>
+            <div class="timeline-card">
+              <div class="timeline-card-header">
+                <div class="timeline-card-header-left">
+                  <span class="deity-pill"><span>${deityIcon}</span><span>${escapeHtml(item.deity)}</span></span>
+                  <span class="speed-pill">${speedIcon} ${escapeHtml(item.speed)}</span>
+                </div>
+                <span style="font-size:12px; font-weight:700; color:var(--ink-soft);">#${stepNum}</span>
+              </div>
+              <div>
+                <h3 class="timeline-bhajan-title">${lyricsLinkHtml}</h3>
+                <div class="timeline-actions-row no-print">${sheetBtnHtml}${lyricsBtnHtml}</div>
+              </div>
+              <div class="timeline-singer-row">
+                <span class="timeline-avatar">${initials}</span>
+                <div class="timeline-singer-info">
+                  <span class="timeline-singer-name">${escapeHtml(item.singer_name)}</span>
+                  ${item.partner_name ? `<span class="timeline-partner-tag">👥 with ${escapeHtml(item.partner_name)}</span>` : ''}
+                </div>
+              </div>
+              <div class="timeline-accompanist-strip">
+                <div class="acc-tile">
+                  <span class="acc-tile-icon">🎹</span>
+                  <div class="acc-tile-text">
+                    <span class="acc-label">Pitch / Scale</span>
+                    <span class="acc-value">
+                      ${escapeHtml(item.scale || 'N/A')}
+                      ${westernKey !== '-' ? `<span class="acc-key-tag">${westernKey}</span>` : ''}
+                    </span>
+                  </div>
+                </div>
+                <div class="acc-tile">
+                  <span class="acc-tile-icon">🥁</span>
+                  <div class="acc-tile-text">
+                    <span class="acc-label">Tempo</span>
+                    <span class="acc-value">${speedIcon} ${escapeHtml(item.speed)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+
+        let waItem = `${numEmoji} *${item.deity}* ${deityIcon}\n🎵 *${item.title}*\n👤 ${item.singer_name}`;
+        if (item.partner_name) waItem += ` (with ${item.partner_name})`;
+        waItem += `\n🎹 Pitch: ${item.scale || 'N/A'}${westernKey !== '-' ? ` (${westernKey})` : ''} | 🥁 Tempo: ${item.speed ? item.speed.charAt(0).toUpperCase() + item.speed.slice(1) : 'Medium'}`;
+        whatsappItems.push(waItem);
       });
     }
 
-    const headerLine = `Bhajan Plan – ${sessionDate}`;
-    const whatsappText = headerLine + "\n" + whatsappLines.join("\n");
+    let sessionDateHuman = sessionDate;
+    try {
+      const [y, m, d] = sessionDate.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      sessionDateHuman = dateObj.toLocaleDateString('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+    } catch(e) {}
+
+    const protocol = req.protocol || 'http';
+    const host = req.get('host') || 'localhost:8000';
+    const livePlanUrl = `${protocol}://${host}/plan-view?session_date=${sessionDate}`;
+
+    let whatsappText = `🕉️ *SRI SATHYA SAI SEVA ORGANISATION*\n📅 *LIVE BHAJAN PLAN – ${sessionDateHuman}*\nTotal Bhajans: ${sorted.length}\n──────────────────────────────\n\n`;
+    whatsappText += whatsappItems.length > 0 ? whatsappItems.join('\n\n') + '\n\n' : 'No bhajans scheduled for this date yet.\n\n';
+    whatsappText += `──────────────────────────────\n🙏 *Sai Ram to all Accompanists & Devotees*\n🌐 *Live Plan:* ${livePlanUrl}`;
     const whatsappEncoded = encodeURIComponent(whatsappText);
 
-    const html = generatePlanViewHtml(sessionDate, rowsHtml, whatsappText, whatsappEncoded);
-    res.send(html);
+    const isAdmin = Boolean(req.session && (req.session.admin || req.session.adminUserId));
 
+    const html = generatePlanViewHtml(sessionDate, rowsHtml, whatsappText, whatsappEncoded, {
+      sessionDateHuman,
+      timelineCardsHtml,
+      dateOptionsList,
+      submissionsCount: sorted.length,
+      isUpcoming: sessionDate >= getLocalDateStr(),
+      isAdmin
+    });
+
+    res.send(html);
   } catch (error) {
     res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
   }

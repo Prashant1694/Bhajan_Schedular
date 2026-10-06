@@ -1,0 +1,102 @@
+<div class="session-unified-page" style="padding:24px; max-width:1100px; margin:0 auto;">
+  <!-- Header -->
+  <header class="session-unified-header">
+    <div class="session-header-left">
+      <div class="session-title-wrap">
+        <span class="session-type-badge">📋 Personal Audit Trail</span>
+        <h1 class="session-title">My Activity History</h1>
+        <p class="session-subtitle">
+          Your personal timeline of bhajan submissions, repertoire updates, and satsang interactions.
+        </p>
+      </div>
+    </div>
+    <div class="session-header-actions">
+      <a href="/my-hub" class="session-btn session-btn-secondary">
+        <span>🎤</span> Back to My Hub
+      </a>
+      <a href="/submit-form" class="session-btn session-btn-primary">
+        <span>➕</span> Submit Bhajan
+      </a>
+    </div>
+  </header>
+
+  <!-- User Card & Summary -->
+  <div style="background:var(--surface,#fff); border-radius:16px; border:1px solid var(--border,#e2e8f0); padding:20px 24px; margin-bottom:24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+    <div style="display:flex; align-items:center; gap:14px;">
+      <div style="width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg, #ec4899, #f43f5e); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; box-shadow:0 4px 12px rgba(236,72,153,0.3);">
+        <%= username ? username.charAt(0).toUpperCase() : 'U' %>
+      </div>
+      <div>
+        <div style="font-size:18px; font-weight:700; color:var(--ink,#1e293b); display:flex; align-items:center; gap:8px;">
+          <%= username %>
+          <% if (singer) { %>
+            <span style="font-size:11px; padding:2px 8px; border-radius:6px; background:rgba(236,72,153,0.1); color:#db2777; font-weight:700;">🎤 Singer Account</span>
+          <% } else if (admin) { %>
+            <span style="font-size:11px; padding:2px 8px; border-radius:6px; background:rgba(99,102,241,0.1); color:#4f46e5; font-weight:700;">🛡️ Administrator</span>
+          <% } %>
+        </div>
+        <div style="font-size:13px; color:var(--muted,#64748b); margin-top:2px;">
+          Showing your recent actions on Bhajan Scheduler
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:16px;">
+      <div style="text-align:right;">
+        <div style="font-size:20px; font-weight:800; color:var(--ink,#1e293b);"><%= logs.length %></div>
+        <div style="font-size:11.5px; color:var(--muted,#64748b); text-transform:uppercase; font-weight:600;">Recorded Steps</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div style="background:var(--surface,#fff); border-radius:16px; border:1px solid var(--border,#e2e8f0); padding:24px;">
+    <h3 style="margin:0 0 18px 0; font-size:16px; font-weight:700; color:var(--ink,#1e293b);">Timeline of Actions</h3>
+
+    <% if (logs && logs.length > 0) { %>
+      <div class="user-timeline" style="display:flex; flex-direction:column; gap:14px;">
+        <% logs.forEach(log => { 
+          const dateStr = new Date(log.created_at).toLocaleString('en-US', {
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+          let icon = '⚡';
+          let iconBg = 'rgba(99,102,241,0.1)';
+          let iconColor = '#6366f1';
+
+          if (log.action.includes('SUBMIT')) {
+            icon = '🎵'; iconBg = 'rgba(16,185,129,0.1)'; iconColor = '#10b981';
+          } else if (log.action.includes('SONGBOOK')) {
+            icon = '📖'; iconBg = 'rgba(236,72,153,0.1)'; iconColor = '#ec4899';
+          } else if (log.action.includes('SCALE')) {
+            icon = '🎹'; iconBg = 'rgba(139,92,246,0.1)'; iconColor = '#8b5cf6';
+          } else if (log.action.includes('PIN')) {
+            icon = '🔑'; iconBg = 'rgba(245,158,11,0.1)'; iconColor = '#f59e0b';
+          } else if (log.action.includes('LOGIN')) {
+            icon = '🔓'; iconBg = 'rgba(59,130,246,0.1)'; iconColor = '#3b82f6';
+          }
+        %>
+          <div style="display:flex; align-items:flex-start; gap:14px; padding:12px 16px; border-radius:12px; background:var(--background,#f8fafc); border:1px solid var(--border,#f1f5f9);">
+            <div style="width:36px; height:36px; border-radius:10px; background:<%= iconBg %>; color:<%= iconColor %>; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;">
+              <%= icon %>
+            </div>
+            <div style="flex:1;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <span style="font-weight:700; font-size:14px; color:var(--ink,#1e293b);"><%= log.details || log.action %></span>
+                <span style="font-size:12px; color:var(--muted,#64748b); font-weight:500;"><%= dateStr %></span>
+              </div>
+              <div style="font-size:12px; color:var(--muted,#64748b); margin-top:3px; display:flex; gap:10px;">
+                <span>Section: <strong><%= log.section %></strong></span>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div style="text-align:center; padding:40px 20px; color:var(--muted,#64748b);">
+        <div style="font-size:32px; margin-bottom:8px;">📝</div>
+        <div style="font-weight:700; font-size:15px; color:var(--ink,#1e293b);">No activity recorded yet</div>
+        <p style="margin:4px 0 0 0; font-size:13px;">Actions like submitting songs, changing pitch, and saving to your songbook will appear here.</p>
+      </div>
+    <% } %>
+  </div>
+</div>

@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>
+    <%= typeof pageTitle !=='undefined' ? pageTitle : 'Bhajan Planner' %>
+  </title>
+  <meta name="description"
+    content="Sri Sathya Sai Seva Organisations, Gandhinagar - Devotional Bhajan Management System">
+  <meta name="theme-color" content="#d98a2b">
+  <link rel="icon" type="image/png" href="/images/icons/icon-192x192.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
+
+  <!-- Frame Guard: Prevent app-shell from ever nesting inside an iframe -->
+  <script>
+    if (window.self !== window.top) {
+      window.location.replace('/?_embed=1');
+    }
+  </script>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Core CSS -->
+  <link rel="stylesheet" href="/css/style.css?v=4.6">
+  <link rel="stylesheet" href="/css/notifications.css?v=4.4">
+  <link rel="stylesheet" href="/css/app-shell.css?v=4.5">
+
+  <!-- Native Micro-Haptics Engine -->
+  <script src="/js/haptics.js"></script>
+
+  <!-- Dark mode preference BEFORE render to prevent flash -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('bp-theme');
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      } catch (e) { }
+    })();
+  </script>
+</head>
+
+<body class="shell-body">
+
+  <!-- Native App Header Bar -->
+  <header class="native-top-bar" id="nativeTopBar" role="banner">
+    <div class="native-top-left" onclick="if(document.body.classList.contains('in-admin-tab')){navigateAdminSection('/admin');}else{switchTab('home');}" style="cursor: pointer;">
+      <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
+        <!-- Admin Sidebar Hamburger: Only visible on the Admin page -->
+        <button type="button" class="native-action-btn admin-sidebar-btn" id="adminSidebarToggleBtn" onclick="event.stopPropagation(); toggleAdminShellSidebar();" aria-label="Open Admin Menu" title="Admin Menu" data-haptic="light" style="margin-right:2px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      <% } %>
+
+      <div class="native-top-logo-wrap">
+        <img src="/images/logo.png" alt="Sri Sathya Sai Emblem" class="native-top-logo">
+      </div>
+      <div class="native-top-brand">
+        <div class="native-top-title-row">
+          <span class="native-top-title">Bhajan Planner</span>
+        </div>
+        <span class="native-top-subtitle">SSSO - GANDHINAGAR</span>
+      </div>
+    </div>
+
+    <!-- Header Actions firmly positioned on the right end -->
+    <div class="native-top-actions">
+      <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
+        <!-- Admin Profile Badge: Merged into app header ONLY for Admin page -->
+        <div class="admin-header-profile" id="adminHeaderProfile" title="Logged in as <%= currentAdmin.displayName || currentAdmin.username %>">
+          <div class="admin-header-avatar">
+            <%= (currentAdmin.displayName || currentAdmin.username || "A").charAt(0).toUpperCase() %>
+          </div>
+          <div class="admin-header-meta">
+            <span class="admin-header-name"><%= currentAdmin.displayName || currentAdmin.username %></span>
+            <span class="admin-header-role <%= (currentAdmin.role === 'super_admin' || currentAdmin.role === 'SUPER_ADMIN') ? 'is-super' : '' %>">
+              <%= (currentAdmin.role === "super_admin" || currentAdmin.role === "SUPER_ADMIN") ? "Super Admin" : "Admin" %>
+            </span>
+          </div>
+        </div>
+      <% } %>
+
+      <!-- Dark / Light Theme Toggle -->
+      <button class="native-action-btn shell-theme-btn" id="shellThemeToggle" aria-label="Toggle dark mode"
+        title="Toggle theme" type="button" data-haptic="light">
+        <span class="icon-moon" aria-hidden="true">🌙</span>
+        <span class="icon-sun" aria-hidden="true">☀️</span>
+      </button>
+
+      <!-- Native Notification Bell (devotee notifications on public tabs) -->
+      <button class="native-action-btn shell-notif-btn" id="shellNotifBtn" aria-label="Notifications"
+        title="Notifications" type="button" data-haptic="medium">
+        <svg class="native-bell-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span class="notif-badge" id="shellNotifBadge" style="display:none"></span>
+      </button>
+    </div>
+  </header>
+
+  <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
+    <!-- Integrated Admin Sidebar Drawer (Off-Canvas) -->
+    <div class="admin-shell-sidebar-overlay" id="adminShellSidebarOverlay" onclick="closeAdminShellSidebar()"></div>
+    <aside class="sidebar admin-shell-sidebar" id="adminShellSidebar" aria-label="Admin Navigation">
+      <div class="sidebar-header">
+        <div class="sidebar-brand-link">
+          <div class="sidebar-logo-wrap">
+            <img src="/images/logo.png" alt="Sri Sathya Sai Emblem" class="sidebar-logo-img">
+          </div>
+          <div class="sidebar-brand-text">
+            <h2>Bhajan Planner</h2>
+            <div class="sidebar-brand-sub">
+              <span class="sidebar-admin-pill">Admin Portal</span>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="sidebar-close-btn" onclick="closeAdminShellSidebar()" aria-label="Close admin menu">✕</button>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Admin Navigation">
+        <!-- ═══ 1. SCHEDULE & SESSIONS ═══ -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Schedule &amp; Sessions</div>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin')">
+            <span>🏠</span> Dashboard
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/submit-form?admin=true')">
+            <span>📅</span> New Entry
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/plan-view')">
+            <span>📤</span> Plan &amp; Share
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin?copy=true')">
+            <span>📋</span> Copy Session
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/import-sessions')">
+            <span>📥</span> Import Sessions
+          </a>
+        </div>
+
+        <!-- ═══ 2. DATABASE & CONTENT ═══ -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Database &amp; Content</div>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/master-bank')">
+            <span>📚</span> Master Bank
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/archived-master-bhajans')">
+            <span>📦</span> Archived Masters
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/rules')">
+            <span>🎼</span> Deity Rules
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/missing-bhajans')">
+            <span>🚨</span> Missing Catcher
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/reports')">
+            <span>🚩</span> Bhajan Reports
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/bulletins')">
+            <span>📢</span> Bulletins
+          </a>
+        </div>
+
+        <!-- ═══ 3. SINGERS & COMMUNITY ═══ -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">Singers &amp; Community</div>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/singers')">
+            <span>👥</span> Singers Directory
+          </a>
+          <% if (currentAdmin.role === "super_admin" || currentAdmin.role === "SUPER_ADMIN") { %>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/diwali')">
+            <span>🪔</span> Diwali Bhajans
+          </a>
+          <% } %>
+        </div>
+
+        <!-- ═══ 4. SYSTEM & AUDIT ═══ -->
+        <div class="sidebar-section">
+          <div class="sidebar-section-title">System &amp; Audit</div>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/analytics')">
+            <span>📊</span> Analytics
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/notifications')">
+            <span>🔔</span> Notifications
+          </a>
+          <% if (currentAdmin.role === "super_admin" || currentAdmin.role === "SUPER_ADMIN") { %>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/admin-users')">
+            <span>👨‍💼</span> Administrators
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/activity-logs')">
+            <span>🕵️</span> Activity Monitor
+          </a>
+          <a href="javascript:void(0)" onclick="navigateAdminSection('/admin/danger-reset-history')">
+            <span>⚠️</span> Reset History
+          </a>
+          <% } %>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="javascript:void(0)" onclick="closeAdminShellSidebar(); switchTab('home');" title="Open Public Devotee View">
+          <span>🌐</span> Public Home
+        </a>
+        <a href="/logout" target="_top" class="logout-link" title="Sign out of Admin Session" onclick="try{localStorage.removeItem('bp_is_admin');localStorage.removeItem('bp_admin_name');localStorage.removeItem('bp_admin_role');}catch(_){}">
+          <span>🚪</span> Logout
+        </a>
+      </div>
+    </aside>
+  <% } %>
+
+  <!-- Notification Center Panel & Overlay -->
+  <div class="notif-panel" id="notifPanel">
+    <div class="notif-panel-header">
+      <h3>🔔 Notifications</h3>
+      <div class="notif-panel-actions">
+        <a href="/my-reports" class="notif-settings-link" title="My Reported Bhajan Tickets"
+          style="text-decoration: none; font-size: 13px;">🚩</a>
+        <button class="notif-mark-all" id="notifMarkAllRead" title="Mark all as read">✓ All</button>
+        <a href="/notification-settings" class="notif-settings-link" title="Notification Settings">⚙️</a>
+        <button class="notif-close-btn" id="notifCloseBtn" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="notif-panel-body" id="notifPanelBody">
+      <div class="notif-loading">Loading...</div>
+    </div>
+  </div>
+  <div class="notif-overlay" id="notifOverlay"></div>
+
+  <!-- Persistent 5-Tab Viewport Stack -->
+  <main class="shell-viewport" id="shellViewport">
+    <% 
+      const activeTabKey = typeof initialTab !== 'undefined' && initialTab ? initialTab : 'home'; 
+      const initRoute = (typeof initialRoute !== 'undefined' && initialRoute) ? initialRoute : '';
+
+      function getTabSrc(tabKey, defaultPath) {
+        if (activeTabKey === tabKey && initRoute) {
+          return initRoute.includes('?') ? (initRoute + '&_embed=1') : (initRoute + '?_embed=1');
+        }
+        return defaultPath + '?_embed=1';
+      }
+    %>
+    <!-- Tab 0: Home -->
+    <iframe id="frame-home"
+      class="shell-frame <%= activeTabKey === 'home' ? 'active-frame' : '' %>"
+      <% if (activeTabKey === 'home') { %>src="<%= getTabSrc('home', '/') %>"<% } else { %>data-src="/?_embed=1"<% } %>
+      title="Home Dashboard"></iframe>
+
+    <!-- Tab 1: Singer Zone (Mark Bhajan) -->
+    <iframe id="frame-singer"
+      class="shell-frame <%= activeTabKey === 'singer' ? 'active-frame' : '' %>"
+      <% if (activeTabKey === 'singer') { %>src="<%= getTabSrc('singer', '/submit-form') %>"<% } else { %>data-src="/submit-form?_embed=1"<% } %>
+      title="Singer Zone"></iframe>
+
+    <!-- Tab 2: Songbook (Master Bank) -->
+    <iframe id="frame-bank"
+      class="shell-frame <%= activeTabKey === 'bank' ? 'active-frame' : '' %>"
+      <% if (activeTabKey === 'bank') { %>src="<%= getTabSrc('bank', '/master-bank') %>"<% } else { %>data-src="/master-bank?_embed=1"<% } %>
+      title="Master Songbook"></iframe>
+
+    <!-- Tab 3: Live Plan -->
+    <iframe id="frame-plan"
+      class="shell-frame <%= activeTabKey === 'plan' ? 'active-frame' : '' %>"
+      <% if (activeTabKey === 'plan') { %>src="<%= getTabSrc('plan', '/plan-view') %>"<% } else { %>data-src="/plan-view?_embed=1"<% } %>
+      title="Live Session Plan"></iframe>
+
+    <!-- Tab 4: My Hub -->
+    <iframe id="frame-hub"
+      class="shell-frame <%= activeTabKey === 'hub' ? 'active-frame' : '' %>"
+      <% if (activeTabKey === 'hub') { %>src="<%= getTabSrc('hub', '/my-hub') %>"<% } else { %>data-src="/my-hub?_embed=1"<% } %>
+      title="Singer Hub"></iframe>
+
+    <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
+      <!-- Tab 5: Admin Portal (When in Admin Mode) -->
+      <iframe id="frame-admin"
+        class="shell-frame <%= activeTabKey === 'admin' ? 'active-frame' : '' %>"
+        <% if (activeTabKey === 'admin') { %>src="<%= getTabSrc('admin', '/admin') %>"<% } else { %>data-src="/admin?_embed=1"<% } %>
+        title="Admin Portal"></iframe>
+    <% } %>
+  </main>
+
+  <!-- Native App Bottom Navigation Bar -->
+  <nav class="native-bottom-nav" id="nativeBottomNav" aria-label="Bottom Navigation">
+    <div class="native-nav-inner">
+      <!-- 1. Home -->
+      <button type="button"
+        class="nav-tab <%= (typeof initialTab === 'undefined' || initialTab === 'home' || !initialTab) ? 'active' : '' %>"
+        id="tab-btn-home" data-tab="home" onclick="switchTab('home')">
+        <div class="tab-icon-box">
+          <span class="tab-icon">🏠</span>
+        </div>
+        <span class="tab-label">Home</span>
+      </button>
+
+      <!-- 2. Singer Zone -->
+      <button type="button"
+        class="nav-tab <%= (typeof initialTab !== 'undefined' && initialTab === 'singer') ? 'active' : '' %>"
+        id="tab-btn-singer" data-tab="singer" onclick="switchTab('singer')">
+        <div class="tab-icon-box">
+          <span class="tab-icon">🎤</span>
+        </div>
+        <span class="tab-label">Singer Zone</span>
+      </button>
+
+      <!-- 3. Songbook -->
+      <button type="button"
+        class="nav-tab <%= (typeof initialTab !== 'undefined' && initialTab === 'bank') ? 'active' : '' %>"
+        id="tab-btn-bank" data-tab="bank" onclick="switchTab('bank')">
+        <div class="tab-icon-box">
+          <span class="tab-icon">📖</span>
+        </div>
+        <span class="tab-label">Songbook</span>
+      </button>
+
+      <!-- 4. Live Plan -->
+      <button type="button"
+        class="nav-tab <%= (typeof initialTab !== 'undefined' && initialTab === 'plan') ? 'active' : '' %>"
+        id="tab-btn-plan" data-tab="plan" onclick="switchTab('plan')">
+        <div class="tab-icon-box">
+          <span class="tab-icon">📊</span>
+        </div>
+        <span class="tab-label">Live Plan</span>
+      </button>
+
+      <!-- 5. My Hub -->
+      <button type="button"
+        class="nav-tab <%= (typeof initialTab !== 'undefined' && initialTab === 'hub') ? 'active' : '' %>"
+        id="tab-btn-hub" data-tab="hub" onclick="switchTab('hub')">
+        <div class="tab-icon-box">
+          <span class="tab-icon">👤</span>
+          <span class="tab-badge-dot" id="hubBadgeDot" style="display:none;"></span>
+        </div>
+        <span class="tab-label">My Hub</span>
+      </button>
+
+      <% if (typeof currentAdmin !=='undefined' && currentAdmin) { %>
+        <!-- 6. Admin Mode -->
+        <button type="button"
+          class="nav-tab <%= (typeof initialTab !== 'undefined' && initialTab === 'admin') ? 'active' : '' %>"
+          id="tab-btn-admin" data-tab="admin" onclick="switchTab('admin')">
+          <div class="tab-icon-box">
+            <span class="tab-icon">👑</span>
+          </div>
+          <span class="tab-label">Admin</span>
+        </button>
+        <% } %>
+    </div>
+  </nav>
+
+  <!-- Session to LocalStorage Auto-Sync -->
+  <script>
+    try {
+      <% if (typeof currentSinger !== 'undefined' && currentSinger) { %>
+        localStorage.setItem('bp_singer_id', <%= JSON.stringify(currentSinger.id) %>);
+        localStorage.setItem('bp_singer_name', <%= JSON.stringify(currentSinger.name) %>);
+        localStorage.setItem('bp_singer_gender', <%= JSON.stringify(currentSinger.gender || '') %>);
+        localStorage.setItem('bp_singer_login_time', Date.now());
+      <% } %>
+      <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
+        localStorage.setItem('bp_is_admin', 'true');
+        localStorage.setItem('bp_admin_name', <%= JSON.stringify(currentAdmin.display_name || currentAdmin.displayName || currentAdmin.username) %>);
+        localStorage.setItem('bp_admin_role', <%= JSON.stringify(currentAdmin.role || 'admin') %>);
+      <% } else { %>
+        localStorage.removeItem('bp_is_admin');
+        localStorage.removeItem('bp_admin_name');
+        localStorage.removeItem('bp_admin_role');
+      <% } %>
+    } catch (_) { }
+  </script>
+
+  <!-- PWA Script -->
+  <script src="/js/pwa.js"></script>
+
+  <!-- Shell Controller Script -->
+  <script>
+    (function () {
+      const TAB_KEYS = ['home', 'singer', 'bank', 'plan', 'hub' <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>, 'admin' <% } %>];
+      const TAB_ROUTES = {
+        home: '/',
+        singer: '/submit-form',
+        bank: '/master-bank',
+        plan: '/plan-view',
+        hub: '/my-hub' <% if(typeof currentAdmin !== 'undefined' && currentAdmin) { %>,
+          admin: '/admin' <% } %>
+      };
+
+    function mapPathToTab(p) {
+      if (!p) return 'home';
+      var lower = p.toLowerCase();
+      if (lower.startsWith('/submit-form')) return 'singer';
+      if (lower.startsWith('/master-bank') || lower.startsWith('/bhajan/')) return 'bank';
+      if (lower.startsWith('/plan-view')) return 'plan';
+      if (lower.startsWith('/my-hub') || lower.startsWith('/singer/')) return 'hub';
+      if (lower.startsWith('/admin')) return 'admin';
+      return 'home';
+    }
+
+    let currentTab = '<%= typeof initialTab !== "undefined" && initialTab ? initialTab : "home" %>';
+    if (!TAB_KEYS.includes(currentTab)) currentTab = 'home';
+
+    // Synchronize child iframe URL with top-level browser address bar in real time
+    window.onFrameNavigated = function (cleanUrl, pathname) {
+      if (!cleanUrl) return;
+      try {
+        sessionStorage.setItem('bp_current_path', cleanUrl);
+      } catch (_) {}
+
+      // Keep address bar in sync with child page URL without reloading
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({ path: cleanUrl, tab: currentTab }, '', cleanUrl);
+      }
+
+      // If active frame navigates to another major section, sync bottom nav tab highlight
+      var expectedTab = mapPathToTab(pathname || cleanUrl);
+      if (expectedTab && expectedTab !== currentTab && TAB_KEYS.includes(expectedTab)) {
+        currentTab = expectedTab;
+        try { sessionStorage.setItem('bp_active_tab', expectedTab); } catch (_) {}
+        document.querySelectorAll('.nav-tab').forEach(function (btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-tab') === expectedTab);
+        });
+      }
+    };
+
+    // Listen for postMessage navigation notifications from iframes
+    window.addEventListener('message', function (e) {
+      if (e.data && e.data.type === 'bp_navigated' && e.data.path) {
+        window.onFrameNavigated(e.data.path, e.data.path.split('?')[0]);
+      }
+    });
+
+    // Switch active tab without reloading iframe, preserving form state & scroll
+    function switchTab(tabKey, targetUrl, skipHistory) {
+      if (!TAB_KEYS.includes(tabKey)) return;
+      const previousTab = currentTab;
+      currentTab = tabKey;
+      try { sessionStorage.setItem('bp_active_tab', tabKey); } catch (_) {}
+
+      TAB_KEYS.forEach(function (k) {
+        const frame = document.getElementById('frame-' + k);
+        const btn = document.getElementById('tab-btn-' + k);
+
+        if (k === tabKey) {
+          // If already on this tab and tapped again, pop back to root if navigated deep
+          if (previousTab === tabKey && !targetUrl) {
+            try {
+              if (frame && frame.contentWindow && frame.contentWindow.location.pathname !== TAB_ROUTES[tabKey]) {
+                frame.src = TAB_ROUTES[tabKey] + '?_embed=1';
+              }
+            } catch (_) { }
+          }
+
+          frame.classList.add('active-frame');
+          btn.classList.add('active');
+          btn.setAttribute('aria-selected', 'true');
+
+          // Lazy load iframe source on first activation
+          const pendingSrc = frame.getAttribute('data-src');
+          if (pendingSrc && !frame.getAttribute('src')) {
+            frame.setAttribute('src', pendingSrc);
+            frame.removeAttribute('data-src');
+          }
+
+          // If a specific deep URL with query was requested (e.g. from session click)
+          if (targetUrl) {
+            const currentSrc = frame.getAttribute('src') || '';
+            const sep = targetUrl.includes('?') ? '&' : '?';
+            const fullEmbedUrl = targetUrl.includes('_embed') ? targetUrl : (targetUrl + sep + '_embed=1');
+            if (currentSrc !== fullEmbedUrl) {
+              frame.src = fullEmbedUrl;
+            }
+          }
+
+          // Sync rights dynamically inside the frame if it exposes syncAdminRights
+          try {
+            if (frame && frame.contentWindow && typeof frame.contentWindow.syncAdminRights === 'function') {
+              frame.contentWindow.syncAdminRights();
+            }
+          } catch (_) { }
+        } else {
+          frame.classList.remove('active-frame');
+          btn.classList.remove('active');
+          btn.setAttribute('aria-selected', 'false');
+        }
+      });
+
+      if (tabKey === 'admin') {
+        document.body.classList.add('in-admin-tab');
+      } else {
+        document.body.classList.remove('in-admin-tab');
+        if (typeof window.closeAdminShellSidebar === 'function') window.closeAdminShellSidebar();
+      }
+
+      // Sync browser URL smoothly with back/forward history support
+      const browserPath = (targetUrl && !targetUrl.includes('_embed')) ? targetUrl : TAB_ROUTES[tabKey];
+      try { sessionStorage.setItem('bp_current_path', browserPath); } catch (_) {}
+
+      if (!skipHistory && window.history && window.history.pushState) {
+        if (window.location.pathname + window.location.search !== browserPath) {
+          window.history.pushState({ tab: tabKey, path: browserPath }, '', browserPath);
+        }
+      } else if (window.history && window.history.replaceState) {
+        window.history.replaceState({ tab: tabKey, path: browserPath }, '', browserPath);
+      }
+    }
+
+    window.switchTab = switchTab;
+
+    window.toggleAdminShellSidebar = function() {
+      const sidebar = document.getElementById('adminShellSidebar');
+      const overlay = document.getElementById('adminShellSidebarOverlay');
+      if (!sidebar || !overlay) return;
+      const isOpen = sidebar.classList.contains('open');
+      if (isOpen) {
+        window.closeAdminShellSidebar();
+      } else {
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+        if (window.haptics && typeof window.haptics.light === 'function') window.haptics.light();
+      }
+    };
+
+    window.closeAdminShellSidebar = function() {
+      const sidebar = document.getElementById('adminShellSidebar');
+      const overlay = document.getElementById('adminShellSidebarOverlay');
+      if (sidebar) sidebar.classList.remove('open');
+      if (overlay) overlay.classList.remove('open');
+    };
+
+    function syncAdminSidebarActive(path) {
+      if (!path) path = window.location.pathname;
+      var clean = path.split('?')[0].toLowerCase();
+      var sidebar = document.getElementById('adminShellSidebar');
+      if (!sidebar) return;
+      sidebar.querySelectorAll('.sidebar-nav a').forEach(function(a) {
+        var onclickAttr = a.getAttribute('onclick') || '';
+        if (onclickAttr.toLowerCase().includes("'" + clean + "'") || onclickAttr.toLowerCase().includes('"' + clean + '"')) {
+          a.classList.add('active');
+        } else {
+          a.classList.remove('active');
+        }
+      });
+    }
+
+    window.navigateAdminSection = function(urlPath) {
+      window.closeAdminShellSidebar();
+      switchTab('admin', urlPath);
+      syncAdminSidebarActive(urlPath);
+      if (window.haptics && typeof window.haptics.medium === 'function') window.haptics.medium();
+    };
+
+    // Initialize in-admin-tab class if starting on admin tab
+    if (currentTab === 'admin') {
+      document.body.classList.add('in-admin-tab');
+      syncAdminSidebarActive(window.location.pathname);
+    }
+
+    // Handle Browser & Phone Hardware Back / Forward Buttons
+    window.addEventListener('popstate', function (e) {
+      const path = window.location.pathname;
+      const routeToTab = {
+        '/': 'home',
+        '/submit-form': 'singer',
+        '/master-bank': 'bank',
+        '/plan-view': 'plan',
+        '/my-hub': 'hub',
+        '/admin': 'admin'
+      };
+      const targetTab = (e.state && e.state.tab) || routeToTab[path] || 'home';
+      switchTab(targetTab, null, true);
+    });
+
+    // Listen for admin login/logout across storage/tabs and reload shell
+    window.addEventListener('storage', function (e) {
+      if (e.key === 'bp_is_admin' || e.key === 'bp_singer_id') {
+        window.location.reload();
+      }
+    });
+
+    // Auto-detect logged_out parameter in URL to clean storage and reload clean
+    if (window.location.search.includes('logged_out')) {
+      try {
+        localStorage.removeItem('bp_is_admin');
+        localStorage.removeItem('bp_admin_name');
+        localStorage.removeItem('bp_admin_role');
+      } catch (_) { }
+    }
+
+    // Allow child iframes to trigger tab switches (e.g. clicking "Mark Your Bhajan" on dashboard)
+    window.switchTabFromChild = function (tabKey, targetUrl) {
+      switchTab(tabKey, targetUrl);
+    };
+
+    // Native Theme Toggle Controller
+    const themeBtn = document.getElementById('shellThemeToggle');
+    function syncThemeToFrames(theme) {
+      document.querySelectorAll('.shell-frame').forEach(function (f) {
+        try {
+          if (f.contentDocument && f.contentDocument.documentElement) {
+            if (theme === 'dark') {
+              f.contentDocument.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+              f.contentDocument.documentElement.removeAttribute('data-theme');
+            }
+          }
+        } catch (e) { }
+      });
+    }
+
+    if (themeBtn) {
+      themeBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const next = isDark ? 'light' : 'dark';
+        if (next === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          try { localStorage.setItem('bp-theme', 'dark'); } catch (_) { }
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+          try { localStorage.setItem('bp-theme', 'light'); } catch (_) { }
+        }
+        syncThemeToFrames(next);
+      });
+    }
+
+    // Propagate theme when iframes finish loading
+    document.querySelectorAll('.shell-frame').forEach(function (f) {
+      f.addEventListener('load', function () {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        syncThemeToFrames(isDark ? 'dark' : 'light');
+      });
+    });
+
+    // Browser back/forward navigation support
+    window.addEventListener('popstate', function (e) {
+      if (e.state && e.state.tab) {
+        switchTab(e.state.tab, null, true);
+      } else {
+        const p = window.location.pathname;
+        let matched = 'home';
+        Object.keys(TAB_ROUTES).forEach(function (k) {
+          if (p === TAB_ROUTES[k] || (TAB_ROUTES[k] !== '/' && p.startsWith(TAB_ROUTES[k]))) {
+            matched = k;
+          }
+        });
+        switchTab(matched, null, true);
+      }
+    });
+
+    // Immediate address bar restoration if initialRoute was provided by server
+    const serverInitRoute = '<%= typeof initialRoute !== "undefined" && initialRoute ? initialRoute : "" %>';
+    if (serverInitRoute && serverInitRoute !== '/') {
+      try {
+        sessionStorage.setItem('bp_current_path', serverInitRoute);
+        sessionStorage.setItem('bp_active_tab', currentTab);
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState({ path: serverInitRoute, tab: currentTab }, '', serverInitRoute);
+        }
+      } catch (_) {}
+    } else {
+      // If refreshed on root '/' or without explicit route, check if sessionStorage remembers where user was
+      try {
+        const saved = sessionStorage.getItem('bp_current_path');
+        if (saved && saved !== '/' && !window.location.search.includes('logged_out')) {
+          const expectedTab = mapPathToTab(saved.split('?')[0]);
+          if (expectedTab && TAB_KEYS.includes(expectedTab)) {
+            switchTab(expectedTab, saved, true);
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Check initial URL parameters for tab
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam && TAB_KEYS.includes(tabParam) && !serverInitRoute) {
+      switchTab(tabParam, null, true);
+    }
+
+    // ── Device ID Management ──
+    function getDeviceId() {
+      let id = localStorage.getItem('bp_device_id');
+      if (!id) {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+          id = 'dev_' + crypto.randomUUID();
+        } else {
+          id = 'dev_' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          });
+        }
+        try { localStorage.setItem('bp_device_id', id); } catch (_) { }
+      }
+      return id;
+    }
+
+    // ── Notification Center Panel Handler ──
+    const notifBtn = document.getElementById('shellNotifBtn');
+    const notifPanel = document.getElementById('notifPanel');
+    const notifOverlay = document.getElementById('notifOverlay');
+    const notifCloseBtn = document.getElementById('notifCloseBtn');
+    const notifMarkAllReadBtn = document.getElementById('notifMarkAllRead');
+    const notifBadge = document.getElementById('shellNotifBadge');
+
+    function autoMarkAllRead() {
+      const devId = getDeviceId();
+      // Immediately clear visual unread state
+      if (notifBadge) {
+        notifBadge.textContent = '';
+        notifBadge.classList.remove('has-unread');
+        notifBadge.style.display = 'none';
+      }
+      document.querySelectorAll('#notifPanelBody .notif-item.unread').forEach(function (el) {
+        el.classList.remove('unread');
+      });
+
+      fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device_id: devId })
+      }).catch(function () { });
+    }
+
+    function openPanel() {
+      if (notifPanel) notifPanel.classList.add('open');
+      if (notifOverlay) notifOverlay.classList.add('show');
+      loadNotifs();
+      autoMarkAllRead();
+    }
+
+    function closePanel() {
+      if (notifPanel) notifPanel.classList.remove('open');
+      if (notifOverlay) notifOverlay.classList.remove('show');
+      autoMarkAllRead();
+    }
+
+    function timeAgo(dateStr) {
+      if (!dateStr) return '';
+      const now = new Date();
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return '';
+      const diffMs = now - date;
+      const diffMin = Math.floor(diffMs / 60000);
+      const diffHr = Math.floor(diffMs / 3600000);
+      const diffDay = Math.floor(diffMs / 86400000);
+
+      if (diffMin < 1) return 'Just now';
+      if (diffMin < 60) return diffMin + 'm ago';
+      if (diffHr < 24) return diffHr + 'h ago';
+      if (diffDay < 7) return diffDay + 'd ago';
+      return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    }
+
+    function getTypeIcon(type) {
+      switch (type) {
+        case 'deadline_reminder': return '⏰';
+        case 'schedule_published': return '📖';
+        case 'partner_bhajan': return '🤝';
+        case 'bulletin_published': return '📢';
+        case 'custom': return '📢';
+        case 'test': return '🔔';
+        default: return '🔔';
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function loadNotifs() {
+      const body = document.getElementById('notifPanelBody');
+      if (!body) return;
+      body.innerHTML = '<div class="notif-loading">Loading...</div>';
+      const devId = getDeviceId();
+      fetch('/api/notifications?device_id=' + encodeURIComponent(devId))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          const items = data.notifications || [];
+          if (items.length === 0) {
+            body.innerHTML = '<div class="notif-empty"><div class="notif-empty-icon">🔔</div><div class="notif-empty-text">No notifications yet.<br>You are all caught up!</div></div>';
+            return;
+          }
+          body.innerHTML = items.map(function (n) {
+            const isRead = n.isRead || n.is_read;
+            const title = n.title || 'Notification';
+            const text = n.body || n.message || '';
+            const time = timeAgo(n.createdAt || n.created_at);
+            const icon = getTypeIcon(n.type);
+            const link = n.link || '#';
+            return (
+              '<a class="notif-item ' + (isRead ? '' : 'unread') + '" href="' + escapeHtml(link) + '" data-id="' + n.id + '">' +
+              '<div class="notif-item-icon">' + icon + '</div>' +
+              '<div class="notif-item-content">' +
+              '<div class="notif-item-title">' + escapeHtml(title) + '</div>' +
+              '<div class="notif-item-body">' + escapeHtml(text) + '</div>' +
+              '<div class="notif-item-time">' + escapeHtml(time) + '</div>' +
+              '</div>' +
+              '</a>'
+            );
+          }).join('');
+        })
+        .catch(function () {
+          body.innerHTML = '<div class="notif-loading">Failed to load notifications</div>';
+        });
+    }
+
+    if (notifBtn) {
+      notifBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (notifPanel && notifPanel.classList.contains('open')) {
+          closePanel();
+        } else {
+          openPanel();
+        }
+      });
+    }
+    if (notifCloseBtn) notifCloseBtn.addEventListener('click', closePanel);
+    if (notifOverlay) notifOverlay.addEventListener('click', closePanel);
+    if (notifMarkAllReadBtn) notifMarkAllReadBtn.addEventListener('click', autoMarkAllRead);
+
+    // Poll unread badge count
+    function checkBadge() {
+      const devId = getDeviceId();
+      fetch('/api/notifications/unread-count?device_id=' + encodeURIComponent(devId))
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          const count = d.count || 0;
+          if (notifBadge) {
+            if (count > 0) {
+              notifBadge.textContent = count > 99 ? '99+' : count;
+              notifBadge.classList.add('has-unread');
+              notifBadge.style.display = 'flex';
+            } else {
+              notifBadge.textContent = '';
+              notifBadge.classList.remove('has-unread');
+              notifBadge.style.display = 'none';
+            }
+          }
+        })
+        .catch(function () { });
+    }
+    checkBadge();
+    setInterval(checkBadge, 60000);
+    }) ();
+  </script>
+
+</body>
+
+</html>

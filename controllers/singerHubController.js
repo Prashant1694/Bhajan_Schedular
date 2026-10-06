@@ -364,10 +364,36 @@ exports.logout = (req, res) => {
       if (req.xhr || req.headers?.accept?.includes("application/json")) {
         return res.json({ success: true, redirect: "/" });
       }
-      res.redirect("/");
+      res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Logging out...</title></head><body>
+      <script>
+        try {
+          localStorage.removeItem('bp_singer_id');
+          localStorage.removeItem('bp_singer_name');
+          localStorage.removeItem('bp_singer_gender');
+          localStorage.removeItem('bp_singer_login_time');
+        } catch(_) {}
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = '/?logged_out=' + Date.now();
+        } else {
+          window.location.href = '/?logged_out=' + Date.now();
+        }
+      </script></body></html>`);
     });
   } else {
-    res.redirect("/");
+    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Logging out...</title></head><body>
+    <script>
+      try {
+        localStorage.removeItem('bp_singer_id');
+        localStorage.removeItem('bp_singer_name');
+        localStorage.removeItem('bp_singer_gender');
+        localStorage.removeItem('bp_singer_login_time');
+      } catch(_) {}
+      if (window.top && window.top !== window.self) {
+        window.top.location.href = '/?logged_out=' + Date.now();
+      } else {
+        window.location.href = '/?logged_out=' + Date.now();
+      }
+    </script></body></html>`);
   }
 };
 

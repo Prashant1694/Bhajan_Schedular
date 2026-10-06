@@ -1,11 +1,4 @@
 <div class="container" style="max-width: 520px; margin: 40px auto; padding: 24px 20px 32px 20px;">
-  
-  <!-- Back Button -->
-  <div style="margin-bottom: 22px; padding: 4px 0 2px 0;">
-    <a href="/" style="display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); text-decoration: none; font-size: 14px; font-weight: 600; padding: 4px 0;">
-      <span>←</span> Back to Home
-    </a>
-  </div>
 
   <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 32px 28px; box-shadow: var(--shadow); position: relative; overflow: hidden;">
     
@@ -239,11 +232,14 @@ async function handleSingerLogin(e) {
     } catch (_) {}
 
     // If first login or new PIN, forward to hub or redirect with welcome state
+    let target = data.redirect || '/submit-form';
     if (data.showIntro) {
-      window.location.href = '/my-hub?welcome=true&redirect=' + encodeURIComponent(data.redirect || '/submit-form');
-    } else {
-      window.location.href = data.redirect || '/submit-form';
+      target = '/my-hub?welcome=true&redirect=' + encodeURIComponent(data.redirect || '/submit-form');
     }
+    if (window.location.search.includes('_embed=1') && !target.includes('_embed=1')) {
+      target += (target.includes('?') ? '&' : '?') + '_embed=1';
+    }
+    window.location.href = target;
 
   } catch (err) {
     showAlert(err.message, 'error');
