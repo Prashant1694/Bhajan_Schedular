@@ -69,7 +69,15 @@ const AdminUser = sequelize.define(
     tableName: "admin_users",
     timestamps: true,
     createdAt: "created_at",
-    updatedAt: "updated_at"
+    updatedAt: "updated_at",
+    defaultScope: {
+      attributes: { exclude: ["password_hash", "google_sub"] }
+    },
+    scopes: {
+      withSecrets: {
+        attributes: { include: ["password_hash", "google_sub"] }
+      }
+    }
   }
 );
 

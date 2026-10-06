@@ -721,7 +721,8 @@ function generatePlanViewHtml(
 }
 
 function generateErrorHtml(deity, existing, session_date) {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Slot Taken</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtnHtml}<div class="container" style="text-align:center; padding:32px;"><div class="error-icon">⚠️</div><h2 style="color:#e03131;">Slot Already Taken</h2><p>Sorry, the <strong>${deity}</strong> deity slot has already been taken.</p><div class="info-box"><strong>Taken by:</strong> ${escapeHtml(existing.singer_name)}<br><strong>Bhajan:</strong> ${escapeHtml(existing.title)}<br><strong>Time:</strong> ${new Date(existing.created_at).toLocaleTimeString()}</div><a class="button" href="/submit-form?session_date=${session_date}">← Go Back</a></div><script src="/js/script.js"></script></body></html>`;
+  const safeDate = encodeURIComponent(session_date || "");
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Slot Taken</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtnHtml}<div class="container" style="text-align:center; padding:32px;"><div class="error-icon">⚠️</div><h2 style="color:#e03131;">Slot Already Taken</h2><p>Sorry, the <strong>${escapeHtml(deity)}</strong> deity slot has already been taken.</p><div class="info-box"><strong>Taken by:</strong> ${escapeHtml(existing.singer_name)}<br><strong>Bhajan:</strong> ${escapeHtml(existing.title)}<br><strong>Time:</strong> ${new Date(existing.created_at).toLocaleTimeString()}</div><a class="button" href="/submit-form?session_date=${safeDate}">← Go Back</a></div><script src="/js/script.js"></script></body></html>`;
 }
 
 function generateSuccessHtml(
@@ -733,23 +734,24 @@ function generateSuccessHtml(
   session_date,
   isAdmin,
 ) {
+  const safeDate = encodeURIComponent(session_date || "");
   let actionButtons;
   if (isAdmin) {
     actionButtons = `
-      <a class="button" href="/submit-form?admin=true&session_date=${session_date}">➕ Append New Bhajan</a>
-      <a class="button secondary" href="/admin/date/${session_date}">⬅️ Back to List</a>
+      <a class="button" href="/submit-form?admin=true&session_date=${safeDate}">➕ Append New Bhajan</a>
+      <a class="button secondary" href="/admin/date/${safeDate}">⬅️ Back to List</a>
     `;
   } else {
     actionButtons = `
-      <a class="button" href="/submit-form?session_date=${session_date}">View Updated Slots</a>
-      <a class="button secondary" href="/plan-view?session_date=${session_date}">View Full Session Plan</a>
+      <a class="button" href="/submit-form?session_date=${safeDate}">View Updated Slots</a>
+      <a class="button secondary" href="/plan-view?session_date=${safeDate}">View Full Session Plan</a>
     `;
   }
-  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Success</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtnHtml}<div class="container" style="text-align:center; padding:32px;"><div class="success-icon">✅</div><h2 style="color:#2f9e44;">Bhajan Submitted!</h2><div style="font-size:20px; margin-bottom:24px;">🙏 Sai Ram, ${escapeHtml(singer_name)}!</div><div class="details-box" style="text-align:left;"><div><strong>Deity:</strong> ${deity}</div><div><strong>Bhajan:</strong> ${escapeHtml(title)}</div><div><strong>Speed:</strong> ${escapeHtml(speed)}</div><div><strong>Scale:</strong> ${escapeHtml(scale || "Not specified")}</div><div><strong>Session:</strong> ${session_date}</div></div><p>Your bhajan has been recorded.</p><div style="display:flex; flex-direction:column; gap:12px; margin-top:24px;">${actionButtons}</div></div><script src="/js/script.js"></script></body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Success</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body>${themeToggleBtnHtml}<div class="container" style="text-align:center; padding:32px;"><div class="success-icon">✅</div><h2 style="color:#2f9e44;">Bhajan Submitted!</h2><div style="font-size:20px; margin-bottom:24px;">🙏 Sai Ram, ${escapeHtml(singer_name)}!</div><div class="details-box" style="text-align:left;"><div><strong>Deity:</strong> ${escapeHtml(deity)}</div><div><strong>Bhajan:</strong> ${escapeHtml(title)}</div><div><strong>Speed:</strong> ${escapeHtml(speed)}</div><div><strong>Scale:</strong> ${escapeHtml(scale || "Not specified")}</div><div><strong>Session:</strong> ${escapeHtml(session_date)}</div></div><p>Your bhajan has been recorded.</p><div style="display:flex; flex-direction:column; gap:12px; margin-top:24px;">${actionButtons}</div></div><script src="/js/script.js"></script></body></html>`;
 }
 
 function generateDatePickerHtml(today) {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Select Date</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body style="justify-content: center;">${themeToggleBtnHtml}<div class="container" style="max-width:480px; padding:24px;"><h2 style="text-align: center; margin-bottom: 16px;">🕉️ View Bhajan Plan</h2><form method="get" action="/plan-view"><label style="display:block; margin-bottom:8px;">Bhajan Date</label><input type="date" name="session_date" value="${today}" required style="width:100%; padding:12px; margin-bottom:16px;" /><button type="submit" class="button" style="width:100%;">Show Plan</button></form></div><script src="/js/script.js"></script></body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Select Date</title><meta name="viewport" content="width=device-width, initial-scale=1" /><link rel="stylesheet" href="/css/style.css">${themeHeadScript}</head><body style="justify-content: center;">${themeToggleBtnHtml}<div class="container" style="max-width:480px; padding:24px;"><h2 style="text-align: center; margin-bottom: 16px;">🕉️ View Bhajan Plan</h2><form method="get" action="/plan-view"><label style="display:block; margin-bottom:8px;">Bhajan Date</label><input type="date" name="session_date" value="${escapeHtml(today)}" required style="width:100%; padding:12px; margin-bottom:16px;" /><button type="submit" class="button" style="width:100%;">Show Plan</button></form></div><script src="/js/script.js"></script></body></html>`;
 }
 
 function generateAdminSessionViewHtml(date, submissions, isLocked) {

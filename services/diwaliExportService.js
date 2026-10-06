@@ -1,19 +1,19 @@
-const XLSX = require("xlsx");
+const ExcelJS = require("exceljs");
 const PDFDocument = require("pdfkit");
 const { getFlatBhajanRows, getFullSequences, getSingleSequence } = require("./diwaliService");
 
-// Helper to auto-fit Excel column widths
-function calculateColWidths(dataRows, headers) {
-  const colWidths = headers.map(h => ({ wch: Math.max(h.length + 2, 10) }));
-  for (const row of dataRows) {
-    for (let c = 0; c < row.length; c++) {
-      const val = row[c] !== null && row[c] !== undefined ? String(row[c]) : "";
-      if (val.length + 2 > colWidths[c].wch) {
-        colWidths[c].wch = Math.min(val.length + 3, 40); // cap max width
+// Helper to auto-fit Excel column widths in ExcelJS
+function autoFitWorksheetColumns(worksheet) {
+  worksheet.columns.forEach((column) => {
+    let maxLen = 10;
+    column.eachCell({ includeEmpty: false }, (cell) => {
+      const val = cell.value ? String(cell.value) : "";
+      if (val.length > maxLen) {
+        maxLen = Math.min(val.length + 2, 40);
       }
-    }
-  }
-  return colWidths;
+    });
+    column.width = maxLen;
+  });
 }
 
 // ============================================================
@@ -22,7 +22,9 @@ function calculateColWidths(dataRows, headers) {
 
 async function generateYearlyExcel(event, options = {}) {
   const category = options.category || "Both"; // "Gents", "Ladies", "Both"
-  const wb = XLSX.utils.book_new();
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Bhajan Scheduler";
+  workbook.created = new Date();
 
   const headers = [
     "Sr.",
@@ -53,59 +55,55 @@ async function generateYearlyExcel(event, options = {}) {
     ];
   }
 
-  // 1. If Both, create a consolidated "Total Data" sheet (matching reference Excel)
+  // 1. Consolidated "Total Data" sheet
   if (category === "Both") {
     const gentsBhajans = await getFlatBhajanRows(event.id, { gender: "Gents" });
     const ladiesBhajans = await getFlatBhajanRows(event.id, { gender: "Ladies" });
 
-    const totalSheetData = [];
-    totalSheetData.push([`DIWALI BHAJANS — ${event.name.toUpperCase()} (TOTAL YEARLY DATA)`]);
-    totalSheetData.push([]);
+    const totalSheet = workbook.addWorksheet("Total Data");
+    totalSheet.addRow([`DIWALI BHAJANS — ${event.name.toUpperCase()} (TOTAL YEARLY DATA)`]);
+    totalSheet.addRow([]);
 
     // Gents Section
-    totalSheetData.push(["Gents"]);
-    totalSheetData.push([]);
-    totalSheetData.push(headers);
+    totalSheet.addRow(["Gents"]);
+    totalSheet.addRow([]);
+    totalSheet.addRow(headers);
     let gSr = 1;
     for (const b of gentsBhajans) {
-      totalSheetData.push(formatBhajanRow(gSr++, b));
+      totalSheet.addRow(formatBhajanRow(gSr++, b));
     }
 
     // Space before Ladies
-    totalSheetData.push([]);
-    totalSheetData.push([]);
+    totalSheet.addRow([]);
+    totalSheet.addRow([]);
 
     // Ladies Section
-    totalSheetData.push(["Ladies"]);
-    totalSheetData.push([]);
-    totalSheetData.push(headers);
+    totalSheet.addRow(["Ladies"]);
+    totalSheet.addRow([]);
+    totalSheet.addRow(headers);
     let lSr = 1;
     for (const b of ladiesBhajans) {
-      totalSheetData.push(formatBhajanRow(lSr++, b));
+      totalSheet.addRow(formatBhajanRow(lSr++, b));
     }
 
-    const wsTotal = XLSX.utils.aoa_to_sheet(totalSheetData);
-    wsTotal["!cols"] = calculateColWidths(totalSheetData.slice(4), headers);
-    XLSX.utils.book_append_sheet(wb, wsTotal, "Total Data");
+    autoFitWorksheetColumns(totalSheet);
   }
 
   // 2. Individual Category Sheets
   async function createCategorySheet(genderName) {
     const bhajans = await getFlatBhajanRows(event.id, { gender: genderName });
-    const sheetData = [];
+    const sheet = workbook.addWorksheet(genderName);
 
-    sheetData.push([`DIWALI BHAJANS — ${event.name.toUpperCase()} (${genderName.toUpperCase()})`]);
-    sheetData.push([]);
-    sheetData.push(headers);
+    sheet.addRow([`DIWALI BHAJANS — ${event.name.toUpperCase()} (${genderName.toUpperCase()})`]);
+    sheet.addRow([]);
+    sheet.addRow(headers);
 
     let sr = 1;
     for (const b of bhajans) {
-      sheetData.push(formatBhajanRow(sr++, b));
+      sheet.addRow(formatBhajanRow(sr++, b));
     }
 
-    const ws = XLSX.utils.aoa_to_sheet(sheetData);
-    ws["!cols"] = calculateColWidths(sheetData.slice(2), headers);
-    XLSX.utils.book_append_sheet(wb, ws, genderName);
+    autoFitWorksheetColumns(sheet);
   }
 
   if (category === "Gents" || category === "Both") {
@@ -115,7 +113,8 @@ async function generateYearlyExcel(event, options = {}) {
     await createCategorySheet("Ladies");
   }
 
-  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }
 
 // ============================================================
@@ -125,7 +124,16 @@ async function generateYearlyExcel(event, options = {}) {
 async function generateYearlyPdf(event, options = {}) {
   const category = options.category || "Both";
 
-  return new Promise(async (resolve, reject) => {
+  let gentsBhajans = [];
+  let ladiesBhajans = [];
+  if (category === "Both" || category === "Gents") {
+    gentsBhajans = await getFlatBhajanRows(event.id, { gender: "Gents" });
+  }
+  if (category === "Both" || category === "Ladies") {
+    ladiesBhajans = await getFlatBhajanRows(event.id, { gender: "Ladies" });
+  }
+
+  return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
         size: "A4",
@@ -138,83 +146,74 @@ async function generateYearlyPdf(event, options = {}) {
       doc.on("end", () => resolve(Buffer.concat(buffers)));
       doc.on("error", reject);
 
-      const renderHeader = (sectionTitle) => {
-        doc.fontSize(16).fillColor("#7d2f45").font("Helvetica-Bold")
-          .text(`DIWALI BHAJANS — ${event.name.toUpperCase()}`, { align: "center" });
-        doc.moveDown(0.2);
-        doc.fontSize(12).fillColor("#d98a2b").font("Helvetica-Bold")
-          .text(sectionTitle, { align: "center" });
-        doc.moveDown(0.5);
-      };
+      const colX = [30, 65, 175, 285, 485, 550, 630, 700];
+      const colWidths = [35, 110, 110, 200, 65, 80, 70, 80];
+      const colHeaders = ["Sr.", "Lead Singer", "Partner", "Bhajan", "Scale", "Tabla Shruti", "Deity", "Remarks"];
 
-      const renderTable = (rows, sectionTitle) => {
-        renderHeader(sectionTitle);
-
-        const colX = [30, 65, 175, 285, 485, 550, 630, 700];
-        const colWidths = [35, 110, 110, 200, 65, 80, 70, 80];
-        const colHeaders = ["Sr.", "Lead Singer", "Partner", "Bhajan", "Scale", "Tabla Shruti", "Deity", "Remarks"];
-
-        // Header row
+      const renderTableHeader = () => {
         doc.rect(30, doc.y, 750, 20).fill("#f8f4ed");
         doc.fillColor("#221e2a").font("Helvetica-Bold").fontSize(9);
-
-        let curY = doc.y + 5;
+        const curY = doc.y + 5;
         for (let i = 0; i < colHeaders.length; i++) {
           doc.text(colHeaders[i], colX[i] + 2, curY, { width: colWidths[i] - 4, ellipsis: true });
         }
-
         doc.y += 20;
         doc.font("Helvetica").fontSize(8.5);
+      };
+
+      const renderSection = (title, items) => {
+        doc.fontSize(15).fillColor("#7d2f45").font("Helvetica-Bold")
+          .text(`DIWALI BHAJANS — ${event.name.toUpperCase()} — ${title.toUpperCase()}`, { align: "center" });
+        doc.moveDown(0.4);
+
+        if (items.length === 0) {
+          doc.fontSize(11).fillColor("#666666").font("Helvetica").text(`No ${title.toLowerCase()} participants registered yet.`, { align: "center" });
+          return;
+        }
+
+        renderTableHeader();
 
         let sr = 1;
-        for (const b of rows) {
+        for (const b of items) {
           if (doc.y > 520) {
             doc.addPage();
-            renderHeader(sectionTitle + " (Continued)");
-            doc.rect(30, doc.y, 750, 20).fill("#f8f4ed");
-            doc.fillColor("#221e2a").font("Helvetica-Bold").fontSize(9);
-            curY = doc.y + 5;
-            for (let i = 0; i < colHeaders.length; i++) {
-              doc.text(colHeaders[i], colX[i] + 2, curY, { width: colWidths[i] - 4, ellipsis: true });
-            }
-            doc.y += 20;
-            doc.font("Helvetica").fontSize(8.5);
+            doc.fontSize(12).fillColor("#7d2f45").font("Helvetica-Bold")
+              .text(`DIWALI BHAJANS — ${event.name.toUpperCase()} — ${title.toUpperCase()} (Continued)`, { align: "center" });
+            doc.moveDown(0.3);
+            renderTableHeader();
           }
 
+          const lead = b.participant?.lead_name || "-";
+          const partner = b.participant?.partner_name || "-";
           const rowY = doc.y;
-          // alternating line background
+
           if (sr % 2 === 0) {
             doc.rect(30, rowY - 2, 750, 18).fill("#fcfbf8");
           }
 
           doc.fillColor("#221e2a");
           doc.text(String(sr++), colX[0] + 2, rowY, { width: colWidths[0] - 4 });
-          doc.text(b.participant?.lead_name || "-", colX[1] + 2, rowY, { width: colWidths[1] - 4, ellipsis: true });
-          doc.text(b.participant?.partner_name || "-", colX[2] + 2, rowY, { width: colWidths[2] - 4, ellipsis: true });
+          doc.text(lead, colX[1] + 2, rowY, { width: colWidths[1] - 4, ellipsis: true });
+          doc.text(partner, colX[2] + 2, rowY, { width: colWidths[2] - 4, ellipsis: true });
           doc.font("Helvetica-Bold").text(b.bhajan_title || "-", colX[3] + 2, rowY, { width: colWidths[3] - 4, ellipsis: true }).font("Helvetica");
           doc.text(b.scale || "-", colX[4] + 2, rowY, { width: colWidths[4] - 4, ellipsis: true });
           doc.text(b.tabla || "-", colX[5] + 2, rowY, { width: colWidths[5] - 4, ellipsis: true });
           doc.text(b.deity || "-", colX[6] + 2, rowY, { width: colWidths[6] - 4, ellipsis: true });
           doc.text(b.remarks || "", colX[7] + 2, rowY, { width: colWidths[7] - 4, ellipsis: true });
 
-          // horizontal border
           doc.strokeColor("#e7e0d2").lineWidth(0.5).moveTo(30, rowY + 16).lineTo(780, rowY + 16).stroke();
           doc.y = rowY + 18;
         }
       };
 
-      if (category === "Gents" || category === "Both") {
-        const gentsRows = await getFlatBhajanRows(event.id, { gender: "Gents" });
-        renderTable(gentsRows, "GENTS AUDITIONS & SELECTED BHAJANS");
-      }
-
       if (category === "Both") {
+        renderSection("Gents", gentsBhajans);
         doc.addPage();
-      }
-
-      if (category === "Ladies" || category === "Both") {
-        const ladiesRows = await getFlatBhajanRows(event.id, { gender: "Ladies" });
-        renderTable(ladiesRows, "LADIES AUDITIONS & SELECTED BHAJANS");
+        renderSection("Ladies", ladiesBhajans);
+      } else if (category === "Gents") {
+        renderSection("Gents", gentsBhajans);
+      } else if (category === "Ladies") {
+        renderSection("Ladies", ladiesBhajans);
       }
 
       doc.end();
@@ -229,8 +228,11 @@ async function generateYearlyPdf(event, options = {}) {
 // ============================================================
 
 async function generateSequenceExcel(event, options = {}) {
-  const wb = XLSX.utils.book_new();
-  const sequenceId = options.sequenceId; // if specific sequence, else all
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Bhajan Scheduler";
+  workbook.created = new Date();
+
+  const sequenceId = options.sequenceId;
   const category = options.category || "Both";
 
   let sequences = [];
@@ -255,11 +257,13 @@ async function generateSequenceExcel(event, options = {}) {
   ];
 
   for (const seq of sequences) {
-    const sheetData = [];
+    const sheetName = `Sequence ${seq.sequence_number}`.slice(0, 31);
+    const sheet = workbook.addWorksheet(sheetName);
+
     const dateStr = seq.assigned_date ? ` (Date: ${seq.assigned_date})` : "";
-    sheetData.push([`DIWALI BHAJANS — ${event.name.toUpperCase()} — SEQUENCE ${seq.sequence_number}${dateStr}`]);
-    sheetData.push([]);
-    sheetData.push(headers);
+    sheet.addRow([`DIWALI BHAJANS — ${event.name.toUpperCase()} — SEQUENCE ${seq.sequence_number}${dateStr}`]);
+    sheet.addRow([]);
+    sheet.addRow(headers);
 
     let filteredEntries = seq.entries || [];
     if (category === "Gents") {
@@ -272,7 +276,7 @@ async function generateSequenceExcel(event, options = {}) {
     for (const entry of filteredEntries) {
       const b = entry.participantBhajan || {};
       const p = b.participant || {};
-      sheetData.push([
+      sheet.addRow([
         sr++,
         `Seq ${seq.sequence_number}`,
         p.gender || "",
@@ -286,22 +290,19 @@ async function generateSequenceExcel(event, options = {}) {
       ]);
     }
 
-    const ws = XLSX.utils.aoa_to_sheet(sheetData);
-    ws["!cols"] = calculateColWidths(sheetData.slice(2), headers);
-    const sheetName = `Sequence ${seq.sequence_number}`.slice(0, 31);
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    autoFitWorksheetColumns(sheet);
   }
 
   if (sequences.length === 0) {
-    const ws = XLSX.utils.aoa_to_sheet([
-      [`DIWALI BHAJANS — ${event.name.toUpperCase()}`],
-      [],
-      ["No sequences have been generated yet. Please click 'Make Sequence' on the dashboard first."]
-    ]);
-    XLSX.utils.book_append_sheet(wb, ws, "Notice");
+    const noticeSheet = workbook.addWorksheet("Notice");
+    noticeSheet.addRow([`DIWALI BHAJANS — ${event.name.toUpperCase()}`]);
+    noticeSheet.addRow([]);
+    noticeSheet.addRow(["No sequences have been generated yet. Please click 'Make Sequence' on the dashboard first."]);
+    autoFitWorksheetColumns(noticeSheet);
   }
 
-  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 }
 
 // ============================================================

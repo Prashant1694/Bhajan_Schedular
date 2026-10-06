@@ -6,10 +6,18 @@
 
 require('dotenv').config();
 process.env.TZ = process.env.TZ || 'Asia/Kolkata';
+
+if (process.env.NODE_ENV === "production" && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)) {
+  console.error("FATAL: In production, SESSION_SECRET environment variable must be set with at least 32 characters.");
+  process.exit(1);
+}
+
 const express = require('express');
 const expressLayouts = require("express-ejs-layouts");
 const path = require('path');
 const crypto = require('crypto');
+const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
 const session = require('express-session');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 const sequelize = require('./config/database');
@@ -25,6 +33,7 @@ const sessionStore = new SequelizeStore({
 sessionStore.sync();
 
 const { securityHeaders, blockCrossSiteWrites, generalWriteLimit, sanitizeInputs } = require("./middleware/security");
+const { doubleCsrfProtection, generateToken } = require("./middleware/csrfProtection");
 const {initializeDatabase} = require("./services/databaseInitializer");
 
 // ============================================================
@@ -42,6 +51,40 @@ app.set("views", path.join(__dirname, "views"));
 
 app.set("trust proxy", 1);
 app.disable("x-powered-by");
+
+// Request ID tracking
+app.use((req, res, next) => {
+  const reqId = req.headers["x-request-id"] || crypto.randomUUID();
+  req.id = reqId;
+  res.setHeader("X-Request-Id", reqId);
+  res.locals.requestId = reqId;
+  res.locals.nonce = crypto.randomBytes(16).toString("base64");
+  next();
+});
+
+app.use(cookieParser(process.env.SESSION_SECRET || "bhajan-planner-session-secret-gandhinagar-2026"));
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
+      connectSrc: ["'self'", "https://accounts.google.com", "https://oauth2.googleapis.com"],
+      frameSrc: ["'self'", "https://accounts.google.com"],
+      workerSrc: ["'self'"],
+      manifestSrc: ["'self'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"]
+    }
+  },
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  crossOriginResourcePolicy: { policy: "same-origin" }
+}));
+
 app.use(securityHeaders);
 // Reject oversized payloads before they can consume server resources.
 app.use(express.urlencoded({ extended: true, limit: "100kb", parameterLimit: 100 }));
@@ -83,6 +126,8 @@ app.use(session({
   }
 }));
 
+app.use(doubleCsrfProtection);
+
 const { trackActivity } = require("./middleware/activityTracker");
 app.use(trackActivity);
 
@@ -102,6 +147,11 @@ const ADMIN_PATH_PREFIXES = [
 const { getCachedMissingCount } = require("./services/helpers");
 
 app.use(async (req, res, next) => {
+  try {
+    res.locals.csrfToken = typeof req.csrfToken === "function" ? req.csrfToken() : generateToken(req, res);
+  } catch (_) {
+    res.locals.csrfToken = "";
+  }
   res.locals.currentAdmin = req.session.admin || null;
   res.locals.page = "";
   res.locals.pageTitle = "Bhajan Planner";
@@ -157,12 +207,24 @@ app.use("/", diwaliRoutes);
 app.use("/", reportsRoutes);
 app.use("/", singerHubRoutes);
 
+// CSRF token error handler
+app.use((error, req, res, next) => {
+  if (error && (error.code === "EBADCSRFTOKEN" || error.message === "invalid csrf token")) {
+    const isJson = req.xhr || (req.headers.accept && req.headers.accept.includes("json")) || req.path.startsWith("/api/");
+    if (isJson) {
+      return res.status(403).json({ error: "Invalid or missing CSRF token. Please refresh the page and try again." });
+    }
+    return res.status(403).send("Security token expired or invalid. Please refresh the page and try again.");
+  }
+  next(error);
+});
+
 // Do not expose stack traces or database details to visitors.
 app.use((error, req, res, next) => {
   if (error?.type === "entity.too.large") {
     return res.status(413).send("Request payload is too large.");
   }
-  console.error("Unhandled request error:", error);
+  console.error(`[${req.id || 'NO-REQ-ID'}] Unhandled request error:`, error);
   const isJson = req.xhr || (req.headers.accept && req.headers.accept.includes("json")) || req.path.startsWith("/api/");
   if (isJson) {
     return res.status(500).json({ error: "Something went wrong. Please try again later." });

@@ -19,6 +19,8 @@
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/images/icons/icon-192x192.png">
+    <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+    <script>window.csrfToken = "<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>";</script>
 
     <title>
       <%= typeof pageTitle !=="undefined" ? pageTitle : "Bhajan Planner" %>

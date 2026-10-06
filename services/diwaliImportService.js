@@ -1,4 +1,4 @@
-const XLSX = require("xlsx");
+const ExcelJS = require("exceljs");
 const sequelize = require("../config/database");
 const { DiwaliParticipant, DiwaliParticipantBhajan, MasterBhajan } = require("../models/diwaliModels");
 
@@ -35,7 +35,6 @@ function detectColumns(headers) {
     } else if (nh === "partner" || nh === "partnername" || nh === "colead" || nh === "secondlead") {
       map.partner_name = idx;
     } else if (nh === "lead" || nh === "leadsinger" || nh === "leadname" || nh === "name" || nh === "singer" || nh === "singername") {
-      // If we don't have lead yet, or if this specifically says "lead"
       if (map.lead_name === -1 || nh.includes("lead")) {
         map.lead_name = idx;
       }
@@ -58,10 +57,38 @@ function detectColumns(headers) {
 }
 
 /**
- * Parses Excel buffer into preview data
+ * Validates file upload by size and magic bytes (ZIP/XLSX: PK\x03\x04 or legacy OLE: \xD0\xCF\x11\xE0)
+ */
+function validateUploadBuffer(buffer) {
+  if (!buffer || !Buffer.isBuffer(buffer)) {
+    throw new Error("Invalid or empty file uploaded.");
+  }
+  // Max size: 5 MB
+  const MAX_SIZE = 5 * 1024 * 1024;
+  if (buffer.length > MAX_SIZE) {
+    throw new Error("File exceeds maximum allowed size of 5MB.");
+  }
+  // Magic bytes check for ZIP (XLSX)
+  const isZip = buffer.length >= 4 &&
+    buffer[0] === 0x50 &&
+    buffer[1] === 0x4B &&
+    buffer[2] === 0x03 &&
+    buffer[3] === 0x04;
+
+  if (!isZip) {
+    throw new Error("Invalid file format. Please upload a genuine Excel workbook (.xlsx).");
+  }
+}
+
+/**
+ * Parses Excel buffer into preview data using ExcelJS
  */
 async function parseExcelBuffer(buffer) {
-  const wb = XLSX.read(buffer, { type: "buffer" });
+  validateUploadBuffer(buffer);
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+
   const allMasterBhajans = await MasterBhajan.findAll({
     attributes: ["id", "title", "deity", "shruti"]
   });
@@ -80,25 +107,36 @@ async function parseExcelBuffer(buffer) {
   const seenBhajanKeys = new Set();
   let duplicateBhajansCount = 0;
 
-  for (const sheetName of wb.SheetNames) {
-    const ws = wb.Sheets[sheetName];
-    if (!ws) continue;
+  for (const worksheet of workbook.worksheets) {
+    const sheetName = worksheet.name || "";
+    const rawRows = [];
 
-    const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
-    if (!data || data.length === 0) continue;
+    worksheet.eachRow({ includeEmpty: false }, (row) => {
+      const rowVals = Array.isArray(row.values) ? row.values.slice(1) : [];
+      const cells = rowVals.map(cell => {
+        if (cell === null || cell === undefined) return "";
+        if (typeof cell === "object") {
+          if (cell.text) return String(cell.text).trim();
+          if (cell.result) return String(cell.result).trim();
+        }
+        return String(cell).trim();
+      });
+      rawRows.push(cells);
+    });
 
-    // Detect gender from sheet name
+    if (rawRows.length === 0) continue;
+
     const lowerSheet = sheetName.toLowerCase();
     let defaultGender = "Gents";
     if (lowerSheet.includes("lad") || lowerSheet.includes("female") || lowerSheet.includes("women")) {
       defaultGender = "Ladies";
     }
 
-    // Find header row (first non-empty row)
+    // Find header row (first row with any populated cell)
     let headerRowIdx = -1;
-    for (let r = 0; r < Math.min(10, data.length); r++) {
-      const row = data[r];
-      if (Array.isArray(row) && row.some(cell => String(cell).trim().length > 0)) {
+    for (let r = 0; r < Math.min(10, rawRows.length); r++) {
+      const row = rawRows[r];
+      if (row.some(c => c.length > 0)) {
         headerRowIdx = r;
         break;
       }
@@ -106,20 +144,21 @@ async function parseExcelBuffer(buffer) {
 
     if (headerRowIdx === -1) continue;
 
-    const rawHeaders = data[headerRowIdx];
+    const rawHeaders = rawRows[headerRowIdx];
     const colMap = detectColumns(rawHeaders);
 
     let currentLeadName = "";
     let currentPartnerName = "";
     let currentParticipantGroup = null;
 
-    for (let r = headerRowIdx + 1; r < data.length; r++) {
-      const row = data[r];
-      if (!Array.isArray(row) || row.every(cell => String(cell).trim().length === 0)) {
-        continue; // skip completely empty rows
-      }
+    for (let r = headerRowIdx + 1; r < rawRows.length; r++) {
+      const row = rawRows[r];
+      if (row.every(c => c.length === 0)) continue;
 
       totalRows++;
+      if (totalRows > 5000) {
+        throw new Error("File exceeds maximum limit of 5,000 rows.");
+      }
 
       let rawLead = colMap.lead_name !== -1 ? String(row[colMap.lead_name] || "").trim() : "";
       let rawPartner = colMap.partner_name !== -1 ? String(row[colMap.partner_name] || "").trim() : "";
@@ -130,18 +169,14 @@ async function parseExcelBuffer(buffer) {
       const deity = colMap.deity !== -1 ? String(row[colMap.deity] || "").trim() : "";
       const remarks = colMap.remarks !== -1 ? String(row[colMap.remarks] || "").trim() : "";
 
-      // Legacy handling: if rawLead is non-empty, start a new singer context.
-      // If rawLead is empty, inherit from currentLeadName.
       if (rawLead.length > 0) {
         currentLeadName = rawLead;
         currentPartnerName = rawPartner;
       } else {
-        // Inherited row
         rawLead = currentLeadName;
         rawPartner = currentPartnerName;
       }
 
-      // Check validation flags
       const isMissingLead = !rawLead;
       const isMissingPartner = !rawPartner;
       const isMissingBhajan = !rawBhajan;
@@ -153,7 +188,6 @@ async function parseExcelBuffer(buffer) {
       const isInvalid = isMissingLead || isMissingPartner || isMissingBhajan;
       if (isInvalid) invalidRowCount++;
 
-      // Check duplicates
       const bhajanKey = `${defaultGender}|${rawBhajan.toLowerCase()}`;
       if (rawBhajan && seenBhajanKeys.has(bhajanKey)) {
         duplicateBhajansCount++;
@@ -161,13 +195,11 @@ async function parseExcelBuffer(buffer) {
         seenBhajanKeys.add(bhajanKey);
       }
 
-      // Match master bhajan
       let matchedMaster = null;
       if (rawBhajan) {
         matchedMaster = masterLookup.get(rawBhajan.toLowerCase()) || null;
       }
 
-      // Find or create participant group
       const groupKey = `${rawLead.toLowerCase()}|${rawPartner.toLowerCase()}|${defaultGender}`;
       if (!currentParticipantGroup || currentParticipantGroup.groupKey !== groupKey) {
         currentParticipantGroup = {
@@ -184,7 +216,6 @@ async function parseExcelBuffer(buffer) {
         parsedParticipants.push(currentParticipantGroup);
       }
 
-      // If remarks was provided on the row, append to participant remarks
       if (remarks && !currentParticipantGroup.remarks) {
         currentParticipantGroup.remarks = remarks;
       }
@@ -254,7 +285,7 @@ async function commitImport(eventId, confirmedParticipants) {
 
       const validBhajans = (p.bhajans || []).filter(b => (b.bhajan_title || "").trim().length > 0);
       if (validBhajans.length === 0) {
-        continue; // skip participant with no bhajans
+        continue;
       }
 
       const participant = await DiwaliParticipant.create(
@@ -318,5 +349,6 @@ async function commitImport(eventId, confirmedParticipants) {
 
 module.exports = {
   parseExcelBuffer,
-  commitImport
+  commitImport,
+  validateUploadBuffer
 };

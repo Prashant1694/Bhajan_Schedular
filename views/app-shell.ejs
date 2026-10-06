@@ -14,6 +14,8 @@
   <link rel="icon" type="image/png" href="/images/icons/icon-192x192.png">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
+  <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+  <script>window.csrfToken = "<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>";</script>
 
   <!-- Frame Guard: Prevent app-shell from ever nesting inside an iframe -->
   <script>
@@ -215,9 +217,12 @@
         <a href="javascript:void(0)" onclick="closeAdminShellSidebar(); switchTab('home');" title="Open Public Devotee View">
           <span>🌐</span> Public Home
         </a>
-        <a href="/logout" target="_top" class="logout-link" title="Sign out of Admin Session" onclick="try{localStorage.removeItem('bp_is_admin');localStorage.removeItem('bp_admin_name');localStorage.removeItem('bp_admin_role');}catch(_){}">
-          <span>🚪</span> Logout
-        </a>
+        <form method="POST" action="/logout" target="_top" style="margin:0; width:100%;">
+          <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+          <button type="submit" class="logout-link" title="Sign out of Admin Session" style="background:none;border:none;cursor:pointer;width:100%;text-align:left;font:inherit;color:inherit;display:flex;align-items:center;gap:8px;padding:0;" onclick="try{localStorage.removeItem('bp_is_admin');localStorage.removeItem('bp_admin_name');localStorage.removeItem('bp_admin_role');}catch(_){}">
+            <span>🚪</span> Logout
+          </button>
+        </form>
       </div>
     </aside>
   <% } %>

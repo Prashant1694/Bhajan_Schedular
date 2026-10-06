@@ -14,15 +14,21 @@
         <span class="hub-btn-text">Change PIN</span>
       </button>
       <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
-        <a href="/logout" target="_top" class="singer-hub-action-btn btn-logout" data-haptic="medium" title="Logout from Admin Mode" onclick="try{localStorage.removeItem('bp_is_admin');localStorage.removeItem('bp_admin_name');localStorage.removeItem('bp_admin_role');}catch(_){}">
-          <span class="hub-btn-icon">🚪</span>
-          <span class="hub-btn-text">Admin Logout</span>
-        </a>
+        <form method="POST" action="/logout" target="_top" style="margin:0;display:inline;">
+          <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+          <button type="submit" class="singer-hub-action-btn btn-logout" data-haptic="medium" title="Logout from Admin Mode" onclick="try{localStorage.removeItem('bp_is_admin');localStorage.removeItem('bp_admin_name');localStorage.removeItem('bp_admin_role');}catch(_){}">
+            <span class="hub-btn-icon">🚪</span>
+            <span class="hub-btn-text">Admin Logout</span>
+          </button>
+        </form>
       <% } else { %>
-        <a href="/singer/logout" target="_top" class="singer-hub-action-btn btn-logout" data-haptic="medium" title="Logout" onclick="try{localStorage.removeItem('bp_singer_id');localStorage.removeItem('bp_singer_name');localStorage.removeItem('bp_is_admin');}catch(_){}">
-          <span class="hub-btn-icon">🚪</span>
-          <span class="hub-btn-text">Logout</span>
-        </a>
+        <form method="POST" action="/singer/logout" target="_top" style="margin:0;display:inline;">
+          <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+          <button type="submit" class="singer-hub-action-btn btn-logout" data-haptic="medium" title="Logout" onclick="try{localStorage.removeItem('bp_singer_id');localStorage.removeItem('bp_singer_name');localStorage.removeItem('bp_is_admin');}catch(_){}">
+            <span class="hub-btn-icon">🚪</span>
+            <span class="hub-btn-text">Logout</span>
+          </button>
+        </form>
       <% } %>
     </div>
   </div>

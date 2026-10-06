@@ -1,11 +1,14 @@
 const bcrypt = require("bcrypt");
 const { OAuth2Client } = require("google-auth-library");
-
 const AdminUser = require("../models/AdminUser");
+const UserPresence = require("../models/UserPresence");
+const { Op } = require("sequelize");
+const { resolveSingerForAdmin } = require("../middleware/singerAuth");
+const { safeJsonStringify, validatePasswordPolicy, safeRedirect } = require("../services/securityHelpers");
+const { destroyAdminSessions } = require("../services/sessionManager");
+const { invalidateAdminCache } = require("../middleware/auth");
 
 const googleClient = new OAuth2Client();
-
-const { resolveSingerForAdmin } = require("../middleware/singerAuth");
 
 async function createAdminSession(req, admin) {
   return new Promise((resolve, reject) => {
@@ -20,6 +23,7 @@ async function createAdminSession(req, admin) {
       if (prevVisitorId) req.session.visitorId = prevVisitorId;
 
       req.session.adminUserId = admin.id;
+      req.session.adminLastActive = Date.now();
 
       req.session.admin = {
         id: admin.id,
@@ -27,7 +31,8 @@ async function createAdminSession(req, admin) {
         display_name: admin.display_name,
         title: admin.title || "",
         displayName: admin.display_name,
-        role: admin.role
+        role: admin.role,
+        singer_id: admin.singer_id
       };
 
       // Restore previously authenticated singer session OR auto-link admin's singer profile
@@ -54,7 +59,6 @@ async function createAdminSession(req, admin) {
       try {
         const visitorId = req.session.visitorId;
         if (visitorId) {
-          const UserPresence = require("../models/UserPresence");
           const userType = admin.role === "super_admin" ? "super_admin" : "admin";
           const titleStr = admin.title ? ` (${admin.title})` : "";
           await UserPresence.update(
@@ -93,34 +97,27 @@ exports.showLogin = (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const username = (req.body.username || "")
-      .trim()
-      .toLowerCase();
-
+    const username = (req.body.username || "").trim().toLowerCase();
     const password = req.body.password || "";
 
-    const admin = await AdminUser.findOne({
-      where: {
-        username
-      }
+    const admin = await AdminUser.scope("withSecrets").findOne({
+      where: { username }
     });
 
     if (!admin || !admin.is_active) {
       return res.status(401).render("admin-login", {
         error: "Invalid username or password.",
-        googleClientId: process.env.GOOGLE_CLIENT_ID || null
+        googleClientId: process.env.GOOGLE_CLIENT_ID || null,
+        showLoader: false
       });
     }
 
-    const passwordMatches = await bcrypt.compare(
-      password,
-      admin.password_hash
-    );
-
+    const passwordMatches = await bcrypt.compare(password, admin.password_hash);
     if (!passwordMatches) {
       return res.status(401).render("admin-login", {
         error: "Invalid username or password.",
-        googleClientId: process.env.GOOGLE_CLIENT_ID || null
+        googleClientId: process.env.GOOGLE_CLIENT_ID || null,
+        showLoader: false
       });
     }
 
@@ -129,10 +126,10 @@ exports.login = async (req, res) => {
     req.session.save((error) => {
       if (error) {
         console.error("Session save failed:", error);
-
         return res.status(500).render("admin-login", {
           error: "Login failed. Please try again.",
-          googleClientId: process.env.GOOGLE_CLIENT_ID || null
+          googleClientId: process.env.GOOGLE_CLIENT_ID || null,
+          showLoader: false
         });
       }
 
@@ -140,8 +137,8 @@ exports.login = async (req, res) => {
       <script>
         try {
           localStorage.setItem('bp_is_admin', 'true');
-          localStorage.setItem('bp_admin_name', ${JSON.stringify(admin.display_name || admin.username)});
-          localStorage.setItem('bp_admin_role', ${JSON.stringify(admin.role || 'admin')});
+          localStorage.setItem('bp_admin_name', ${safeJsonStringify(admin.display_name || admin.username)});
+          localStorage.setItem('bp_admin_role', ${safeJsonStringify(admin.role || 'admin')});
         } catch(_) {}
         if (window.top && window.top !== window.self) {
           window.top.location.href = '/?tab=admin&login_ts=' + Date.now();
@@ -152,15 +149,15 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error("Admin login failed:", error);
-
     res.status(500).render("admin-login", {
       error: "Login failed. Please try again.",
-      googleClientId: process.env.GOOGLE_CLIENT_ID || null
+      googleClientId: process.env.GOOGLE_CLIENT_ID || null,
+      showLoader: false
     });
   }
 };
-async function verifyGoogleCredential(credential) {
 
+async function verifyGoogleCredential(credential) {
   if (!credential) {
     throw new Error("Google credential is required.");
   }
@@ -175,14 +172,13 @@ async function verifyGoogleCredential(credential) {
   });
 
   const payload = ticket.getPayload();
-
   if (!payload || !payload.sub) {
     throw new Error("Google authentication failed.");
   }
 
   return payload;
-
 }
+
 exports.googleLogin = async (req, res) => {
   try {
     const credential = req.body.credential;
@@ -196,27 +192,18 @@ exports.googleLogin = async (req, res) => {
 
     if (!process.env.GOOGLE_CLIENT_ID) {
       console.error("GOOGLE_CLIENT_ID is not configured.");
-
       return res.status(500).json({
         success: false,
         error: "Google Sign-In is not configured."
       });
     }
 
-    const payload =
-      await verifyGoogleCredential(
-        credential
-      );
-
+    const payload = await verifyGoogleCredential(credential);
     const googleSub = payload.sub;
-    const googleEmail = (payload.email || "")
-      .trim()
-      .toLowerCase();
+    const googleEmail = (payload.email || "").trim().toLowerCase();
 
-    let admin = await AdminUser.findOne({
-      where: {
-        google_sub: googleSub
-      }
+    let admin = await AdminUser.scope("withSecrets").findOne({
+      where: { google_sub: googleSub }
     });
 
     if (!admin) {
@@ -227,7 +214,7 @@ exports.googleLogin = async (req, res) => {
         });
       }
 
-      const pendingAdmin = await AdminUser.findOne({
+      const pendingAdmin = await AdminUser.scope("withSecrets").findOne({
         where: {
           google_email: googleEmail,
           google_sub: null,
@@ -243,14 +230,8 @@ exports.googleLogin = async (req, res) => {
       }
 
       pendingAdmin.google_sub = googleSub;
-
       await pendingAdmin.save();
-
       admin = pendingAdmin;
-
-      console.log(
-        `✅ Google account linked to admin user ${admin.id}.`
-      );
     }
 
     if (!admin.is_active) {
@@ -265,7 +246,6 @@ exports.googleLogin = async (req, res) => {
     req.session.save((error) => {
       if (error) {
         console.error("Google session save failed:", error);
-
         return res.status(500).json({
           success: false,
           error: "Login failed. Please try again."
@@ -279,16 +259,12 @@ exports.googleLogin = async (req, res) => {
     });
   } catch (error) {
     console.error("Google login failed:", error);
-
     res.status(401).json({
       success: false,
       error: "Google authentication failed."
     });
   }
 };
-
-const UserPresence = require("../models/UserPresence");
-const { Op } = require("sequelize");
 
 exports.logout = async (req, res) => {
   try {
@@ -311,12 +287,12 @@ exports.logout = async (req, res) => {
     console.error("Logout presence update failed:", err.message);
   }
 
-  // Clear admin session while preserving user/singer identity
+  // Destroy admin session securely
   if (req.session) {
-    delete req.session.adminUserId;
-    delete req.session.admin;
-    req.session.save((saveErr) => {
-      if (saveErr) console.error("Session save error on admin logout:", saveErr);
+    req.session.destroy((err) => {
+      if (err) console.error("Session destroy error on logout:", err);
+      res.clearCookie("connect.sid");
+      res.clearCookie("ps_csrf");
       res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Logging out...</title></head><body>
       <script>
         try {
@@ -349,252 +325,160 @@ exports.logout = async (req, res) => {
     </body></html>`);
   }
 };
-exports.showForgotPassword = (req, res) => {
 
+exports.showForgotPassword = (req, res) => {
   res.render("forgot-password", {
     error: null
   });
-
 };
+
 exports.checkForgotPassword = async (req, res) => {
+  const username = (req.body.username || "").trim().toLowerCase();
 
-  const username =
-    (req.body.username || "")
-      .trim()
-      .toLowerCase();
+  const admin = await AdminUser.scope("withSecrets").findOne({
+    where: { username, is_active: true }
+  });
 
-  const admin =
-    await AdminUser.findOne({
-      where: { username }
-    });
-
-  if (!admin) {
-
-    return res.render(
-      "forgot-password",
-      {
-        error: "Account not found."
-      }
-    );
-
-  }
-
-  if (admin.google_sub) {
-
-    return res.redirect(
-      `/forgot-password/google/${admin.id}`
-    );
-
-  }
-
-  const superAdmin =
-    await AdminUser.findOne({
-
+  // Generic response to prevent account enumeration
+  if (!admin || !admin.google_sub) {
+    const superAdmin = await AdminUser.findOne({
       where: {
         role: "super_admin",
         is_active: true
       }
-
     });
 
-  res.render(
-    "forgot-password-contact",
-    {
+    return res.render("forgot-password-contact", {
       superAdmin
-    }
-  );
+    });
+  }
 
+  // Bound to server-side session state: no admin id in the URL!
+  req.session.recoveryAdminId = admin.id;
+  req.session.recoveryExpires = Date.now() + 10 * 60 * 1000; // 10 min validity
+
+  req.session.save(() => {
+    res.redirect("/forgot-password/google");
+  });
 };
+
 exports.showGoogleRecovery = async (req, res) => {
+  const recoveryAdminId = req.session?.recoveryAdminId;
+  const expires = req.session?.recoveryExpires;
 
-  const admin = await AdminUser.findByPk(
-    req.params.id
-  );
-
-  if (!admin) {
+  if (!recoveryAdminId || !expires || Date.now() > expires) {
     return res.redirect("/forgot-password");
   }
 
-  res.render(
-    "forgot-password-google",
-    {
-      admin,
-      googleClientId:
-        process.env.GOOGLE_CLIENT_ID
-    }
-  );
+  const admin = await AdminUser.findByPk(recoveryAdminId);
+  if (!admin || !admin.is_active) {
+    return res.redirect("/forgot-password");
+  }
 
+  res.render("forgot-password-google", {
+    admin,
+    googleClientId: process.env.GOOGLE_CLIENT_ID
+  });
 };
+
 exports.googleRecovery = async (req, res) => {
-
   try {
+    const recoveryAdminId = req.session?.recoveryAdminId;
+    const expires = req.session?.recoveryExpires;
 
-    const { credential, adminId } = req.body;
-
-    const payload =
-      await verifyGoogleCredential(
-        credential
-      );
-
-    const admin =
-      await AdminUser.findByPk(adminId);
-
-    if (!admin) {
-
-      return res.status(404).json({
+    if (!recoveryAdminId || !expires || Date.now() > expires) {
+      return res.status(401).json({
         success: false,
-        error: "Administrator not found."
+        error: "Recovery session expired. Please start over."
       });
-
     }
 
-    if (!admin.google_sub) {
+    const { credential } = req.body;
+    const payload = await verifyGoogleCredential(credential);
 
+    const admin = await AdminUser.scope("withSecrets").findByPk(recoveryAdminId);
+    if (!admin || !admin.is_active) {
       return res.status(403).json({
         success: false,
-        error: "Google account not linked."
+        error: "Account recovery not available."
       });
-
     }
 
-    if (payload.sub !== admin.google_sub) {
-
+    if (!admin.google_sub || payload.sub !== admin.google_sub) {
       return res.status(403).json({
         success: false,
         error: "Incorrect Google account."
       });
-
     }
 
     req.session.passwordRecovery = {
-
       adminId: admin.id,
-
-      expires:
-        Date.now() + 5 * 60 * 1000
-
+      expires: Date.now() + 5 * 60 * 1000
     };
 
     req.session.save(() => {
-
       res.json({
-
         success: true,
-
-        redirect:
-          "/forgot-password/reset"
-
+        redirect: "/forgot-password/reset"
       });
-
     });
-
-  }
-
-  catch (error) {
-
-    console.error(error);
-
+  } catch (error) {
+    console.error("Google recovery failed:", error);
     res.status(401).json({
-
       success: false,
-
-      error:
-        "Google verification failed."
-
+      error: "Google verification failed."
     });
-
   }
-
 };
+
 exports.showPasswordReset = (req, res) => {
-
-  const recovery =
-    req.session.passwordRecovery;
-
-  if (
-    !recovery ||
-    recovery.expires < Date.now()
-  ) {
-
-    return res.redirect(
-      "/forgot-password"
-    );
-
+  const recovery = req.session.passwordRecovery;
+  if (!recovery || recovery.expires < Date.now()) {
+    return res.redirect("/forgot-password");
   }
 
-  res.render(
-    "forgot-password-reset",
-    {
-      error: null
-    }
-  );
-
+  res.render("forgot-password-reset", {
+    error: null
+  });
 };
 
 exports.resetForgotPassword = async (req, res) => {
-
-  const recovery =
-    req.session.passwordRecovery;
-
-  if (
-    !recovery ||
-    recovery.expires < Date.now()
-  ) {
-
-    return res.redirect(
-      "/forgot-password"
-    );
-
+  const recovery = req.session.passwordRecovery;
+  if (!recovery || recovery.expires < Date.now()) {
+    return res.redirect("/forgot-password");
   }
 
-  const {
-    password,
-    confirmPassword
-  } = req.body;
-
-  if (
-    password !== confirmPassword
-  ) {
-
-    return res.render(
-      "forgot-password-reset",
-      {
-        error:
-          "Passwords do not match."
-      }
-    );
-
+  const { password, confirmPassword } = req.body;
+  if (password !== confirmPassword) {
+    return res.render("forgot-password-reset", {
+      error: "Passwords do not match."
+    });
   }
 
-  const admin =
-    await AdminUser.findByPk(
-      recovery.adminId
-    );
-
-  if (!admin) {
-
-    return res.redirect(
-      "/forgot-password"
-    );
-
+  const admin = await AdminUser.findByPk(recovery.adminId);
+  if (!admin || !admin.is_active) {
+    return res.redirect("/forgot-password");
   }
 
-  admin.password_hash =
-    await bcrypt.hash(
-      password,
-      12
-    );
+  const policyCheck = validatePasswordPolicy(password, admin.username);
+  if (!policyCheck.isValid) {
+    return res.render("forgot-password-reset", {
+      error: policyCheck.message
+    });
+  }
 
+  admin.password_hash = await bcrypt.hash(password, 12);
   await admin.save();
 
+  // Invalidate any active sessions across devices and clear recovery tokens
+  await destroyAdminSessions(admin.id);
+  invalidateAdminCache(admin.id);
+
   delete req.session.passwordRecovery;
+  delete req.session.recoveryAdminId;
+  delete req.session.recoveryExpires;
 
   req.session.save(() => {
-
-    res.redirect(
-      "/admin-login"
-    );
-
+    res.redirect("/admin-login");
   });
-
 };

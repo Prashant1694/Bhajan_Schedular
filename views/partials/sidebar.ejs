@@ -152,10 +152,13 @@
             Public Home ↗
         </a>
 
-        <a href="/logout" target="_top" class="logout-link" title="Sign out of Admin Session" onclick="try{localStorage.removeItem('bp_is_admin');localStorage.removeItem('bp_admin_name');localStorage.removeItem('bp_admin_role');}catch(_){}">
-            <span>🚪</span>
-            Logout
-        </a>
+        <form method="POST" action="/logout" target="_top" style="margin:0; width:100%;">
+            <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+            <button type="submit" class="logout-link" title="Sign out of Admin Session" style="background:none;border:none;cursor:pointer;width:100%;text-align:left;font:inherit;color:inherit;display:flex;align-items:center;gap:8px;padding:0;" onclick="try{localStorage.removeItem('bp_is_admin');localStorage.removeItem('bp_admin_name');localStorage.removeItem('bp_admin_role');}catch(_){}">
+                <span>🚪</span>
+                Logout
+            </button>
+        </form>
     </div>
 
 </aside>

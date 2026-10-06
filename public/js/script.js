@@ -1,3 +1,65 @@
+// Global Safe HTML Escaping Utility
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+window.escapeHTML = escapeHTML;
+
+// Universal CSRF header injection for non-GET requests and form submissions
+(function() {
+  function getCsrfToken() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    return (meta && meta.getAttribute('content')) || window.csrfToken || '';
+  }
+
+  var originalFetch = window.fetch;
+  window.fetch = function(url, options) {
+    var opts = Object.assign({}, options || {});
+    var method = (opts.method || 'GET').toUpperCase();
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].indexOf(method) !== -1) {
+      var token = getCsrfToken();
+      if (token) {
+        if (opts.headers instanceof Headers) {
+          if (!opts.headers.has('X-CSRF-Token')) {
+            opts.headers.append('X-CSRF-Token', token);
+          }
+        } else if (Array.isArray(opts.headers)) {
+          if (!opts.headers.some(function(h) { return h[0].toLowerCase() === 'x-csrf-token'; })) {
+            opts.headers.push(['X-CSRF-Token', token]);
+          }
+        } else {
+          opts.headers = Object.assign({}, opts.headers || {});
+          if (!opts.headers['X-CSRF-Token'] && !opts.headers['x-csrf-token']) {
+            opts.headers['X-CSRF-Token'] = token;
+          }
+        }
+      }
+    }
+    return originalFetch.call(this, url, opts);
+  };
+
+  document.addEventListener('submit', function(e) {
+    var form = e.target;
+    if (!form || form.tagName !== 'FORM') return;
+    var method = (form.method || 'GET').toUpperCase();
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].indexOf(method) !== -1) {
+      var token = getCsrfToken();
+      if (token && !form.querySelector('input[name="_csrf"]')) {
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = '_csrf';
+        input.value = token;
+        form.appendChild(input);
+      }
+    }
+  }, true);
+})();
+
 // Global Dark Mode Controller
 (function initGlobalTheme() {
   function syncAllThemeToggles() {
@@ -556,7 +618,9 @@ document.addEventListener('DOMContentLoaded', function () {
           .then(res => res.json())
           .then(data => {
             if (data && warningDiv) {
-              warningDiv.innerHTML = `⚠️ <strong>Cool-down warning:</strong> This bhajan was last sung by <strong>${data.singer_name}</strong> on <strong>${data.session_date}</strong>.`;
+              const safeSinger = (window.escapeHTML || escapeHTML)(data.singer_name);
+              const safeDate = (window.escapeHTML || escapeHTML)(data.session_date);
+              warningDiv.innerHTML = `⚠️ <strong>Cool-down warning:</strong> This bhajan was last sung by <strong>${safeSinger}</strong> on <strong>${safeDate}</strong>.`;
               warningDiv.style.display = 'block';
             } else if (warningDiv) {
               warningDiv.style.display = 'none';

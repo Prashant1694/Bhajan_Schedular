@@ -67,7 +67,8 @@ exports.showSubmitForm = async (req, res) => {
 
     // Devotees must be logged in as a singer to submit bhajans
     if (!isAdmin && (!req.session || !req.session.singer)) {
-      const returnTo = encodeURIComponent(req.originalUrl || "/submit-form");
+      const { safeRedirect } = require("../services/securityHelpers");
+      const returnTo = encodeURIComponent(safeRedirect(req.originalUrl, "/submit-form"));
       const embedParam = req.query._embed === "1" ? "&_embed=1" : "";
       return res.redirect(`/singer/login?redirect=${returnTo}${embedParam}`);
     }
@@ -249,7 +250,8 @@ exports.showSubmitForm = async (req, res) => {
     res.send(generateSubmitFormHtml(sessionDate, mandatoryFilled, totalMandatory, optionalFilled, totalOptional, ganeshaCardHtml, otherDeitiesHtml, hanumanCard, isAdmin, showSuccess, submissionRowsHtml, results.length, req.session?.singer));
 
   } catch (error) {
-    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+    console.error(`[Req ${req.id || ""}] showSubmitForm error:`, error);
+    res.status(500).send(`<h1>Error</h1><p>An unexpected error occurred loading the submission form.</p>`);
   };
 };
 
@@ -259,12 +261,11 @@ exports.submitForm = async (req, res) => {
     const isAdmin = Boolean(req.session && req.session.admin);
 
     if (!isAdmin && (!req.session || !req.session.singer)) {
-      const returnTo = encodeURIComponent("/submit-form");
-      return res.redirect(`/singer/login?redirect=${returnTo}`);
+      return res.redirect(`/singer/login?redirect=${encodeURIComponent("/submit-form")}`);
     }
 
-    // For devotees, use their verified singer name
-    const effectiveSingerName = (!isAdmin && req.session?.singer) ? req.session.singer.name : singer_name;
+    // For devotees, strictly enforce their verified singer name; non-admins can never set a different name
+    const effectiveSingerName = (!isAdmin && req.session?.singer) ? req.session.singer.name.trim() : (singer_name || "").trim();
     const effectiveGender = (!isAdmin && req.session?.singer && req.session.singer.gender) ? req.session.singer.gender : (locked_gender || gender);
 
     if (!session_date || !effectiveSingerName || !deity || !title) {
@@ -396,16 +397,19 @@ exports.submitForm = async (req, res) => {
     // case-insensitive SQL LIKE on the trimmed name, and only create a new
     // row if no match is found.
     const submittedGender = gender || locked_gender;
-    const normalizedInputName = normalizeName(singer_name);
+    const normalizedInputName = normalizeName(effectiveSingerName);
 
     // Try to find an existing singer whose normalized name matches
     const allSingers = await Singer.findAll({ attributes: ['id', 'name', 'gender'] });
     let singer = allSingers.find(s => normalizeName(s.name) === normalizedInputName) || null;
 
     if (!singer) {
-      // No existing singer found â€” create a new record using the trimmed submitted name
+      if (!isAdmin) {
+        return res.status(400).send('<h1>Error</h1><p>Singer profile not found in directory. Please sign in through Singer Hub.</p><a class="button" href="/singer/login">Login</a>');
+      }
+      // Admins only can create a new singer from free text
       singer = await Singer.create({
-        name: singer_name.trim(),
+        name: effectiveSingerName,
         gender: submittedGender || null
       });
     } else if (!singer.gender && submittedGender) {
@@ -414,12 +418,12 @@ exports.submitForm = async (req, res) => {
     }
     const resolvedGender = singer.gender || submittedGender || null;
 
-    // Save submission
+    // Save submission using strictly effectiveSingerName
     const newSubmission = await BhajanSubmission.create({
       session_date,
-      singer_name,
+      singer_name: effectiveSingerName,
       gender: resolvedGender,
-      partner_name: partner_name || null,
+      partner_name: partner_name ? partner_name.trim() : null,
       title,
       deity,
       scale: scale || "Not specified",
@@ -476,11 +480,12 @@ exports.submitForm = async (req, res) => {
     if (error.name === 'SequelizeUniqueConstraintError') {
       return res.send(generateErrorHtml(req.body.deity, {
         singer_name: "Another devotee",
-        title: "Unknown",
+        title: req.body.title || "Selected Bhajan",
         created_at: new Date()
       }, req.body.session_date));
     }
-    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+    console.error(`[Req ${req.id || ""}] submitForm error:`, error);
+    res.status(500).send("<h1>Error</h1><p>An unexpected error occurred while processing your bhajan submission.</p>");
   }
 };
 
@@ -734,7 +739,8 @@ exports.planView = async (req, res) => {
 
     res.send(html);
   } catch (error) {
-    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+    console.error(`[Req ${req.id || ""}] planView error:`, error);
+    res.status(500).send("<h1>Error</h1><p>Failed to load session plan.</p>");
   }
 };
 exports.submitApi = async (req, res) => {
@@ -760,7 +766,8 @@ exports.submitApi = async (req, res) => {
       total_bhajans_received: bhajans.length
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] submitApi error:`, error);
+    res.status(500).json({ error: "Failed to save bhajans." });
   }
 };
 exports.getPlan = async (req, res) => {
@@ -803,7 +810,8 @@ exports.getPlan = async (req, res) => {
 
     res.json(plan);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] getPlan error:`, error);
+    res.status(500).json({ error: "Failed to retrieve session plan." });
   }
 };
 

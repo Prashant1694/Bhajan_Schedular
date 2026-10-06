@@ -8,50 +8,22 @@ const SingerBookmark = require("../models/SingerBookmark");
 const AdminUser = require("../models/AdminUser");
 const { NINETY_DAYS_MS, resolveSingerForAdmin } = require("../middleware/singerAuth");
 const { getLocalDateStr } = require("../services/helpers");
+const { safeRedirect, DUMMY_BCRYPT_HASH } = require("../services/securityHelpers");
 
-// In-memory account lockout tracker (5 attempts -> 15 min lock)
-const SINGER_LOCKOUT_MS = 15 * 60 * 1000;
 const MAX_SINGER_PIN_FAILURES = 5;
-const singerFailedAttempts = new Map();
-
-function getSingerLockRemaining(singerId) {
-  const id = Number(singerId);
-  const rec = singerFailedAttempts.get(id);
-  if (!rec || !rec.lockedUntil) return 0;
-  if (Date.now() < rec.lockedUntil) {
-    return Math.ceil((rec.lockedUntil - Date.now()) / 1000);
-  }
-  singerFailedAttempts.delete(id);
-  return 0;
-}
-
-function recordSingerFail(singerId) {
-  const id = Number(singerId);
-  const now = Date.now();
-  const rec = singerFailedAttempts.get(id) || { count: 0, firstFail: now };
-  rec.count += 1;
-  if (rec.count >= MAX_SINGER_PIN_FAILURES) {
-    rec.lockedUntil = now + SINGER_LOCKOUT_MS;
-  }
-  singerFailedAttempts.set(id, rec);
-  return rec;
-}
-
-function clearSingerFail(singerId) {
-  singerFailedAttempts.delete(Number(singerId));
-}
+const SINGER_LOCKOUT_MS = 15 * 60 * 1000; // 15-minute temporary lockout
 
 /**
  * Show the devotee login page
  */
 exports.showLoginPage = async (req, res) => {
   try {
-    const singers = await Singer.findAll({
+    const singers = await Singer.scope("withSecrets").findAll({
       order: [["name", "ASC"]],
       attributes: ["id", "name", "gender", "pin"]
     });
 
-    const redirectUrl = req.query.redirect || "/submit-form";
+    const redirectUrl = safeRedirect(req.query.redirect, "/submit-form");
     const isExpired = req.query.expired === "true";
 
     res.render("singer-login", {
@@ -68,7 +40,7 @@ exports.showLoginPage = async (req, res) => {
       pageJS: null
     });
   } catch (error) {
-    console.error("Error loading singer login page:", error);
+    console.error(`[Req ${req.id || ""}] Error loading singer login page:`, error);
     res.status(500).send("Unable to load singer verification page.");
   }
 };
@@ -82,7 +54,7 @@ exports.checkSingerPinStatus = async (req, res) => {
     if (isNaN(id) || id <= 0) {
       return res.status(400).json({ error: "Invalid singer ID" });
     }
-    const singer = await Singer.findByPk(id);
+    const singer = await Singer.scope("withSecrets").findByPk(id);
     if (!singer) {
       return res.status(404).json({ error: "Singer not found" });
     }
@@ -92,12 +64,14 @@ exports.checkSingerPinStatus = async (req, res) => {
       gender: singer.gender
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] checkSingerPinStatus error:`, error);
+    res.status(500).json({ error: "Failed to check PIN status." });
   }
 };
 
 /**
- * Singer authentication / PIN creation handler
+ * Singer authentication handler with database-backed lockout,
+ * constant-time dummy bcrypt path, and coordinator-issued claim protection.
  */
 exports.login = async (req, res) => {
   try {
@@ -112,68 +86,74 @@ exports.login = async (req, res) => {
       return res.status(400).json({ error: "Invalid singer selection." });
     }
 
-    // Check account lockout
-    const lockSec = getSingerLockRemaining(numericSingerId);
-    if (lockSec > 0) {
-      const mins = Math.ceil(lockSec / 60);
-      return res.status(429).json({
-        error: `Account is temporarily locked due to 5 consecutive incorrect PIN attempts. Please wait ${mins} minute${mins === 1 ? '' : 's'} or contact a coordinator.`
-      });
-    }
-
     const cleanPin = (pin || "").toString().trim();
     if (!/^\d{4}$/.test(cleanPin)) {
       return res.status(400).json({ error: "Please enter a valid 4-digit numeric PIN (e.g. 1234)." });
     }
 
-    const singer = await Singer.findByPk(numericSingerId);
-    if (!singer) {
-      return res.status(404).json({ error: "Singer record not found." });
+    // Query singer with secrets for authentication
+    const singer = await Singer.scope("withSecrets").findByPk(numericSingerId);
+
+    // Constant-time execution path if singer not found or not yet claimed with a PIN
+    if (!singer || !singer.pin) {
+      await bcrypt.compare(cleanPin, DUMMY_BCRYPT_HASH);
+      if (!singer) {
+        return res.status(404).json({ error: "Singer record not found." });
+      }
+      // Coordinator-set first-time claim policy:
+      // Devotees cannot self-claim names with arbitrary PINs; a coordinator or admin must issue the initial PIN.
+      return res.status(403).json({
+        error: "This singer profile has not been assigned a PIN yet. Please contact a coordinator or admin to issue your initial PIN."
+      });
     }
 
-    const isFirstTime = !singer.pin;
-    let isMatch = false;
-
-    if (isFirstTime) {
-      // First time claiming this name: hash and store new 4-digit PIN!
-      const hashed = await bcrypt.hash(cleanPin, 10);
-      await singer.update({
-        pin: hashed,
-        pin_set_at: new Date(),
-        last_login_at: new Date()
+    // Check database-backed temporary lockout
+    const now = Date.now();
+    if (singer.locked_until && new Date(singer.locked_until).getTime() > now) {
+      const remainingSec = Math.ceil((new Date(singer.locked_until).getTime() - now) / 1000);
+      const mins = Math.ceil(remainingSec / 60);
+      return res.status(429).json({
+        error: `Account is temporarily locked due to 5 consecutive incorrect PIN attempts. Please wait ${mins} minute${mins === 1 ? '' : 's'} or contact a coordinator.`
       });
-      isMatch = true;
-    } else {
-      isMatch = await bcrypt.compare(cleanPin, singer.pin);
-      if (!isMatch) {
-        const failRec = recordSingerFail(singer.id);
-        if (failRec.lockedUntil) {
-          return res.status(429).json({
-            error: `Account is now temporarily locked for 15 minutes due to 5 consecutive incorrect PIN attempts. Please contact a coordinator if you forgot your PIN.`
-          });
-        }
-        const remaining = MAX_SINGER_PIN_FAILURES - failRec.count;
-        return res.status(403).json({
-          error: `Incorrect 4-digit PIN for ${singer.name}. (${remaining} attempt${remaining === 1 ? '' : 's'} remaining before temporary lock)`
+    }
+
+    // Constant-time PIN verification
+    const isMatch = await bcrypt.compare(cleanPin, singer.pin);
+    if (!isMatch) {
+      const nextFailures = (singer.failed_attempts || 0) + 1;
+      if (nextFailures >= MAX_SINGER_PIN_FAILURES) {
+        await singer.update({
+          failed_attempts: nextFailures,
+          locked_until: new Date(Date.now() + SINGER_LOCKOUT_MS)
+        });
+        return res.status(429).json({
+          error: "Account is now temporarily locked for 15 minutes due to 5 consecutive incorrect PIN attempts. Please contact a coordinator if you forgot your PIN."
         });
       }
-      await singer.update({ last_login_at: new Date() });
+
+      await singer.update({ failed_attempts: nextFailures });
+      const remaining = MAX_SINGER_PIN_FAILURES - nextFailures;
+      return res.status(403).json({
+        error: `Incorrect 4-digit PIN for ${singer.name}. (${remaining} attempt${remaining === 1 ? '' : 's'} remaining before temporary lock)`
+      });
     }
 
-    // PIN verified: clear any failed attempts
-    clearSingerFail(singer.id);
+    // Success: clear failed attempts and update last login
+    await singer.update({
+      failed_attempts: 0,
+      locked_until: null,
+      last_login_at: new Date()
+    });
 
-    // Save existing visitorId AND admin credentials before session regeneration
     const existingVisitorId = req.session?.visitorId;
     const existingAdmin = req.session?.admin;
     const existingAdminUserId = req.session?.adminUserId;
-    const showIntro = isFirstTime || !singer.last_login_at;
-    const safeRedirect = redirect && redirect.startsWith("/") ? redirect : "/submit-form";
+    const validatedRedirect = safeRedirect(redirect, "/submit-form");
 
     // Regenerate session to eliminate session fixation risks
     req.session.regenerate((err) => {
       if (err) {
-        console.error("Session regeneration failed:", err);
+        console.error(`[Req ${req.id || ""}] Session regeneration failed:`, err);
         return res.status(500).json({ error: "Login failed. Please try again." });
       }
 
@@ -188,11 +168,7 @@ exports.login = async (req, res) => {
         preferred_scale: singer.preferred_scale || null,
         pinVerifiedAt: Date.now()
       };
-      if (showIntro) {
-        req.session.showHubWelcome = true;
-      }
 
-      // If user is also an admin, automatically associate this singer to their admin user record
       if (existingAdminUserId) {
         AdminUser.update({ singer_id: singer.id }, { where: { id: existingAdminUserId } }).catch(() => {});
       }
@@ -200,26 +176,29 @@ exports.login = async (req, res) => {
       req.session.save(() => {
         res.json({
           success: true,
-          isFirstTime,
-          showIntro,
-          redirect: safeRedirect,
-          singer: req.session.singer
+          redirect: validatedRedirect,
+          singer: req.session.singer,
+          showIntro: false
         });
       });
     });
   } catch (error) {
-    console.error("Singer login failed:", error);
-    res.status(500).json({ error: "Login failed. Please try again." });
+    console.error(`[Req ${req.id || ""}] Singer login error:`, error);
+    res.status(500).json({ error: "Authentication failed. Please try again." });
   }
 };
 
 /**
- * The Singer Hub Dashboard (Phase 2 - Schedule, Songbook & History)
+ * Render the full devotee hub (dashboard)
  */
-exports.showHub = async (req, res) => {
+exports.showHubPage = async (req, res) => {
   try {
+    const singerSession = req.session.singer;
     const isAdmin = Boolean(req.session && (req.session.admin || req.session.adminUserId));
-    let singerSession = req.session.singer;
+
+    if (!singerSession && !isAdmin) {
+      return res.redirect("/singer/login?redirect=/my-hub");
+    }
 
     if (!singerSession && isAdmin) {
       const adminId = req.session.adminUserId || req.session.admin?.id;
@@ -235,68 +214,52 @@ exports.showHub = async (req, res) => {
           pinVerifiedAt: Date.now(),
           isAdminLinked: true
         };
-        singerSession = req.session.singer;
       }
     }
 
-    if (!singerSession) {
-      delete req.session.singer;
+    if (!req.session.singer) {
       return res.redirect("/singer/login?redirect=/my-hub");
     }
 
-    const singer = await Singer.findByPk(singerSession.id);
+    const singer = await Singer.findByPk(req.session.singer.id);
     if (!singer) {
       delete req.session.singer;
       return res.redirect("/singer/login?redirect=/my-hub");
     }
 
-    // Calculate days remaining in 90-day verification cycle (Admins are exempt)
-    const verifiedAt = singerSession.pinVerifiedAt || Date.now();
-    const elapsedMs = Date.now() - verifiedAt;
-    const daysRemaining = isAdmin ? 90 : Math.max(0, Math.ceil((NINETY_DAYS_MS - elapsedMs) / (24 * 60 * 60 * 1000)));
+    const todayStr = getLocalDateStr(new Date());
 
-    const todayStr = getLocalDateStr();
-
-    // 1. Upcoming active submissions for this singer (Lead or Partner)
     const upcomingSubmissions = await BhajanSubmission.findAll({
       where: {
+        session_date: { [Op.gte]: todayStr },
         [Op.or]: [
           { singer_name: singer.name },
           { partner_name: singer.name }
-        ],
-        session_date: { [Op.gte]: todayStr }
+        ]
       },
-      order: [["session_date", "ASC"], ["list_order", "ASC"]]
+      order: [["session_date", "ASC"], ["created_at", "ASC"]],
+      limit: 10
     });
 
-    // 2. Complete past singing history
-    const pastHistory = await BhajanSubmission.findAll({
+    const pastSubmissions = await BhajanSubmission.findAll({
       where: {
+        session_date: { [Op.lt]: todayStr },
         [Op.or]: [
           { singer_name: singer.name },
           { partner_name: singer.name }
-        ],
-        session_date: { [Op.lt]: todayStr }
+        ]
       },
-      order: [["session_date", "DESC"]]
+      order: [["session_date", "DESC"]],
+      limit: 30
     });
 
-    // Deity frequency summary
-    const deitySummary = {};
-    pastHistory.forEach(item => {
-      const d = item.deity || "Other";
-      deitySummary[d] = (deitySummary[d] || 0) + 1;
-    });
-
-    // 3. Personal Songbook & Repertoire
-    const songbook = await SingerBookmark.findAll({
+    const myBookmarks = await SingerBookmark.findAll({
       where: { singer_id: singer.id },
       include: [{ model: MasterBhajan, as: "masterBhajan" }],
       order: [["created_at", "DESC"]]
     });
 
-    // 4. Reported correction tickets for this singer
-    const rawReports = await BhajanReport.findAll({
+    const myReports = await BhajanReport.findAll({
       where: {
         [Op.or]: [
           { singer_id: singer.id },
@@ -304,25 +267,10 @@ exports.showHub = async (req, res) => {
           { visitor_id: `singer_${singer.id}` }
         ]
       },
-      order: [["created_at", "DESC"]]
+      order: [["created_at", "DESC"]],
+      limit: 15
     });
 
-    const myReports = rawReports.map(r => {
-      const p = r.toJSON();
-      try {
-        p.categories = JSON.parse(p.categories);
-      } catch (_) {
-        p.categories = [];
-      }
-      return p;
-    });
-    const myReportsCount = myReports.length;
-
-    // Pop the welcome modal flag if present
-    const showWelcome = Boolean(req.session.showHubWelcome);
-    req.session.showHubWelcome = false;
-
-    // If admin is viewing, load all singers for the quick-switch capability
     let allSingers = [];
     if (isAdmin) {
       allSingers = await Singer.findAll({
@@ -334,24 +282,22 @@ exports.showHub = async (req, res) => {
     res.render("singer-hub", {
       pageTitle: `${singer.name} | Singer Hub`,
       singer,
-      daysRemaining,
-      upcomingSubmissions,
-      pastHistory,
-      deitySummary,
-      songbook,
-      myReports,
-      myReportsCount,
-      showWelcome,
       isAdmin,
       allSingers,
-      pageCSS: null,
-      pageJS: null
+      upcomingSubmissions,
+      pastSubmissions,
+      bookmarks: myBookmarks,
+      reports: myReports,
+      todayStr,
+      pageCSS: "singer-hub.css",
+      pageJS: "singer-hub.js"
     });
   } catch (error) {
-    console.error("Error loading Singer Hub:", error);
-    res.status(500).send("Unable to load Singer Hub.");
+    console.error(`[Req ${req.id || ""}] Error loading singer hub:`, error);
+    res.status(500).send("Unable to load Singer Hub at this time.");
   }
 };
+exports.showHub = exports.showHubPage;
 
 /**
  * Devotee Logout (Preserves admin session if logged in)
@@ -359,41 +305,11 @@ exports.showHub = async (req, res) => {
 exports.logout = (req, res) => {
   if (req.session) {
     delete req.session.singer;
-    delete req.session.showHubWelcome;
     req.session.save(() => {
-      if (req.xhr || req.headers?.accept?.includes("application/json")) {
-        return res.json({ success: true, redirect: "/" });
-      }
-      res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Logging out...</title></head><body>
-      <script>
-        try {
-          localStorage.removeItem('bp_singer_id');
-          localStorage.removeItem('bp_singer_name');
-          localStorage.removeItem('bp_singer_gender');
-          localStorage.removeItem('bp_singer_login_time');
-        } catch(_) {}
-        if (window.top && window.top !== window.self) {
-          window.top.location.href = '/?logged_out=' + Date.now();
-        } else {
-          window.location.href = '/?logged_out=' + Date.now();
-        }
-      </script></body></html>`);
+      res.redirect(safeRedirect(req.query.redirect, "/submit-form"));
     });
   } else {
-    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Logging out...</title></head><body>
-    <script>
-      try {
-        localStorage.removeItem('bp_singer_id');
-        localStorage.removeItem('bp_singer_name');
-        localStorage.removeItem('bp_singer_gender');
-        localStorage.removeItem('bp_singer_login_time');
-      } catch(_) {}
-      if (window.top && window.top !== window.self) {
-        window.top.location.href = '/?logged_out=' + Date.now();
-      } else {
-        window.location.href = '/?logged_out=' + Date.now();
-      }
-    </script></body></html>`);
+    res.redirect("/submit-form");
   }
 };
 
@@ -441,8 +357,8 @@ exports.adminSwitchSinger = async (req, res) => {
       });
     });
   } catch (error) {
-    console.error("adminSwitchSinger error:", error);
-    res.status(500).json({ error: error.message || "Failed to switch singer." });
+    console.error(`[Req ${req.id || ""}] adminSwitchSinger error:`, error);
+    res.status(500).json({ error: "Failed to switch singer profile." });
   }
 };
 
@@ -464,7 +380,7 @@ exports.changePin = async (req, res) => {
       return res.status(400).json({ error: "New PIN must be exactly 4 digits." });
     }
 
-    const singer = await Singer.findByPk(singerSession.id);
+    const singer = await Singer.scope("withSecrets").findByPk(singerSession.id);
     if (!singer) {
       return res.status(404).json({ error: "Singer not found." });
     }
@@ -482,18 +398,14 @@ exports.changePin = async (req, res) => {
       pin_set_at: new Date()
     });
 
-    // Reset 90-day verification timer
     req.session.singer.pinVerifiedAt = Date.now();
 
     res.json({ success: true, message: "Your 4-digit PIN has been updated successfully." });
   } catch (error) {
-    res.status(500).json({ error: error.message || "Failed to update PIN." });
+    console.error(`[Req ${req.id || ""}] changePin error:`, error);
+    res.status(500).json({ error: "Failed to update PIN." });
   }
 };
-
-// -------------------------------------------------------------
-// SONGBOOK / REPERTOIRE ENDPOINTS (PHASE 2)
-// -------------------------------------------------------------
 
 /**
  * Check if a bhajan is in current singer's songbook
@@ -517,7 +429,8 @@ exports.checkSongbookStatus = async (req, res) => {
       bookmark: bookmark || null
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] checkSongbookStatus error:`, error);
+    res.status(500).json({ error: "Failed to check songbook status." });
   }
 };
 
@@ -565,8 +478,8 @@ exports.toggleSongbook = async (req, res) => {
       message: `"${master.title}" saved to your Songbook!`
     });
   } catch (error) {
-    console.error("Error toggling songbook:", error);
-    res.status(500).json({ error: error.message || "Failed to update songbook." });
+    console.error(`[Req ${req.id || ""}] toggleSongbook error:`, error);
+    res.status(500).json({ error: "Failed to update songbook." });
   }
 };
 
@@ -597,7 +510,8 @@ exports.updateSongbookDetails = async (req, res) => {
       message: "Personal scale and practice notes saved!"
     });
   } catch (error) {
-    res.status(500).json({ error: error.message || "Failed to update details." });
+    console.error(`[Req ${req.id || ""}] updateSongbookDetails error:`, error);
+    res.status(500).json({ error: "Failed to update songbook details." });
   }
 };
 
@@ -615,7 +529,8 @@ exports.getSongbookList = async (req, res) => {
 
     res.json({ success: true, bookmarks });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] getSongbookList error:`, error);
+    res.status(500).json({ error: "Failed to load songbook." });
   }
 };
 
@@ -634,7 +549,6 @@ exports.updatePreferredScale = async (req, res) => {
     const cleanScale = preferred_scale ? preferred_scale.trim() : null;
     await singer.update({ preferred_scale: cleanScale });
 
-    // Update in session as well
     if (req.session?.singer) {
       req.session.singer.preferred_scale = cleanScale;
     }
@@ -645,7 +559,7 @@ exports.updatePreferredScale = async (req, res) => {
       message: "Default singing pitch saved!"
     });
   } catch (error) {
-    res.status(500).json({ error: error.message || "Failed to update preferred scale." });
+    console.error(`[Req ${req.id || ""}] updatePreferredScale error:`, error);
+    res.status(500).json({ error: "Failed to update preferred scale." });
   }
 };
-

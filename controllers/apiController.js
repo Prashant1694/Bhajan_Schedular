@@ -86,7 +86,8 @@ exports.getMasterBhajans = async (req, res) => {
       .sort((a, b) => a.title.localeCompare(b.title));
     res.json(relevantBhajans);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Failed to get master bhajans:`, error);
+    res.status(500).json({ error: "Failed to retrieve bhajans." });
   }
 };
 
@@ -108,7 +109,8 @@ exports.checkCooldown = async (req, res) => {
     
     res.json(recentSubmission);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Failed to check cooldown:`, error);
+    res.status(500).json({ error: "Failed to check bhajan cool-down status." });
   }
 };
 
@@ -213,16 +215,21 @@ exports.getScaleSuggestions = async (req, res) => {
       mostCommonGenderScale
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Failed to get scale suggestions:`, error);
+    res.status(500).json({ error: "Failed to retrieve scale suggestions." });
   }
 };
 
 exports.getSingers = async (req, res) => {
   try {
-    const singers = await Singer.findAll({ order: [['name', 'ASC']] });
+    const singers = await Singer.findAll({
+      attributes: ["id", "name", "gender"],
+      order: [["name", "ASC"]]
+    });
     res.json(singers);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Failed to load singers:`, error);
+    res.status(500).json({ error: "Failed to load singers list." });
   }
 };
 
@@ -235,7 +242,8 @@ exports.getDeityRules = async (req, res) => {
     }
     res.json(rules);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Failed to load deity rules:`, error);
+    res.status(500).json({ error: "Failed to load deity rules." });
   }
 };
 

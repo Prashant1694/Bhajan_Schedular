@@ -140,7 +140,8 @@ async function requireSingerAuth(req, res, next) {
 
     // 90 days have elapsed — re-verify PIN for regular devotee
     delete req.session.singer;
-    const returnTo = encodeURIComponent(req.originalUrl || "/submit-form");
+    const { safeRedirect } = require("../services/securityHelpers");
+    const returnTo = encodeURIComponent(safeRedirect(req.originalUrl, "/submit-form"));
     const embedParam = req.query._embed === "1" ? "&_embed=1" : "";
     return res.redirect(`/singer/login?expired=true&redirect=${returnTo}${embedParam}`);
   }
@@ -167,7 +168,8 @@ async function requireSingerAuth(req, res, next) {
   }
 
   // Not logged in
-  const returnTo = encodeURIComponent(req.originalUrl || "/submit-form");
+  const { safeRedirect } = require("../services/securityHelpers");
+  const returnTo = encodeURIComponent(safeRedirect(req.originalUrl, "/submit-form"));
   const embedParam = req.query._embed === "1" ? "&_embed=1" : "";
   return res.redirect(`/singer/login?redirect=${returnTo}${embedParam}`);
 }

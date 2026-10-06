@@ -1,14 +1,8 @@
-// ============================================================
-// Notification Controller — Bhajan Planner
-// Handles notification API endpoints and admin views
-// ============================================================
-
-const notificationService = require("../services/notificationService");
-const PushSubscription = require("../models/PushSubscription");
 const Singer = require("../models/Singer");
-const { normalizeName } = require("../services/helpers");
+const PushSubscription = require("../models/PushSubscription");
+const notificationService = require("../services/notificationService");
 
-// ── API: Get notifications for a device ──────────────────────
+// ── API: Get notifications for device/singer ─────────────────
 exports.getNotifications = async (req, res) => {
   try {
     const deviceId = req.query.device_id;
@@ -23,7 +17,8 @@ exports.getNotifications = async (req, res) => {
     );
     res.json({ notifications });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Failed to get notifications:`, error);
+    res.status(500).json({ error: "Failed to retrieve notifications." });
   }
 };
 
@@ -39,7 +34,8 @@ exports.getUnreadCount = async (req, res) => {
     const count = await notificationService.getUnreadCount(deviceId, singerId);
     res.json({ count });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Failed to get unread count:`, error);
+    res.status(500).json({ error: "Failed to retrieve unread notification count." });
   }
 };
 
@@ -53,7 +49,8 @@ exports.markRead = async (req, res) => {
     await notificationService.markRead(notification_id, device_id);
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Failed to mark read:`, error);
+    res.status(500).json({ error: "Failed to update notification." });
   }
 };
 
@@ -69,7 +66,8 @@ exports.markAllRead = async (req, res) => {
     await notificationService.markAllRead(device_id, singerId);
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Failed to mark all read:`, error);
+    res.status(500).json({ error: "Failed to update notifications." });
   }
 };
 
@@ -81,59 +79,45 @@ exports.getSingerPinStatus = async (req, res) => {
       return res.status(400).json({ error: "Missing singer_id" });
     }
 
-    const singer = await Singer.findByPk(singer_id);
+    const singer = await Singer.scope("withSecrets").findByPk(singer_id);
     if (!singer) {
       return res.status(404).json({ error: "Singer not found" });
     }
 
     res.json({
-      hasPin: !!singer.pin,
+      hasPin: Boolean(singer.pin),
       singer_id: singer.id,
       singer_name: singer.name
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Failed to get singer PIN status:`, error);
+    res.status(500).json({ error: "Failed to check PIN status." });
   }
 };
 
 // ── API: Subscribe to push notifications ─────────────────────
+// Stop verifying PINs here: requires an existing authenticated singer session
 exports.subscribe = async (req, res) => {
   try {
-    const { singer_id, device_id, pin, subscription } = req.body;
+    const { device_id, subscription } = req.body;
 
-    if (!singer_id || !device_id) {
-      return res.status(400).json({ error: "Missing required fields" });
+    if (!req.session?.singer || !req.session.singer.id) {
+      return res.status(401).json({
+        error: "Active singer session required to register for notifications. Please sign in via Singer Hub."
+      });
     }
 
-    const { Sequelize } = require("sequelize");
-    const bcrypt = require("bcrypt");
+    if (!device_id) {
+      return res.status(400).json({ error: "Missing required device_id" });
+    }
 
-    // Verify singer exists
+    const singer_id = req.session.singer.id;
     const singer = await Singer.findByPk(singer_id);
     if (!singer) {
       return res.status(404).json({ error: "Singer not found" });
     }
 
-    // Validate 4-digit PIN
-    const cleanPin = (pin || "").toString().trim();
-    if (!/^\d{4}$/.test(cleanPin)) {
-      return res.status(400).json({ error: "Please enter a valid 4-digit numeric PIN." });
-    }
-
-    if (!singer.pin) {
-      // First time claiming this name: set the 4-digit PIN!
-      const hashed = await bcrypt.hash(cleanPin, 10);
-      await singer.update({ pin: hashed });
-    } else {
-      // PIN is already set: verify it matches!
-      const isMatch = await bcrypt.compare(cleanPin, singer.pin);
-      if (!isMatch) {
-        return res.status(403).json({
-          error: `Incorrect 4-digit PIN for ${singer.name}. Please enter your correct PIN or contact the administrator to reset it.`
-        });
-      }
-    }
-
+    const { Sequelize } = require("sequelize");
     const endpoint = subscription?.endpoint || `in_app_${device_id}`;
     const p256dh = subscription?.keys?.p256dh || "";
     const auth = subscription?.keys?.auth || "";
@@ -173,7 +157,8 @@ exports.subscribe = async (req, res) => {
 
     res.json({ success: true, created: true, singer_name: singer.name });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Subscribe error:`, error);
+    res.status(500).json({ error: "Failed to register notification subscription." });
   }
 };
 
@@ -186,7 +171,8 @@ exports.unsubscribe = async (req, res) => {
     await PushSubscription.destroy({ where: { device_id } });
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Unsubscribe error:`, error);
+    res.status(500).json({ error: "Failed to unsubscribe." });
   }
 };
 
@@ -207,7 +193,8 @@ exports.subscriptionStatus = async (req, res) => {
       singer_name: singer ? singer.name : "Unknown"
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Subscription status error:`, error);
+    res.status(500).json({ error: "Failed to retrieve subscription status." });
   }
 };
 
@@ -244,7 +231,8 @@ exports.adminNotifications = async (req, res) => {
       pageTitle: "Notifications"
     });
   } catch (error) {
-    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+    console.error(`[Req ${req.id || ""}] Admin notifications error:`, error);
+    res.status(500).send("<h1>Error</h1><p>Failed to load admin notifications.</p>");
   }
 };
 
@@ -294,8 +282,8 @@ exports.sendCustomNotification = async (req, res) => {
       message: "Custom notification sent successfully!"
     });
   } catch (error) {
-    console.error("sendCustomNotification error:", error);
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] sendCustomNotification error:`, error);
+    res.status(500).json({ error: "Failed to send notification." });
   }
 };
 
@@ -312,7 +300,8 @@ exports.sendTestNotification = async (req, res) => {
     });
     res.json({ success: true, created: result.created });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] sendTestNotification error:`, error);
+    res.status(500).json({ error: "Failed to send test notification." });
   }
 };
 
@@ -322,6 +311,7 @@ exports.deleteNotification = async (req, res) => {
     await notificationService.deleteNotification(req.params.id);
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] deleteNotification error:`, error);
+    res.status(500).json({ error: "Failed to delete notification." });
   }
 };

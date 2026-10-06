@@ -163,6 +163,12 @@ async function ensureSingerPinColumn() {
     if (!columns.some((column) => column.name === "preferred_scale")) {
       await sequelize.query("ALTER TABLE singer_dictionary ADD COLUMN preferred_scale VARCHAR(50)");
     }
+    if (!columns.some((column) => column.name === "failed_attempts")) {
+      await sequelize.query("ALTER TABLE singer_dictionary ADD COLUMN failed_attempts INTEGER DEFAULT 0");
+    }
+    if (!columns.some((column) => column.name === "locked_until")) {
+      await sequelize.query("ALTER TABLE singer_dictionary ADD COLUMN locked_until DATETIME");
+    }
   } catch (err) {
     // Ignore if table info query fails
   }

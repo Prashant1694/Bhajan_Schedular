@@ -2,13 +2,13 @@ const express = require("express");
 const router = express.Router();
 const reportController = require("../controllers/reportController");
 const { requireLogin } = require("../middleware/auth");
-const { reportSubmitLimit } = require("../middleware/security");
+const { reportSubmitLimit, ticketRateLimit } = require("../middleware/security");
 
 // Public / User routes
 router.post("/api/reports/submit", reportSubmitLimit, reportController.submitReport);
-router.get("/api/reports/my-reports", reportController.getMyReports);
-router.get("/api/reports/ticket/:code", reportController.getTicketStatus);
-router.post("/api/reports/ticket/:code/seen", reportController.markTicketSeen);
+router.get("/api/reports/my-reports", ticketRateLimit, reportController.getMyReports);
+router.get("/api/reports/ticket/:code", ticketRateLimit, reportController.getTicketStatus);
+router.post("/api/reports/ticket/:code/seen", ticketRateLimit, reportController.markTicketSeen);
 router.get("/my-reports", reportController.showMyReportsPage);
 
 // Admin routes

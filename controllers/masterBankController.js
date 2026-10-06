@@ -1,27 +1,24 @@
-const { Sequelize } = require("sequelize");
-const sequelize = require("../config/database");
-
 const MasterBhajan = require("../models/MasterBhajan");
 const BhajanSubmission = require("../models/BhajanSubmission");
-const { normalizeBhajanTitle } = require("../services/fuzzyMatcher");
+const sequelize = require("../config/database");
+const { Sequelize } = require("sequelize");
 const { invalidateMissingCount } = require("../services/helpers");
-
-const {
-  escapeHTML
-} = require("../templates");
+const ExcelJS = require("exceljs");
 
 exports.showMasterBank = async (req, res) => {
   try {
-    const isAdmin = !!(req.session && req.session.adminUserId);
     const bhajans = await MasterBhajan.findAll({
       where: { is_active: true },
-      order: [['title', 'ASC']]
+      order: [["title", "ASC"]]
     });
-    res.render('master-bank', { bhajans, isAdmin });
+    const isAdmin = !!(req.session && req.session.adminUserId);
+    res.render("master-bank", { bhajans, isAdmin });
   } catch (error) {
-    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+    console.error(`[Req ${req.id || ""}] showMasterBank error:`, error);
+    res.status(500).send("<h1>Error</h1><p>Failed to load master songbook.</p>");
   }
 };
+
 function normalizeDeityString(str) {
   if (!str) return str;
   return str.split(',').map(s => {
@@ -45,9 +42,11 @@ exports.addMasterBhajan = async (req, res) => {
     invalidateMissingCount();
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] addMasterBhajan error:`, error);
+    res.status(500).json({ error: "Failed to add bhajan to catalog." });
   }
-}
+};
+
 exports.updateMasterBhajan = async (req, res) => {
   try {
     const { title, deity, level, tempo, raga, raga_notes, shruti, shruti_female, language, lyrics, sheet_filename } = req.body;
@@ -64,30 +63,50 @@ exports.updateMasterBhajan = async (req, res) => {
 
     res.json({ success: true, message: "Bhajan updated successfully!" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] updateMasterBhajan error:`, error);
+    res.status(500).json({ error: "Failed to update bhajan." });
   }
 };
+
 exports.deleteMasterBhajan = async (req, res) => {
   try {
     // Soft-delete / archive to preserve historical foreign references
     await MasterBhajan.update({ is_active: false }, { where: { id: req.params.id } });
     res.json({ success: true, message: "Bhajan archived successfully" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] deleteMasterBhajan error:`, error);
+    res.status(500).json({ error: "Failed to archive bhajan." });
   }
 };
+
 exports.exportMaster = async (req, res) => {
   try {
     const allBhajans = await MasterBhajan.findAll({
       where: { is_active: true },
-      order: [['title', 'ASC']]
+      order: [["title", "ASC"]]
     });
+
+    const format = (req.query.format || "json").toLowerCase();
+    if (format === "excel" || format === "xlsx") {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Master Bhajans");
+      sheet.addRow(["ID", "Title", "Deity", "Tempo", "Raag", "Raag Notes", "Shruti (Gents)", "Shruti (Ladies)", "Language", "Lyrics"]);
+      allBhajans.forEach(b => {
+        sheet.addRow([b.id, b.title, b.deity, b.tempo, b.raga, b.raga_notes, b.shruti, b.shruti_female, b.language, b.lyrics]);
+      });
+      const buffer = await workbook.xlsx.writeBuffer();
+      res.setHeader("Content-Disposition", "attachment; filename=master_bhajans.xlsx");
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      return res.send(Buffer.from(buffer));
+    }
+
     const jsonString = JSON.stringify(allBhajans, null, 2);
-    res.setHeader('Content-disposition', 'attachment; filename=cleaned_master_bhajans.json');
-    res.setHeader('Content-type', 'application/json');
+    res.setHeader("Content-disposition", "attachment; filename=cleaned_master_bhajans.json");
+    res.setHeader("Content-type", "application/json");
     res.send(jsonString);
   } catch (error) {
-    res.status(500).send("Export failed");
+    console.error(`[Req ${req.id || ""}] exportMaster error:`, error);
+    res.status(500).send("Export failed.");
   }
 };
 
@@ -96,7 +115,7 @@ exports.showArchivedMasterBank = async (req, res) => {
     const isAdmin = !!(req.session && (req.session.adminUserId || req.session.admin));
     const archivedBhajans = await MasterBhajan.findAll({
       where: { is_active: false },
-      order: [['title', 'ASC']]
+      order: [["title", "ASC"]]
     });
 
     let diwaliRefs = [];
@@ -119,51 +138,49 @@ exports.showArchivedMasterBank = async (req, res) => {
       refCount: refMap.get(b.id) || 0
     }));
 
-    res.render('admin-archived-master', {
-      pageTitle: 'Archived Master Bhajans',
+    res.render("admin-archived-master", {
+      pageTitle: "Archived Master Bhajans",
       isAdminPage: true,
       bhajans: bhajansWithRefs,
       isAdmin
     });
   } catch (error) {
-    console.error('Error loading archived bhajans:', error);
-    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+    console.error(`[Req ${req.id || ""}] Error loading archived bhajans:`, error);
+    res.status(500).send("<h1>Error</h1><p>Failed to load archived bhajans catalog.</p>");
   }
 };
 
-/**
- * POST /api/admin/reconcile-bhajan
- *
- * Body: { submitted_title, action: 'link', master_bhajan_id }
- *       { submitted_title, action: 'add' }   ← no-op here; caller will use addMasterBhajan separately
- *
- * 'link': update every BhajanSubmission whose normalised title matches
- *         submitted_title to use the master bhajan's canonical title.
- *         This fixes the mismatch once and removes it from the catcher.
- */
+function normalizeBhajanTitle(t) {
+  return (t || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+}
+
 exports.reconcileBhajan = async (req, res) => {
   try {
     const { submitted_title, action, master_bhajan_id } = req.body;
 
-    if (!submitted_title || !action) {
-      return res.status(400).json({ error: 'submitted_title and action are required.' });
+    if (!submitted_title) {
+      return res.status(400).json({ error: "submitted_title is required." });
     }
 
-    if (action === 'link') {
+    if (action === "link") {
       if (!master_bhajan_id) {
-        return res.status(400).json({ error: 'master_bhajan_id is required for link action.' });
+        return res.status(400).json({ error: "master_bhajan_id is required for link action." });
       }
 
       const master = await MasterBhajan.findOne({ where: { id: master_bhajan_id, is_active: true } });
       if (!master) {
-        return res.status(404).json({ error: 'Active Master bhajan not found.' });
+        return res.status(404).json({ error: "Active Master bhajan not found." });
       }
 
       const normSubmitted = normalizeBhajanTitle(submitted_title);
 
-      // Find all submissions whose normalised title matches the submitted title
       const allSubmissions = await BhajanSubmission.findAll({
-        attributes: ['id', 'title'],
+        attributes: ["id", "title"],
         raw: true
       });
 
@@ -187,18 +204,17 @@ exports.reconcileBhajan = async (req, res) => {
       });
     }
 
-    // action === 'add' — caller handles this separately via addMasterBhajan
-    return res.json({ success: true, action: 'add' });
-
+    return res.json({ success: true, action: "add" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] reconcileBhajan error:`, error);
+    res.status(500).json({ error: "Failed to reconcile bhajan." });
   }
 };
 
 exports.showBhajanDetails = async (req, res) => {
   try {
     const rawId = req.params.id;
-    if (!rawId || rawId === 'null' || rawId === 'undefined') {
+    if (!rawId || rawId === "null" || rawId === "undefined") {
       return res.status(404).render("not-found", {
         pageTitle: "Bhajan Not Found",
         message: "The requested bhajan could not be identified or found in the catalog.",
@@ -212,7 +228,6 @@ exports.showBhajanDetails = async (req, res) => {
     if (/^\d+$/.test(trimmed)) {
       bhajan = await MasterBhajan.findByPk(parseInt(trimmed, 10));
     } else {
-      // Allow title-based lookup fallback
       const decoded = decodeURIComponent(trimmed);
       bhajan = await MasterBhajan.findOne({
         where: {
@@ -239,7 +254,7 @@ exports.showBhajanDetails = async (req, res) => {
       isAdmin
     });
   } catch (error) {
-    console.error("Error in showBhajanDetails:", error);
+    console.error(`[Req ${req.id || ""}] Error in showBhajanDetails:`, error);
     res.status(404).render("not-found", {
       pageTitle: "Bhajan Not Found",
       message: "The requested bhajan could not be retrieved at this time.",

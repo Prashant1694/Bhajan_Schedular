@@ -7,8 +7,9 @@ const ActivityLog = require("../models/ActivityLog");
 function generateTicketCode() {
   const chars = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
   let code = "REP-";
-  for (let i = 0; i < 5; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < 10; i++) {
+    const idx = crypto.randomInt(0, chars.length);
+    code += chars.charAt(idx);
   }
   return code;
 }
@@ -60,75 +61,67 @@ exports.submitReport = async (req, res) => {
       effectiveDescription = "Issue reported in: " + labels.join(", ");
     }
 
-    // Generate unique ticket code
-    let ticketCode = generateTicketCode();
-    let exists = await BhajanReport.findOne({ where: { ticket_code: ticketCode } });
-    while (exists) {
-      ticketCode = generateTicketCode();
-      exists = await BhajanReport.findOne({ where: { ticket_code: ticketCode } });
+    let mid = null;
+    if (master_id && !isNaN(parseInt(master_id, 10))) {
+      const mb = await MasterBhajan.findByPk(parseInt(master_id, 10));
+      if (mb) mid = mb.id;
     }
 
-    const effectiveVisitorId = visitor_id || req.session?.visitorId || null;
-    const singerId = req.session?.singer ? req.session.singer.id : null;
-    const effectiveReporterName = (req.session?.singer?.name) || (reporter_name ? reporter_name.trim() : null);
-
-    let categoriesJson = "[]";
-    if (Array.isArray(categories)) {
-      categoriesJson = JSON.stringify(categories);
-    } else if (typeof categories === "string") {
-      categoriesJson = JSON.stringify([categories]);
+    let code = generateTicketCode();
+    for (let attempts = 0; attempts < 5; attempts++) {
+      const exists = await BhajanReport.findOne({ where: { ticket_code: code } });
+      if (!exists) break;
+      code = generateTicketCode();
     }
 
-    const cleanDesc = effectiveDescription.replace(/<[^>]*>/g, '').trim().slice(0, 2000);
-    const cleanSuggested = suggested_correction ? suggested_correction.toString().replace(/<[^>]*>/g, '').trim().slice(0, 2000) : null;
-    const cleanReporterName = effectiveReporterName ? effectiveReporterName.toString().replace(/<[^>]*>/g, '').trim().slice(0, 100) : null;
-    const cleanContact = reporter_contact ? reporter_contact.toString().replace(/<[^>]*>/g, '').trim().slice(0, 100) : null;
-    const cleanVisitorId = effectiveVisitorId ? effectiveVisitorId.toString().replace(/[^a-zA-Z0-9_\-\.]/g, '').slice(0, 100) : null;
-    const parsedMasterId = master_id ? parseInt(master_id, 10) : null;
+    let effectiveSingerId = null;
+    let effectiveReporterName = (reporter_name || "").toString().replace(/<[^>]*>/g, '').trim().slice(0, 80) || null;
+
+    if (req.session?.singer) {
+      effectiveSingerId = req.session.singer.id;
+      if (!effectiveReporterName) {
+        effectiveReporterName = req.session.singer.name;
+      }
+    }
+
+    const catJson = JSON.stringify(Array.isArray(categories) ? categories : (categories ? [categories] : []));
 
     const report = await BhajanReport.create({
-      ticket_code: ticketCode,
-      master_id: (parsedMasterId && !isNaN(parsedMasterId) && parsedMasterId > 0) ? parsedMasterId : null,
-      singer_id: singerId,
+      ticket_code: code,
+      master_id: mid,
+      singer_id: effectiveSingerId,
       bhajan_title: cleanTitle,
-      categories: categoriesJson,
-      description: cleanDesc,
-      suggested_correction: cleanSuggested,
-      reporter_name: cleanReporterName,
-      reporter_contact: cleanContact,
-      visitor_id: cleanVisitorId,
+      categories: catJson,
+      description: effectiveDescription,
+      suggested_correction: suggested_correction ? suggested_correction.trim().slice(0, 1000) : null,
+      reporter_name: effectiveReporterName,
+      reporter_contact: reporter_contact ? reporter_contact.trim().slice(0, 100) : null,
+      visitor_id: visitor_id || req.session?.visitorId || null,
       status: "pending"
     });
 
-    // Log activity
     try {
-      if (ActivityLog) {
-        await ActivityLog.create({
-          session_id: effectiveVisitorId || "anonymous",
-          user_type: "user",
-          username: reporter_name || "Guest User",
-          action: "SUBMITTED_BHAJAN_REPORT",
-          section: "Master Bhajan Bank",
-          page_url: master_id ? `/bhajan/${master_id}` : "/master-bank",
-          details: `Reported issue for "${bhajan_title.trim()}" (Ticket: ${ticketCode})`
-        });
-      }
+      await ActivityLog.create({
+        session_id: req.session?.visitorId || "guest",
+        user_type: req.session?.admin ? "admin" : (req.session?.singer ? "singer" : "guest"),
+        username: effectiveReporterName || "Anonymous Devotee",
+        action: "REPORT_SUBMITTED",
+        details: `Report ${code} filed for "${cleanTitle}"`,
+        ip_address: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "127.0.0.1",
+        user_agent: req.headers["user-agent"] || "",
+        created_at: new Date()
+      });
     } catch (_) {}
 
     res.json({
       success: true,
-      message: "Report submitted successfully. Thank you for helping keep our Bhajan Bank accurate!",
-      ticket: {
-        id: report.id,
-        ticket_code: report.ticket_code,
-        bhajan_title: report.bhajan_title,
-        status: report.status,
-        created_at: report.created_at
-      }
+      ticket_code: code,
+      report_id: report.id,
+      message: "Report submitted successfully. Thank you for helping keep our Bhajan Bank accurate!"
     });
   } catch (error) {
-    console.error("Error submitting bhajan report:", error);
-    res.status(500).json({ error: error.message || "Failed to submit report." });
+    console.error(`[Req ${req.id || ""}] Error submitting bhajan report:`, error);
+    res.status(500).json({ error: "Failed to submit report. Please try again later." });
   }
 };
 
@@ -171,15 +164,15 @@ exports.getMyReports = async (req, res) => {
       has_unread_reply: hasUnreadReply
     });
   } catch (error) {
-    console.error("Error fetching user reports:", error);
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Error fetching user reports:`, error);
+    res.status(500).json({ error: "Failed to retrieve your reports." });
   }
 };
 
 exports.getTicketStatus = async (req, res) => {
   try {
-    const rawCode = (req.params.code || "").trim().toUpperCase().slice(0, 20);
-    if (!/^REP-[A-Z0-9]{3,10}$/.test(rawCode)) {
+    const rawCode = (req.params.code || "").trim().toUpperCase().slice(0, 30);
+    if (!/^REP-[A-Z0-9]{5,25}$/.test(rawCode)) {
       return res.status(400).json({ error: "Invalid ticket code format." });
     }
     const report = await BhajanReport.findOne({
@@ -199,14 +192,15 @@ exports.getTicketStatus = async (req, res) => {
 
     res.json(plain);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Error fetching ticket status:`, error);
+    res.status(500).json({ error: "Failed to retrieve ticket status." });
   }
 };
 
 exports.markTicketSeen = async (req, res) => {
   try {
-    const rawCode = (req.params.code || "").trim().toUpperCase().slice(0, 20);
-    if (!/^REP-[A-Z0-9]{3,10}$/.test(rawCode)) {
+    const rawCode = (req.params.code || "").trim().toUpperCase().slice(0, 30);
+    if (!/^REP-[A-Z0-9]{5,25}$/.test(rawCode)) {
       return res.status(400).json({ error: "Invalid ticket code format." });
     }
     await BhajanReport.update(
@@ -215,7 +209,8 @@ exports.markTicketSeen = async (req, res) => {
     );
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Error marking ticket seen:`, error);
+    res.status(500).json({ error: "Failed to update ticket." });
   }
 };
 
@@ -227,7 +222,8 @@ exports.showMyReportsPage = async (req, res) => {
       currentAdmin: req.session.admin || null
     });
   } catch (error) {
-    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+    console.error(`[Req ${req.id || ""}] Error loading user reports page:`, error);
+    res.status(500).send("<h1>Error</h1><p>Failed to load reports page.</p>");
   }
 };
 
@@ -238,19 +234,21 @@ exports.showMyReportsPage = async (req, res) => {
 exports.showAdminReports = async (req, res) => {
   try {
     const { status, category, search } = req.query;
-
     const where = {};
+
     if (status && ["pending", "under_review", "resolved", "closed"].includes(status)) {
       where.status = status;
     }
+
     if (category) {
       where.categories = { [Op.like]: `%"${category}"%` };
     }
+
     if (search && search.trim()) {
       const q = `%${search.trim()}%`;
       where[Op.or] = [
-        { bhajan_title: { [Op.like]: q } },
         { ticket_code: { [Op.like]: q } },
+        { bhajan_title: { [Op.like]: q } },
         { reporter_name: { [Op.like]: q } },
         { description: { [Op.like]: q } }
       ];
@@ -258,27 +256,9 @@ exports.showAdminReports = async (req, res) => {
 
     const reports = await BhajanReport.findAll({
       where,
-      order: [
-        // Pending first, then under_review, then resolved, then newest
-        [
-          Sequelize.literal(`CASE 
-            WHEN status = 'pending' THEN 1 
-            WHEN status = 'under_review' THEN 2 
-            WHEN status = 'resolved' THEN 3 
-            ELSE 4 END`),
-          'ASC'
-        ],
-        ["created_at", "DESC"]
-      ]
+      order: [["created_at", "DESC"]],
+      limit: 200
     });
-
-    const counts = {
-      total: await BhajanReport.count(),
-      pending: await BhajanReport.count({ where: { status: "pending" } }),
-      under_review: await BhajanReport.count({ where: { status: "under_review" } }),
-      resolved: await BhajanReport.count({ where: { status: "resolved" } }),
-      closed: await BhajanReport.count({ where: { status: "closed" } })
-    };
 
     const parsedReports = reports.map(r => {
       const plain = r.toJSON();
@@ -289,6 +269,14 @@ exports.showAdminReports = async (req, res) => {
       }
       return plain;
     });
+
+    const counts = {
+      all: await BhajanReport.count(),
+      pending: await BhajanReport.count({ where: { status: "pending" } }),
+      under_review: await BhajanReport.count({ where: { status: "under_review" } }),
+      resolved: await BhajanReport.count({ where: { status: "resolved" } }),
+      closed: await BhajanReport.count({ where: { status: "closed" } })
+    };
 
     res.render("admin-reports", {
       page: "reports",
@@ -301,8 +289,8 @@ exports.showAdminReports = async (req, res) => {
       currentAdmin: req.session.admin
     });
   } catch (error) {
-    console.error("Error loading admin reports:", error);
-    res.status(500).send(`<h1>Error</h1><p>${error.message}</p>`);
+    console.error(`[Req ${req.id || ""}] Error loading admin reports:`, error);
+    res.status(500).send("<h1>Error</h1><p>Failed to load admin reports dashboard.</p>");
   }
 };
 
@@ -324,7 +312,7 @@ exports.updateReport = async (req, res) => {
       admin_notes: admin_notes !== undefined ? admin_notes.trim() : report.admin_notes,
       reviewed_by: adminName,
       reviewed_at: new Date(),
-      user_viewed_reply: false // notify user of update
+      user_viewed_reply: false
     };
 
     if (status && ["pending", "under_review", "resolved", "closed"].includes(status)) {
@@ -336,7 +324,6 @@ exports.updateReport = async (req, res) => {
 
     await report.update(updatePayload);
 
-    // Send personalized notification if report is associated with a singer
     if (report.singer_id) {
       try {
         const notificationService = require("../services/notificationService");
@@ -367,7 +354,7 @@ exports.updateReport = async (req, res) => {
       report: report.toJSON()
     });
   } catch (error) {
-    console.error("Error updating report:", error);
-    res.status(500).json({ error: error.message });
+    console.error(`[Req ${req.id || ""}] Error updating report:`, error);
+    res.status(500).json({ error: "Failed to update report." });
   }
 };
