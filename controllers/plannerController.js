@@ -31,6 +31,8 @@ const {
   escapeHtml
 } = require("../templates");
 
+const { generateToken } = require("../middleware/csrfProtection");
+
 const {
   normalizeBhajanTitle,
   getAvailableDates,
@@ -160,6 +162,10 @@ exports.showSubmitForm = async (req, res) => {
       )
       .join("");
 
+    const csrfToken =
+      res.locals.csrfToken ||
+      (typeof req.csrfToken === "function" ? req.csrfToken() : generateToken(req, res));
+
     res.send(
       generateSubmitFormHtml(
         sessionDate,
@@ -174,7 +180,8 @@ exports.showSubmitForm = async (req, res) => {
         showSuccess,
         submissionRowsHtml,
         results.length,
-        req.session?.singer
+        req.session?.singer,
+        csrfToken
       )
     );
   } catch (error) {
@@ -830,7 +837,8 @@ exports.planView = async (req, res) => {
       dateOptionsList,
       submissionsCount: sorted.length,
       isUpcoming: sessionDate >= getLocalDateStr(),
-      isAdmin
+      isAdmin,
+      csrfToken: res.locals.csrfToken || ""
     });
 
     res.send(html);

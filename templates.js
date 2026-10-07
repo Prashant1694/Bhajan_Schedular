@@ -110,7 +110,8 @@ function generateSubmitFormHtml(
   showSuccess = false,
   submissionRowsHtml = "",
   submissionCount = 0,
-  currentSinger = null
+  currentSinger = null,
+  csrfToken = ""
 ) {
   const isAdminBool = isAdmin === true || isAdmin === "true";
   const dateAttr = isAdminBool ? "" : 'readonly style="cursor:not-allowed;"';
@@ -128,6 +129,8 @@ function generateSubmitFormHtml(
   <meta charset="utf-8" />
   <title>Bhajan Scheduler - Sai Centre Gandhinagar</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="csrf-token" content="${escapeHtml(csrfToken)}" />
+  <script>window.csrfToken = "${escapeHtml(csrfToken)}";</script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   ${themeHeadScript}
@@ -153,6 +156,7 @@ function generateSubmitFormHtml(
       </div>
       
       <form method="post" action="/submit-form" id="bhajanForm">
+        <input type="hidden" name="_csrf" value="${escapeHtml(csrfToken)}" />
         <input type="hidden" name="admin" value="${isAdminBool}" />
         <div class="form-group">
           <label>📅 Bhajan Session Date</label>
@@ -414,7 +418,8 @@ function generatePlanViewHtml(sessionDate, rowsHtml, whatsappText, whatsappEncod
     dateOptionsList = [],
     submissionsCount = 0,
     isUpcoming = false,
-    isAdmin = false
+    isAdmin = false,
+    csrfToken = ""
   } = opts;
 
   const dateOptionsHtml = dateOptionsList
@@ -435,6 +440,8 @@ function generatePlanViewHtml(sessionDate, rowsHtml, whatsappText, whatsappEncod
   <title>Live Plan – ${escapeHtml(sessionDateHuman)} | Bhajan Scheduler</title>
   <meta name="description" content="Live bhajan sequence plan for ${escapeHtml(sessionDateHuman)}. View singer order, deity, pitch scale and tempo for accompanists.">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="csrf-token" content="${escapeHtml(csrfToken)}" />
+  <script>window.csrfToken = "${escapeHtml(csrfToken)}";</script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
   ${themeHeadScript}

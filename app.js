@@ -199,6 +199,9 @@ const { getCachedMissingCount } = require("./services/helpers");
 
 app.use(async (req, res, next) => {
   try {
+    if (req.session && !req.session.initialized) {
+      req.session.initialized = true;
+    }
     res.locals.csrfToken =
       typeof req.csrfToken === "function" ? req.csrfToken() : generateToken(req, res);
   } catch (_) {

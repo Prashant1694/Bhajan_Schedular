@@ -856,6 +856,17 @@ document.addEventListener("DOMContentLoaded", function () {
         localStorage.setItem("bj_singer_name", name);
         localStorage.setItem("bj_gender", gender);
       }
+      var csrfInput = form.querySelector('input[name="_csrf"]');
+      var token = (typeof getCsrfToken === "function" ? getCsrfToken() : "") || window.csrfToken || "";
+      if (!csrfInput && token) {
+        csrfInput = document.createElement("input");
+        csrfInput.type = "hidden";
+        csrfInput.name = "_csrf";
+        csrfInput.value = token;
+        form.appendChild(csrfInput);
+      } else if (csrfInput && !csrfInput.value && token) {
+        csrfInput.value = token;
+      }
       form.submit();
     });
   }
@@ -872,6 +883,18 @@ document.addEventListener("DOMContentLoaded", function () {
       if (confirmSubmitModal && !confirmSubmitModal.classList.contains("show")) {
         e.preventDefault();
         if (preSubmitBtn) preSubmitBtn.click();
+        return;
+      }
+      var csrfInput = form.querySelector('input[name="_csrf"]');
+      var token = (typeof getCsrfToken === "function" ? getCsrfToken() : "") || window.csrfToken || "";
+      if (!csrfInput && token) {
+        csrfInput = document.createElement("input");
+        csrfInput.type = "hidden";
+        csrfInput.name = "_csrf";
+        csrfInput.value = token;
+        form.appendChild(csrfInput);
+      } else if (csrfInput && !csrfInput.value && token) {
+        csrfInput.value = token;
       }
     });
   }

@@ -8,6 +8,7 @@ test.before(async () => {
 });
 
 const { app } = require("../app");
+const MasterBhajan = require("../models/MasterBhajan");
 const {
   validateSubmitForm,
   validateCopySession,
@@ -96,4 +97,69 @@ test("POST /submit-form without authenticated singer redirects to singer login",
 
   assert.strictEqual(res.status, 302);
   assert.ok(res.headers.location.includes("/singer/login"));
+});
+
+test("GET /submit-form serves CSRF token in meta tag and hidden form field", async () => {
+  const agent = request.agent(app);
+  const loginPage = await agent.get("/singer/login");
+  const loginCsrf = (loginPage.text.match(/name="csrf-token" content="([^"]+)"/) || [])[1];
+
+  await agent.post("/api/singer/login").set("X-CSRF-Token", loginCsrf).send({
+    singer_id: 1,
+    pin: "1234",
+    redirect: "/submit-form"
+  });
+
+  const formPage = await agent.get("/submit-form");
+  assert.strictEqual(formPage.status, 200);
+
+  const metaMatch = formPage.text.match(/<meta name="csrf-token" content="([^"]+)"/);
+  assert.ok(metaMatch, "Should have csrf-token meta tag");
+  assert.ok(metaMatch[1].length > 0, "CSRF token should not be empty");
+
+  const inputMatch = formPage.text.match(/<input type="hidden" name="_csrf" value="([^"]+)"/);
+  assert.ok(inputMatch, "Should have hidden _csrf input in bhajanForm");
+  assert.strictEqual(inputMatch[1], metaMatch[1], "Input CSRF token should match meta tag");
+});
+
+test("POST /submit-form succeeds with _csrf in body (standard browser form submission)", async () => {
+  const agent = request.agent(app);
+  const loginPage = await agent.get("/singer/login");
+  const loginCsrf = (loginPage.text.match(/name="csrf-token" content="([^"]+)"/) || [])[1];
+
+  await agent.post("/api/singer/login").set("X-CSRF-Token", loginCsrf).send({
+    singer_id: 1,
+    pin: "1234",
+    redirect: "/submit-form"
+  });
+
+  const formPage = await agent.get("/submit-form");
+  const inputMatch = formPage.text.match(/<input type="hidden" name="_csrf" value="([^"]+)"/);
+  assert.ok(inputMatch, "Hidden _csrf input must be present");
+  const csrfToken = inputMatch[1];
+
+  const dateMatch = formPage.text.match(/name="session_date" value="([^"]+)"/);
+  const sessionDate = dateMatch ? dateMatch[1] : "2026-10-15";
+
+  const mb = await MasterBhajan.findOne({ where: { deity: "Ganesha", is_active: true } });
+  assert.ok(mb, "Should find active Ganesha master bhajan");
+
+  const res = await agent
+    .post("/submit-form")
+    .type("form")
+    .send({
+      _csrf: csrfToken,
+      session_date: sessionDate,
+      singer_name: "Test Singer",
+      gender: "Male",
+      deity: "Ganesha",
+      title: mb.title,
+      master_bhajan_id: mb.id,
+      speed: "Medium",
+      scale: "5.5"
+    });
+
+  assert.notStrictEqual(res.status, 403, "Must not return 403 CSRF forbidden");
+  assert.strictEqual(res.status, 302, "Should redirect upon successful submission");
+  assert.ok(res.headers.location.includes("success=true"));
 });
