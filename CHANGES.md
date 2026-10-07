@@ -315,6 +315,11 @@ ls bhajans.db  # Expect: No such file
 * **CI Matrix Compatibility (Node 18/20/22)**: Pinned ESLint to `^9.39.5` to maintain compatibility with Node 18.x and earlier Node 20.x runners that lack `util.styleText`.
 * **Cross-Platform Test Runner**: Switched `npm test` script to `node --test` for automatic recursive test discovery without bash glob expansion issues on Linux.
 * **PWA Local Network Fallback**: Added visual manual install instructions in `public/js/pwa.js` and `views/layouts/main.ejs` when accessed over local Wi-Fi IP HTTP where browsers restrict 1-click install.
+* **Multi-Tab Devotee Authentication State Synchronization**:
+  * **Problem**: In the persistent multi-iframe App Shell architecture, logging in from "Singer Zone" (`/submit-form`) left "My Hub" (`/my-hub`) sitting on the stale login verification screen if the Hub tab had been loaded earlier, requiring a manual browser refresh.
+  * **Fix**: Added real-time `bp_singer_logged_in` `postMessage` event dispatching from `views/singer-login.ejs` to `window.top` on successful login, instantly reloading background authenticated tabs (`#frame-hub`, `#frame-singer`, `#frame-home`).
+  * **Defensive Auto-Recovery**: Added an active session guard in `app-shell.ejs`'s `switchTab()` so whenever an authenticated devotee taps either "Singer Zone" or "My Hub", any iframe currently stuck on a `/login` URL automatically recovers and navigates to the requested authenticated route.
+  * **Embed Query Preservation**: Preserved `_embed=1` query parameters on all unauthenticated redirects in `singerHubController.js`, `plannerController.js`, and `activityController.js`.
 
 ---
 

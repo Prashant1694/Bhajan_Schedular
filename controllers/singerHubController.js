@@ -202,8 +202,10 @@ exports.showHubPage = async (req, res) => {
     const singerSession = req.session.singer;
     const isAdmin = Boolean(req.session && (req.session.admin || req.session.adminUserId));
 
+    const embedParam = req.query._embed === "1" ? "&_embed=1" : "";
+
     if (!singerSession && !isAdmin) {
-      return res.redirect("/singer/login?redirect=/my-hub");
+      return res.redirect(`/singer/login?redirect=${encodeURIComponent("/my-hub")}${embedParam}`);
     }
 
     if (!singerSession && isAdmin) {
@@ -224,13 +226,13 @@ exports.showHubPage = async (req, res) => {
     }
 
     if (!req.session.singer) {
-      return res.redirect("/singer/login?redirect=/my-hub");
+      return res.redirect(`/singer/login?redirect=${encodeURIComponent("/my-hub")}${embedParam}`);
     }
 
     const singer = await Singer.findByPk(req.session.singer.id);
     if (!singer) {
       delete req.session.singer;
-      return res.redirect("/singer/login?redirect=/my-hub");
+      return res.redirect(`/singer/login?redirect=${encodeURIComponent("/my-hub")}${embedParam}`);
     }
 
     const todayStr = getLocalDateStr(new Date());

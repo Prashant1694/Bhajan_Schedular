@@ -213,7 +213,8 @@ exports.submitForm = async (req, res) => {
     } = req.body;
 
     if (!isAdmin && (!req.session || !req.session.singer)) {
-      return res.redirect(`/singer/login?redirect=${encodeURIComponent("/submit-form")}`);
+      const embedParam = req.query._embed === "1" ? "&_embed=1" : "";
+      return res.redirect(`/singer/login?redirect=${encodeURIComponent("/submit-form")}${embedParam}`);
     }
 
     // For devotees, strictly enforce their verified singer name; non-admins can never set a different name

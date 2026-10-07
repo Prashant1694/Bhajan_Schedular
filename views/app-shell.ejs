@@ -442,10 +442,64 @@
       }
     };
 
+    function handleSingerLoggedIn(singer, target, redirect) {
+      if (!singer) return;
+      try {
+        localStorage.setItem('bp_singer_id', singer.id);
+        localStorage.setItem('bp_singer_name', singer.name);
+        localStorage.setItem('bp_singer_gender', singer.gender || '');
+        localStorage.setItem('bp_singer_login_time', Date.now());
+      } catch (_) { }
+
+      var isHubOrigin = redirect && redirect.includes('/my-hub');
+
+      // 1. Synchronize My Hub frame
+      var hubFrame = document.getElementById('frame-hub');
+      if (hubFrame) {
+        if (!isHubOrigin) {
+          // Logged in from Singer Zone or elsewhere: sync My Hub iframe so it loads the authenticated dashboard
+          if (hubFrame.getAttribute('src')) {
+            hubFrame.src = '/my-hub?_embed=1';
+          } else {
+            hubFrame.setAttribute('data-src', '/my-hub?_embed=1');
+          }
+        }
+      }
+
+      // 2. Synchronize Singer Zone frame
+      var singerFrame = document.getElementById('frame-singer');
+      if (singerFrame) {
+        if (isHubOrigin) {
+          // Logged in from My Hub: sync Singer Zone iframe so it loads the authenticated submission form
+          if (singerFrame.getAttribute('src')) {
+            singerFrame.src = '/submit-form?_embed=1';
+          } else {
+            singerFrame.setAttribute('data-src', '/submit-form?_embed=1');
+          }
+        }
+      }
+
+      // 3. Update Home frame if loaded to refresh personalized greeting bar
+      var homeFrame = document.getElementById('frame-home');
+      if (homeFrame && homeFrame.getAttribute('src')) {
+        try {
+          if (homeFrame.contentWindow && typeof homeFrame.contentWindow.location.reload === 'function') {
+            homeFrame.contentWindow.location.reload();
+          }
+        } catch (_) {
+          homeFrame.src = '/?_embed=1';
+        }
+      }
+    }
+
     // Listen for postMessage navigation notifications from iframes
     window.addEventListener('message', function (e) {
-      if (e.data && e.data.type === 'bp_navigated' && e.data.path) {
+      if (!e.data) return;
+      if (e.data.type === 'bp_navigated' && e.data.path) {
         window.onFrameNavigated(e.data.path, e.data.path.split('?')[0]);
+      }
+      if (e.data.type === 'bp_singer_logged_in') {
+        handleSingerLoggedIn(e.data.singer, e.data.target, e.data.redirect);
       }
     });
 
@@ -479,6 +533,32 @@
           if (pendingSrc && !frame.getAttribute('src')) {
             frame.setAttribute('src', pendingSrc);
             frame.removeAttribute('data-src');
+          }
+
+          // Devotee session auto-recovery: If user is authenticated as singer, ensure Singer Zone and My Hub frames
+          // are never stuck displaying a stale login verification screen
+          let loggedInSingerId = null;
+          try { loggedInSingerId = localStorage.getItem('bp_singer_id'); } catch (_) {}
+
+          if (loggedInSingerId && (tabKey === 'hub' || tabKey === 'singer')) {
+            let isStuckOnLogin = false;
+            try {
+              if (frame && frame.contentWindow && frame.contentWindow.location) {
+                const locPath = (frame.contentWindow.location.pathname || '') + (frame.contentWindow.location.search || '');
+                if (locPath.includes('/login') || locPath.includes('/singer/login')) {
+                  isStuckOnLogin = true;
+                }
+              }
+            } catch (_) {}
+
+            const currentSrc = frame.getAttribute('src') || '';
+            if (currentSrc.includes('/singer/login') || currentSrc.includes('/login')) {
+              isStuckOnLogin = true;
+            }
+
+            if (isStuckOnLogin) {
+              frame.src = TAB_ROUTES[tabKey] + '?_embed=1';
+            }
           }
 
           // If a specific deep URL with query was requested (e.g. from session click)

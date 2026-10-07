@@ -239,6 +239,19 @@ async function handleSingerLogin(e) {
     if (window.location.search.includes('_embed=1') && !target.includes('_embed=1')) {
       target += (target.includes('?') ? '&' : '?') + '_embed=1';
     }
+
+    // Notify parent app shell immediately so other tabs (Singer Zone / My Hub) sync state seamlessly
+    try {
+      if (window.top && window.top !== window) {
+        window.top.postMessage({
+          type: 'bp_singer_logged_in',
+          singer: data.singer,
+          target: target,
+          redirect: redirect
+        }, '*');
+      }
+    } catch (_) {}
+
     window.location.href = target;
 
   } catch (err) {

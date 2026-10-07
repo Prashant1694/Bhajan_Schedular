@@ -204,7 +204,8 @@ exports.showMyActivity = async (req, res) => {
         : null;
 
     if (!username) {
-      return res.redirect("/singer/login?redirect=/my-activity");
+      const embedParam = req.query._embed === "1" ? "&_embed=1" : "";
+      return res.redirect(`/singer/login?redirect=${encodeURIComponent("/my-activity")}${embedParam}`);
     }
 
     const logs = await ActivityLog.findAll({
