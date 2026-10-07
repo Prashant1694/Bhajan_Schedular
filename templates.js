@@ -48,11 +48,7 @@ const themeHeadScript = `
         window.location.replace('/?route=' + encodeURIComponent(fullUrl));
       }
     }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', checkEmbed);
-    } else {
-      checkEmbed();
-    }
+    checkEmbed();
   })();
   </script>`;
 

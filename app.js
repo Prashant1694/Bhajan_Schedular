@@ -250,6 +250,78 @@ const diwaliRoutes = require("./routes/diwali");
 const reportsRoutes = require("./routes/reports");
 const singerHubRoutes = require("./routes/singerHub");
 
+// Native App Shell Auto-Wrapper for top-level browser navigation and refresh
+const SHELL_TAB_MAP = {
+  "/": "home",
+  "/submit-form": "singer",
+  "/master-bank": "bank",
+  "/plan-view": "plan",
+  "/my-hub": "hub",
+  "/singer-dictionary": "singer",
+  "/my-activity": "hub",
+  "/my-reports": "home",
+  "/notification-settings": "home",
+  "/admin": "admin"
+};
+
+app.use((req, res, next) => {
+  if (req.method !== "GET") return next();
+
+  // If this is an iframe embedding, standalone mode, or API/static asset, do not wrap
+  if (
+    req.query._embed === "1" ||
+    req.query.embed === "1" ||
+    req.query.standalone === "1" ||
+    req.headers["sec-fetch-dest"] === "iframe" ||
+    (Boolean(req.headers["referer"]) && req.headers["referer"].includes("_embed=1"))
+  ) {
+    return next();
+  }
+
+  // Must be a top-level document navigation from a real browser (or explicit wrap=1)
+  const isDocumentNav =
+    req.headers["sec-fetch-dest"] === "document" ||
+    Boolean(req.query.wrap === "1");
+
+  if (!isDocumentNav) return next();
+
+  // Check if requested path matches one of the app shell views
+  const cleanPath = req.path.toLowerCase();
+  let matchedTab = SHELL_TAB_MAP[cleanPath];
+
+  if (!matchedTab) {
+    if (cleanPath.startsWith("/bhajan/")) matchedTab = "bank";
+    else if (cleanPath.startsWith("/bulletins")) matchedTab = "home";
+    else if (cleanPath.startsWith("/admin") && !cleanPath.startsWith("/admin-login")) matchedTab = "admin";
+  }
+
+  if (!matchedTab) return next();
+
+  // Don't intercept auth-specific standalone pages or backups
+  if (
+    cleanPath === "/admin-login" ||
+    cleanPath === "/forgot-password" ||
+    cleanPath === "/logout" ||
+    cleanPath === "/admin/download-backup"
+  ) {
+    return next();
+  }
+
+  const isAuthAdmin = Boolean(req.session && (req.session.admin || req.session.adminUserId));
+  if (matchedTab === "admin" && !isAuthAdmin) {
+    return res.redirect("/admin-login");
+  }
+
+  return res.render("app-shell", {
+    layout: false,
+    pageTitle: "Bhajan Planner",
+    initialTab: matchedTab,
+    initialRoute: req.originalUrl,
+    currentAdmin: req.session?.admin || null,
+    currentSinger: req.session?.singer || null
+  });
+});
+
 app.use("/", homeRoutes);
 app.use("/", plannerRoutes);
 app.use("/", apiRoutes);

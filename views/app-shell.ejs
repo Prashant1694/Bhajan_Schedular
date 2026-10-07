@@ -114,6 +114,9 @@
     </div>
   </header>
 
+  <!-- Native Top Loading Progress Bar (Hardware GPU-Accelerated) -->
+  <div class="shell-load-bar" id="shellLoadBar"></div>
+
   <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
     <!-- Integrated Admin Sidebar Drawer (Off-Canvas) -->
     <div class="admin-shell-sidebar-overlay" id="adminShellSidebarOverlay" onclick="closeAdminShellSidebar()"></div>
@@ -503,6 +506,24 @@
       }
     });
 
+    // Native Top Loading Progress Bar Controller
+    function startLoadProgress() {
+      const bar = document.getElementById('shellLoadBar');
+      if (!bar) return;
+      bar.classList.remove('is-done');
+      bar.classList.add('is-loading');
+    }
+
+    function finishLoadProgress() {
+      const bar = document.getElementById('shellLoadBar');
+      if (!bar) return;
+      bar.classList.remove('is-loading');
+      bar.classList.add('is-done');
+      setTimeout(function () {
+        bar.classList.remove('is-done');
+      }, 400);
+    }
+
     // Switch active tab without reloading iframe, preserving form state & scroll
     function switchTab(tabKey, targetUrl, skipHistory) {
       if (!TAB_KEYS.includes(tabKey)) return;
@@ -519,6 +540,7 @@
           if (previousTab === tabKey && !targetUrl) {
             try {
               if (frame && frame.contentWindow && frame.contentWindow.location.pathname !== TAB_ROUTES[tabKey]) {
+                startLoadProgress();
                 frame.src = TAB_ROUTES[tabKey] + '?_embed=1';
               }
             } catch (_) { }
@@ -531,6 +553,7 @@
           // Lazy load iframe source on first activation
           const pendingSrc = frame.getAttribute('data-src');
           if (pendingSrc && !frame.getAttribute('src')) {
+            startLoadProgress();
             frame.setAttribute('src', pendingSrc);
             frame.removeAttribute('data-src');
           }
@@ -557,6 +580,7 @@
             }
 
             if (isStuckOnLogin) {
+              startLoadProgress();
               frame.src = TAB_ROUTES[tabKey] + '?_embed=1';
             }
           }
@@ -567,6 +591,7 @@
             const sep = targetUrl.includes('?') ? '&' : '?';
             const fullEmbedUrl = targetUrl.includes('_embed') ? targetUrl : (targetUrl + sep + '_embed=1');
             if (currentSrc !== fullEmbedUrl) {
+              startLoadProgress();
               frame.src = fullEmbedUrl;
             }
           }
@@ -723,9 +748,10 @@
       });
     }
 
-    // Propagate theme when iframes finish loading
+    // Propagate theme and complete progress bar when iframes finish loading
     document.querySelectorAll('.shell-frame').forEach(function (f) {
       f.addEventListener('load', function () {
+        finishLoadProgress();
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         syncThemeToFrames(isDark ? 'dark' : 'light');
       });
@@ -755,17 +781,6 @@
         sessionStorage.setItem('bp_active_tab', currentTab);
         if (window.history && window.history.replaceState) {
           window.history.replaceState({ path: serverInitRoute, tab: currentTab }, '', serverInitRoute);
-        }
-      } catch (_) {}
-    } else {
-      // If refreshed on root '/' or without explicit route, check if sessionStorage remembers where user was
-      try {
-        const saved = sessionStorage.getItem('bp_current_path');
-        if (saved && saved !== '/' && !window.location.search.includes('logged_out')) {
-          const expectedTab = mapPathToTab(saved.split('?')[0]);
-          if (expectedTab && TAB_KEYS.includes(expectedTab)) {
-            switchTab(expectedTab, saved, true);
-          }
         }
       } catch (_) {}
     }
