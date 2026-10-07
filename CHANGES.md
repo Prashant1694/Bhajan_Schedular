@@ -310,6 +310,12 @@ ls bhajans.db  # Expect: No such file
 * `tests/pinLockout.test.js`
 * `CHANGES.md`
 
+### 6. Additional Hardening & CI Fixes
+* **CSRF Protection on Bhajan Form**: Injected CSRF tokens into `generateSubmitFormHtml` (`<meta name="csrf-token">`, `window.csrfToken`, `<input type="hidden" name="_csrf">`), initialized sessions on token generation in `app.js`, and added pre-submit token injection in `public/js/script.js`.
+* **CI Matrix Compatibility (Node 18/20/22)**: Pinned ESLint to `^9.39.5` to maintain compatibility with Node 18.x and earlier Node 20.x runners that lack `util.styleText`.
+* **Cross-Platform Test Runner**: Switched `npm test` script to `node --test` for automatic recursive test discovery without bash glob expansion issues on Linux.
+* **PWA Local Network Fallback**: Added visual manual install instructions in `public/js/pwa.js` and `views/layouts/main.ejs` when accessed over local Wi-Fi IP HTTP where browsers restrict 1-click install.
+
 ---
 
 ## Manual Steps for the Repository Owner
