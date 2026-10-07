@@ -203,6 +203,23 @@
   border-color: #d4c9b8;
 }
 
+/* ── Manual / Insecure instructions ─────────────────────────────────── */
+.pwa-manual-instructions {
+  text-align: center;
+  padding: 12px 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  margin-top: 14px;
+}
+
+.pwa-manual-instructions p {
+  font-size: 0.85rem;
+  color: #9a3412;
+  line-height: 1.55;
+  margin: 0;
+}
+
 /* ── iOS instructions ──────────────────────────────────────────────────── */
 .pwa-ios-instructions {
   text-align: center;

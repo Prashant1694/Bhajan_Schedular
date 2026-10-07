@@ -94,6 +94,19 @@
       const installBtn = document.getElementById("pwaBtnInstall");
       if (iosEl) iosEl.style.display = "block";
       if (installBtn) installBtn.style.display = "none";
+    } else if (!deferredPrompt) {
+      const manualEl = document.getElementById("pwaManualInstructions");
+      const manualText = document.getElementById("pwaManualInstructionsText");
+      if (manualEl) {
+        manualEl.style.display = "block";
+        const isInsecure =
+          !window.isSecureContext &&
+          location.hostname !== "localhost" &&
+          location.hostname !== "127.0.0.1";
+        if (isInsecure && manualText) {
+          manualText.innerHTML = `<strong>Over Wi-Fi IP (HTTP):</strong> Mobile browsers restrict automated install without HTTPS.<br>Tap your browser menu (<strong>⋮</strong>) &rarr; select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.`;
+        }
+      }
     }
 
     const delay = typeof customDelay === "number" ? customDelay : BANNER_DELAY;
@@ -125,6 +138,10 @@
       });
     } else {
       showBanner(0);
+      const manualEl = document.getElementById("pwaManualInstructions");
+      if (manualEl && !isIOS()) {
+        manualEl.style.display = "block";
+      }
     }
   };
 
@@ -178,6 +195,18 @@
     installBtn?.addEventListener("click", async () => {
       if (!deferredPrompt) {
         showBanner(0);
+        const manualEl = document.getElementById("pwaManualInstructions");
+        const manualText = document.getElementById("pwaManualInstructionsText");
+        if (manualEl) {
+          manualEl.style.display = "block";
+          const isInsecure =
+            !window.isSecureContext &&
+            location.hostname !== "localhost" &&
+            location.hostname !== "127.0.0.1";
+          if (isInsecure && manualText) {
+            manualText.innerHTML = `<strong>Over Wi-Fi IP (HTTP):</strong> Mobile browsers restrict automated install without HTTPS.<br>Tap your browser menu (<strong>⋮</strong>) &rarr; select <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong>.`;
+          }
+        }
         return;
       }
       deferredPrompt.prompt();
