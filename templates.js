@@ -9,7 +9,7 @@ function escapeHtml(unsafe) {
 }
 
 const themeHeadScript = `
-  <link rel="stylesheet" href="/css/app-shell.css?v=3.5">
+  <link rel="stylesheet" href="/css/app-shell.css?v=4.6">
   <script>
   (function(){
     try {
@@ -17,14 +17,22 @@ const themeHeadScript = `
       if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
     } catch(e){}
 
-    // Auto-detect embed mode and apply embed-page and in-iframe class immediately
-    if (window.self !== window.top) {
+    var inIframe = false;
+    try {
+      inIframe = (window.self !== window.top) || window.location.search.includes('_embed=1') || window.location.search.includes('embed=1');
+    } catch(_) {
+      inIframe = true;
+    }
+
+    if (inIframe) {
       document.documentElement.classList.add('in-iframe');
     }
 
     function checkEmbed() {
-      if (window.self !== window.top) {
-        document.body.classList.add('embed-page');
+      if (inIframe) {
+        if (document.body) {
+          document.body.classList.add('embed-page', 'in-iframe');
+        }
         var cleanUrl = (function() {
           try {
             var u = new URL(window.location.href);
@@ -48,7 +56,12 @@ const themeHeadScript = `
         window.location.replace('/?route=' + encodeURIComponent(fullUrl));
       }
     }
-    checkEmbed();
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkEmbed);
+    } else {
+      checkEmbed();
+    }
   })();
   </script>`;
 
@@ -131,7 +144,7 @@ function generateSubmitFormHtml(
   <link rel="stylesheet" href="/css/style.css">
   ${themeHeadScript}
 </head>
-<body>
+<body class="embed-page in-iframe">
   ${themeToggleBtnHtml}
   <div class="container">
     
@@ -442,7 +455,7 @@ function generatePlanViewHtml(sessionDate, rowsHtml, whatsappText, whatsappEncod
   <link rel="stylesheet" href="/css/style.css">
   ${themeHeadScript}
 </head>
-<body>
+<body class="embed-page in-iframe">
   ${themeToggleBtnHtml}
 
   <div class="plan-page-shell">

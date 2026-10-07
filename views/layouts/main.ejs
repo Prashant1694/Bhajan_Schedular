@@ -171,7 +171,14 @@
                     pointer-events: none !important;
                   }
 
-                  .in-iframe body {
+                  .in-iframe body,
+                  body.embed-page,
+                  html.in-iframe {
+                    overflow-y: auto !important;
+                    overflow-x: hidden !important;
+                    -webkit-overflow-scrolling: touch !important;
+                    height: auto !important;
+                    min-height: 100% !important;
                     padding-bottom: 24px !important;
                   }
                 </style>

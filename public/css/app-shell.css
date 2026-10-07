@@ -4,7 +4,8 @@
    ========================================================================== */
 
 /* ── Shell Body (No scrollbars, 100% full screen viewport) ── */
-html,
+html.shell-root,
+html:has(body.shell-body),
 body.shell-body {
   margin: 0 !important;
   padding: 0 !important;
@@ -317,7 +318,7 @@ body #notifBellBtn:not(.native-action-btn) {
   overflow: hidden;
   background: var(--paper);
   box-sizing: border-box;
-  contain: layout paint size;
+  -webkit-overflow-scrolling: touch;
 }
 
 .shell-frame {
@@ -336,11 +337,7 @@ body #notifBellBtn:not(.native-action-btn) {
   z-index: 1;
   background: var(--paper);
   transition: opacity 0.12s cubic-bezier(0.2, 0, 0, 1);
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  will-change: opacity;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .shell-frame.active-frame {
@@ -496,20 +493,39 @@ body #notifBellBtn:not(.native-action-btn) {
    EMBED PAGE OVERHAUL (Rendered inside Shell Iframe)
    Replaces cramped floating cards with edge-to-edge native full-screen flow
    ========================================================================== */
+/* Universal embedded iframe scroll enablement across all devices */
+html.in-iframe,
+body.embed-page,
+.in-iframe body,
+body.in-iframe {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  height: auto !important;
+  min-height: 100% !important;
+  max-width: 100% !important;
+}
+
 /* Mobile-only edge-to-edge flow inside shell iframe */
 @media (max-width: 768px) {
-  body.embed-page {
-    padding: 0 !important;
+  body.embed-page,
+  .in-iframe body,
+  body.in-iframe {
+    padding: 0 0 60px 0 !important;
     margin: 0 !important;
     width: 100% !important;
     min-height: 100% !important;
     max-width: 100% !important;
     background: var(--paper) !important;
     display: block !important;
+    overflow-y: auto !important;
     overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
-  body.embed-page::before {
+  body.embed-page::before,
+  .in-iframe body::before,
+  body.in-iframe::before {
     display: none !important;
   }
 
@@ -538,7 +554,9 @@ body #notifBellBtn:not(.native-action-btn) {
 
 /* Desktop smooth, aligned, premium layout inside shell iframe */
 @media (min-width: 769px) {
-  body.embed-page {
+  body.embed-page,
+  .in-iframe body,
+  body.in-iframe {
     padding: 24px 24px 70px 24px !important;
     margin: 0 !important;
     width: 100% !important;
@@ -548,9 +566,12 @@ body #notifBellBtn:not(.native-action-btn) {
     display: block !important;
     overflow-y: auto !important;
     overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
   }
 
-  body.embed-page::before {
+  body.embed-page::before,
+  .in-iframe body::before,
+  body.in-iframe::before {
     display: none !important;
   }
 

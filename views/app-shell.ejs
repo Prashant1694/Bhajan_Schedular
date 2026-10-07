@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="shell-root">
 
 <head>
   <meta charset="UTF-8">
@@ -34,7 +34,7 @@
   <!-- Core CSS -->
   <link rel="stylesheet" href="/css/style.css?v=4.6">
   <link rel="stylesheet" href="/css/notifications.css?v=4.4">
-  <link rel="stylesheet" href="/css/app-shell.css?v=4.5">
+  <link rel="stylesheet" href="/css/app-shell.css?v=4.6">
 
   <!-- Native Micro-Haptics Engine -->
   <script src="/js/haptics.js"></script>
@@ -268,38 +268,38 @@
     <iframe id="frame-home"
       class="shell-frame <%= activeTabKey === 'home' ? 'active-frame' : '' %>"
       <% if (activeTabKey === 'home') { %>src="<%= getTabSrc('home', '/') %>"<% } else { %>data-src="/?_embed=1"<% } %>
-      title="Home Dashboard"></iframe>
+      title="Home Dashboard" scrolling="yes"></iframe>
 
     <!-- Tab 1: Singer Zone (Mark Bhajan) -->
     <iframe id="frame-singer"
       class="shell-frame <%= activeTabKey === 'singer' ? 'active-frame' : '' %>"
       <% if (activeTabKey === 'singer') { %>src="<%= getTabSrc('singer', '/submit-form') %>"<% } else { %>data-src="/submit-form?_embed=1"<% } %>
-      title="Singer Zone"></iframe>
+      title="Singer Zone" scrolling="yes"></iframe>
 
     <!-- Tab 2: Songbook (Master Bank) -->
     <iframe id="frame-bank"
       class="shell-frame <%= activeTabKey === 'bank' ? 'active-frame' : '' %>"
       <% if (activeTabKey === 'bank') { %>src="<%= getTabSrc('bank', '/master-bank') %>"<% } else { %>data-src="/master-bank?_embed=1"<% } %>
-      title="Master Songbook"></iframe>
+      title="Master Songbook" scrolling="yes"></iframe>
 
     <!-- Tab 3: Live Plan -->
     <iframe id="frame-plan"
       class="shell-frame <%= activeTabKey === 'plan' ? 'active-frame' : '' %>"
       <% if (activeTabKey === 'plan') { %>src="<%= getTabSrc('plan', '/plan-view') %>"<% } else { %>data-src="/plan-view?_embed=1"<% } %>
-      title="Live Session Plan"></iframe>
+      title="Live Session Plan" scrolling="yes"></iframe>
 
     <!-- Tab 4: My Hub -->
     <iframe id="frame-hub"
       class="shell-frame <%= activeTabKey === 'hub' ? 'active-frame' : '' %>"
       <% if (activeTabKey === 'hub') { %>src="<%= getTabSrc('hub', '/my-hub') %>"<% } else { %>data-src="/my-hub?_embed=1"<% } %>
-      title="Singer Hub"></iframe>
+      title="Singer Hub" scrolling="yes"></iframe>
 
     <% if (typeof currentAdmin !== 'undefined' && currentAdmin) { %>
       <!-- Tab 5: Admin Portal (When in Admin Mode) -->
       <iframe id="frame-admin"
         class="shell-frame <%= activeTabKey === 'admin' ? 'active-frame' : '' %>"
         <% if (activeTabKey === 'admin') { %>src="<%= getTabSrc('admin', '/admin') %>"<% } else { %>data-src="/admin?_embed=1"<% } %>
-        title="Admin Portal"></iframe>
+        title="Admin Portal" scrolling="yes"></iframe>
     <% } %>
   </main>
 
